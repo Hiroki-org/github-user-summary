@@ -14,7 +14,10 @@ export default function SkillsCard({ repositories }: Props) {
 
   const topLanguages = languages.slice(0, 10);
   const topTopics = topics.slice(0, 10);
-  const maxTopicCount = topTopics.length > 0 ? Math.max(...topTopics.map((topic) => topic.count)) : 0;
+  const maxTopicCount =
+    topTopics.length > 0
+      ? Math.max(...topTopics.map((topic) => topic.count))
+      : 0;
 
   const topicClassName = (count: number): string => {
     if (maxTopicCount <= 0) {
@@ -32,7 +35,9 @@ export default function SkillsCard({ repositories }: Props) {
 
   return (
     <div className="rounded-lg border border-card-border bg-card-bg p-6">
-      <h3 className="mb-4 text-lg font-semibold text-foreground">Skills & Languages</h3>
+      <h3 className="mb-4 text-lg font-semibold text-foreground">
+        Skills & Languages
+      </h3>
 
       {topLanguages.length > 0 && (
         <>
@@ -68,7 +73,9 @@ export default function SkillsCard({ repositories }: Props) {
                     />
                     {lang.name}
                   </span>
-                  <span className="text-muted">{lang.percentage.toFixed(1)}%</span>
+                  <span className="text-muted">
+                    {lang.percentage.toFixed(1)}%
+                  </span>
                 </div>
                 <div className="h-1.5 overflow-hidden rounded-full bg-background">
                   <div
@@ -92,8 +99,16 @@ export default function SkillsCard({ repositories }: Props) {
       )}
 
       {topTopics.length > 0 && (
-        <div className={topLanguages.length > 0 ? "mt-6 border-t border-card-border pt-4" : ""}>
-          <h4 className="mb-2 text-sm font-medium text-muted">Repository Topics</h4>
+        <div
+          className={
+            topLanguages.length > 0
+              ? "mt-6 border-t border-card-border pt-4"
+              : ""
+          }
+        >
+          <h4 className="mb-2 text-sm font-medium text-muted">
+            Repository Topics
+          </h4>
           <div className="flex flex-wrap gap-2">
             {topTopics.map((topic) => (
               <span

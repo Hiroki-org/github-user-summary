@@ -61,7 +61,9 @@ export default function ContributionsCard({ contributions }: Props) {
 
   return (
     <div className="rounded-lg border border-card-border bg-card-bg p-6">
-      <h3 className="mb-4 text-lg font-semibold text-foreground">Contributions</h3>
+      <h3 className="mb-4 text-lg font-semibold text-foreground">
+        Contributions
+      </h3>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -70,10 +72,7 @@ export default function ContributionsCard({ contributions }: Props) {
             key={stat.label}
             className="rounded-md border border-card-border p-3 text-center"
           >
-            <div
-              className="text-2xl font-bold"
-              style={{ color: stat.color }}
-            >
+            <div className="text-2xl font-bold" style={{ color: stat.color }}>
               {stat.value.toLocaleString()}
               {"suffix" in stat ? stat.suffix : ""}
             </div>
@@ -82,7 +81,9 @@ export default function ContributionsCard({ contributions }: Props) {
         ))}
         {showMostActiveDay && (
           <div className="rounded-md border border-card-border p-3 text-center">
-            <div className="text-base font-semibold text-foreground">📅 {contributions.mostActiveDay}</div>
+            <div className="text-base font-semibold text-foreground">
+              📅 {contributions.mostActiveDay}
+            </div>
             <div className="mt-1 text-xs text-muted">Most Active Day</div>
           </div>
         )}
@@ -91,7 +92,9 @@ export default function ContributionsCard({ contributions }: Props) {
       {/* Full Contribution Graph */}
       {contributions.calendar.length > 0 && (
         <div className="mt-4">
-          <h4 className="mb-2 text-sm font-medium text-muted">Contribution Calendar</h4>
+          <h4 className="mb-2 text-sm font-medium text-muted">
+            Contribution Calendar
+          </h4>
           <ContributionGraph contributions={contributions} />
         </div>
       )}
