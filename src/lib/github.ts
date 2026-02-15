@@ -267,22 +267,23 @@ async function fetchRepositoriesREST(username: string): Promise<RepositoryData> 
   );
 
   const nonFork = repos.filter((r) => !r.fork);
-  const languageMap = new Map<string, number>();
+  // REST API は言語のバイト数を提供しないため、リポジトリ数を代用
+  const languageRepoCount = new Map<string, number>();
 
   for (const repo of nonFork) {
     if (repo.language) {
-      languageMap.set(repo.language, (languageMap.get(repo.language) ?? 0) + 1);
+      languageRepoCount.set(repo.language, (languageRepoCount.get(repo.language) ?? 0) + 1);
     }
   }
 
-  const totalBytes = Array.from(languageMap.values()).reduce((a, b) => a + b, 0);
-  const languages: LanguageStats[] = Array.from(languageMap.entries())
+  const totalRepoCount = Array.from(languageRepoCount.values()).reduce((a, b) => a + b, 0);
+  const languages: LanguageStats[] = Array.from(languageRepoCount.entries())
     .sort((a, b) => b[1] - a[1])
     .slice(0, 10)
-    .map(([name, count]) => ({
+    .map(([name, repoCount]) => ({
       name,
-      bytes: count,
-      percentage: totalBytes > 0 ? Math.round((count / totalBytes) * 1000) / 10 : 0,
+      bytes: repoCount,
+      percentage: totalRepoCount > 0 ? Math.round((repoCount / totalRepoCount) * 1000) / 10 : 0,
       color: getLanguageColor(name),
     }));
 
@@ -334,7 +335,7 @@ function processRepoData(repos: RepoNode[], totalCount: number): RepositoryData 
     primaryLanguage: r.primaryLanguage,
   }));
 
-  return { languages, topRepos, totalCount };
+  return { languages, topRepos, totalCount: repos.length };
 }
 
 // ===== 3. fetchContributions =====
