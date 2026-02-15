@@ -1,3 +1,5 @@
+import "server-only";
+
 import type {
   UserProfile,
   RepositoryData,
@@ -120,6 +122,12 @@ type PinnedItemsResponse = {
   } | null;
 };
 
+/**
+ * Task④: ユーザープロフィール・組織・ピン留めリポジトリを取得
+ * REST /users/:username + /users/:username/orgs + GraphQL pinnedItems
+ * @throws {UserNotFoundError} ユーザーが存在しない場合
+ * @throws {RateLimitError} APIレート制限に達した場合
+ */
 export async function fetchUserProfile(
   username: string,
   token?: string
@@ -210,6 +218,12 @@ type RepositoriesResponse = {
   } | null;
 };
 
+/**
+ * Task⑤: リポジトリ一覧・言語統計・トップリポジトリを取得
+ * 認証時: GraphQL (言語バイト数ベース), 未認証時: REST フォールバック
+ * @throws {UserNotFoundError} ユーザーが存在しない場合
+ * @throws {RateLimitError} APIレート制限に達した場合
+ */
 export async function fetchRepositories(
   username: string,
   token?: string
@@ -360,6 +374,13 @@ type ContributionsResponse = {
   } | null;
 };
 
+/**
+ * Task⑥: 過去1年間のコントリビューション統計を取得
+ * GraphQL contributionsCollection (認証必須)
+ * コミット・PR・Issue・レビュー数 + 日別カレンダーデータ
+ * @throws {GitHubApiError} 認証トークンがない場合
+ * @throws {RateLimitError} APIレート制限に達した場合
+ */
 export async function fetchContributions(
   username: string,
   token?: string
@@ -423,6 +444,12 @@ type GitHubEvent = {
   created_at: string;
 };
 
+/**
+ * Task⑦: アクティビティヒートマップ・イベント内訳を取得
+ * REST /users/:username/events/public (最大3ページ)
+ * 曜日×時間帯の7×24ヒートマップ + イベント種別集計
+ * @throws {RateLimitError} APIレート制限に達した場合
+ */
 export async function fetchActivity(
   username: string,
   token?: string
@@ -472,6 +499,11 @@ export async function fetchActivity(
 
 // ===== 5. fetchUserSummary =====
 
+/**
+ * 全セクションを並行取得し、UserSummary として集約
+ * Promise.allSettled で部分失敗に対応（profile 404 のみ再スロー）
+ * @throws {UserNotFoundError} プロフィールが404の場合
+ */
 export async function fetchUserSummary(
   username: string,
   token?: string
