@@ -44,7 +44,7 @@ export default function LanguageChart({ languages, size = 180 }: Props) {
         height={size}
         viewBox={`0 0 ${size} ${size}`}
         className="shrink-0"
-        aria-label="Language distribution chart"
+        aria-label={`Language distribution: ${top.map((s) => `${s.name} ${s.percentage.toFixed(1)}%`).join(", ")}`}
         role="img"
       >
         {/* Background ring */}
@@ -82,7 +82,7 @@ export default function LanguageChart({ languages, size = 180 }: Props) {
           className="fill-foreground text-lg font-bold"
           style={{ fontSize: 18 }}
         >
-          {languages.length}
+          {top.length}
         </text>
         <text
           x={cx}
