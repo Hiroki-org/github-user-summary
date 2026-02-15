@@ -1,6 +1,13 @@
 import type { ContributionData } from "@/lib/types";
 import ContributionGraph from "./ContributionGraph";
 
+type Stat = {
+  label: string;
+  value: number;
+  color: string;
+  suffix?: string;
+};
+
 type Props = {
   contributions: ContributionData;
 };
@@ -17,7 +24,7 @@ export default function ContributionsCard({ contributions }: Props) {
     return null;
   }
 
-  const stats = [
+  const stats: Stat[] = [
     {
       label: "Total Contributions",
       value: contributions.totalContributions,
@@ -74,7 +81,7 @@ export default function ContributionsCard({ contributions }: Props) {
           >
             <div className="text-2xl font-bold" style={{ color: stat.color }}>
               {stat.value.toLocaleString()}
-              {"suffix" in stat ? stat.suffix : ""}
+              {stat.suffix ?? ""}
             </div>
             <div className="mt-1 text-xs text-muted">{stat.label}</div>
           </div>

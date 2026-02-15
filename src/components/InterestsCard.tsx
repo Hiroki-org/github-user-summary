@@ -1,23 +1,9 @@
 import type { InterestsData } from "@/lib/types";
+import { getTopicSizeClass } from "@/lib/topicUtils";
 
 type Props = {
   interests: InterestsData;
 };
-
-function getTopicSize(count: number, maxCount: number): string {
-  if (maxCount <= 0) {
-    return "text-sm";
-  }
-
-  const ratio = count / maxCount;
-  if (ratio >= 0.8) {
-    return "text-base font-semibold";
-  }
-  if (ratio >= 0.5) {
-    return "text-sm font-medium";
-  }
-  return "text-xs";
-}
 
 export default function InterestsCard({ interests }: Props) {
   const { topTopics, topLanguages, totalStarred } = interests;
@@ -50,7 +36,7 @@ export default function InterestsCard({ interests }: Props) {
             {topTopics.map((topic) => (
               <span
                 key={topic.name}
-                className={`inline-flex items-center gap-1 rounded-full border border-card-border bg-background px-2.5 py-1 text-foreground ${getTopicSize(topic.count, maxTopicCount)}`}
+                className={`inline-flex items-center gap-1 rounded-full border border-card-border bg-background px-2.5 py-1 text-foreground ${getTopicSizeClass(topic.count, maxTopicCount)}`}
                 title={`${topic.name}: ${topic.count}`}
               >
                 {topic.name}

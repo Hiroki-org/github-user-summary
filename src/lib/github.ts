@@ -470,7 +470,11 @@ export async function fetchContributions(
     }
   }
 
-  for (let i = calendar.length - 1; i >= 0; i -= 1) {
+  let startIdx = calendar.length - 1;
+  if (startIdx >= 0 && calendar[startIdx].count === 0) {
+    startIdx -= 1;
+  }
+  for (let i = startIdx; i >= 0; i -= 1) {
     if (calendar[i].count > 0) {
       currentStreak += 1;
     } else {
@@ -532,7 +536,7 @@ export async function fetchStarredRepos(
       {
         headers: {
           ...headers(token),
-          Accept: "application/vnd.github.mercy-preview+json",
+          Accept: "application/vnd.github+json",
         },
         next: { revalidate: 300 },
       }
@@ -570,6 +574,7 @@ export async function fetchStarredRepos(
 
   const topLanguages = Array.from(languageCounts.entries())
     .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
     .map(([name, count]) => ({ name, count }));
 
   return {

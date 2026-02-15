@@ -1,5 +1,6 @@
 import type { RepositoryData } from "@/lib/types";
 import LanguageChart from "./LanguageChart";
+import { getTopicSizeClass } from "@/lib/topicUtils";
 
 type Props = {
   repositories: RepositoryData;
@@ -18,20 +19,6 @@ export default function SkillsCard({ repositories }: Props) {
     topTopics.length > 0
       ? Math.max(...topTopics.map((topic) => topic.count))
       : 0;
-
-  const topicClassName = (count: number): string => {
-    if (maxTopicCount <= 0) {
-      return "text-xs";
-    }
-    const ratio = count / maxTopicCount;
-    if (ratio >= 0.8) {
-      return "text-base font-semibold";
-    }
-    if (ratio >= 0.5) {
-      return "text-sm font-medium";
-    }
-    return "text-xs";
-  };
 
   return (
     <div className="rounded-lg border border-card-border bg-card-bg p-6">
@@ -113,7 +100,7 @@ export default function SkillsCard({ repositories }: Props) {
             {topTopics.map((topic) => (
               <span
                 key={topic.name}
-                className={`inline-flex items-center gap-1 rounded-full border border-card-border bg-background px-2.5 py-1 text-foreground ${topicClassName(topic.count)}`}
+                className={`inline-flex items-center gap-1 rounded-full border border-card-border bg-background px-2.5 py-1 text-foreground ${getTopicSizeClass(topic.count, maxTopicCount)}`}
                 title={`${topic.name}: ${topic.count}`}
               >
                 {topic.name}
