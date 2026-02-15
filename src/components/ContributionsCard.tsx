@@ -6,6 +6,17 @@ type Props = {
 };
 
 export default function ContributionsCard({ contributions }: Props) {
+  const isEmpty =
+    contributions.totalContributions === 0 &&
+    contributions.totalCommits === 0 &&
+    contributions.totalPRs === 0 &&
+    contributions.totalIssues === 0 &&
+    contributions.totalReviews === 0;
+
+  if (isEmpty) {
+    return null;
+  }
+
   const stats = [
     {
       label: "Total Contributions",
@@ -32,7 +43,21 @@ export default function ContributionsCard({ contributions }: Props) {
       value: contributions.totalReviews,
       color: "var(--danger)",
     },
+    {
+      label: "🔥 Longest Streak",
+      value: contributions.longestStreak,
+      suffix: " days",
+      color: "var(--accent)",
+    },
+    {
+      label: "⚡ Current Streak",
+      value: contributions.currentStreak,
+      suffix: " days",
+      color: "var(--success)",
+    },
   ];
+
+  const showMostActiveDay = contributions.mostActiveDay.length > 0;
 
   return (
     <div className="rounded-lg border border-card-border bg-card-bg p-6">
@@ -50,10 +75,17 @@ export default function ContributionsCard({ contributions }: Props) {
               style={{ color: stat.color }}
             >
               {stat.value.toLocaleString()}
+              {"suffix" in stat ? stat.suffix : ""}
             </div>
             <div className="mt-1 text-xs text-muted">{stat.label}</div>
           </div>
         ))}
+        {showMostActiveDay && (
+          <div className="rounded-md border border-card-border p-3 text-center">
+            <div className="text-base font-semibold text-foreground">📅 {contributions.mostActiveDay}</div>
+            <div className="mt-1 text-xs text-muted">Most Active Day</div>
+          </div>
+        )}
       </div>
 
       {/* Full Contribution Graph */}

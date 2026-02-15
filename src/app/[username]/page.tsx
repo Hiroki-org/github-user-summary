@@ -15,6 +15,7 @@ import SkillsCard from "@/components/SkillsCard";
 import ContributionsCard from "@/components/ContributionsCard";
 import ReposCard from "@/components/ReposCard";
 import ActivityCard from "@/components/ActivityCard";
+import InterestsCard from "@/components/InterestsCard";
 
 type Props = {
   params: Promise<{ username: string }>;
@@ -107,6 +108,11 @@ export default async function UserPage({ params }: Props) {
           {/* Repos */}
           {summary.repositories && (
             <ReposCard repositories={summary.repositories} />
+          )}
+
+          {/* Interests */}
+          {summary.interests && (
+            <InterestsCard interests={summary.interests} />
           )}
 
           {/* Activity */}

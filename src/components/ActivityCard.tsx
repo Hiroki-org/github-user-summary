@@ -10,12 +10,7 @@ export default function ActivityCard({ activity }: Props) {
   const { heatmap, eventBreakdown, totalEvents } = activity;
 
   if (totalEvents === 0) {
-    return (
-      <div className="rounded-lg border border-card-border bg-card-bg p-6">
-        <h3 className="mb-4 text-lg font-semibold text-foreground">Activity</h3>
-        <p className="text-sm text-muted">No recent activity data available.</p>
-      </div>
-    );
+    return null;
   }
 
   // Event type labels
