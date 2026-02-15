@@ -4,6 +4,14 @@ type Props = {
   contributions: ContributionData;
 };
 
+const OPACITY_MAP: Record<number, string> = {
+  0: "opacity-10",
+  1: "opacity-30",
+  2: "opacity-50",
+  3: "opacity-75",
+  4: "opacity-100",
+};
+
 export default function ContributionsCard({ contributions }: Props) {
   const stats = [
     {
@@ -66,17 +74,10 @@ export default function ContributionsCard({ contributions }: Props) {
           <div className="flex gap-0.5">
             {recentCalendar.map((day) => {
               const intensity = day.count === 0 ? 0 : Math.ceil((day.count / maxCount) * 4);
-              const opacityMap: Record<number, string> = {
-                0: "opacity-10",
-                1: "opacity-30",
-                2: "opacity-50",
-                3: "opacity-75",
-                4: "opacity-100",
-              };
               return (
                 <div
                   key={day.date}
-                  className={`h-4 flex-1 rounded-sm bg-accent ${opacityMap[intensity]}`}
+                  className={`h-4 flex-1 rounded-sm bg-accent ${OPACITY_MAP[intensity]}`}
                   title={`${day.date}: ${day.count} contributions`}
                 />
               );
