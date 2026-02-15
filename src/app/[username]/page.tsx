@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { notFound } from "next/navigation";
 
@@ -56,9 +57,9 @@ export default async function UserPage({ params }: Props) {
       {/* Header */}
       <header className="border-b border-card-border px-6 py-4">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <a href="/" className="text-lg font-semibold text-foreground hover:text-accent transition-colors">
+          <Link href="/" className="text-lg font-semibold text-foreground hover:text-accent transition-colors">
             GitHub User Summary
-          </a>
+          </Link>
           <div className="flex items-center gap-4">
             <SearchForm />
             <LoginButton />

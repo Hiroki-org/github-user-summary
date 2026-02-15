@@ -7,6 +7,14 @@ type Props = {
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
+const INTENSITY_COLORS: Record<number, string> = {
+  0: "bg-foreground/5",
+  1: "bg-accent/25",
+  2: "bg-accent/50",
+  3: "bg-accent/75",
+  4: "bg-accent",
+};
+
 export default function ActivityCard({ activity }: Props) {
   const { heatmap, eventBreakdown, totalEvents } = activity;
 
@@ -69,17 +77,10 @@ export default function ActivityCard({ activity }: Props) {
                   const count = heatmap[dayIdx]?.[hour] ?? 0;
                   const intensity =
                     count === 0 ? 0 : Math.ceil((count / maxVal) * 4);
-                  const colors: Record<number, string> = {
-                    0: "bg-foreground/5",
-                    1: "bg-accent/25",
-                    2: "bg-accent/50",
-                    3: "bg-accent/75",
-                    4: "bg-accent",
-                  };
                   return (
                     <div
                       key={hour}
-                      className={`aspect-square flex-1 rounded-sm ${colors[intensity]}`}
+                      className={`aspect-square flex-1 rounded-sm ${INTENSITY_COLORS[intensity]}`}
                       title={`${day} ${hour}:00 — ${count} events`}
                     />
                   );
