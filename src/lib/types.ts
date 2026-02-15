@@ -33,6 +33,7 @@ export type LanguageStats = {
 
 export type RepositoryData = {
   languages: LanguageStats[];
+  topics: { name: string; count: number }[];
   topRepos: TopRepo[];
   totalCount: number;
 };
@@ -52,7 +53,16 @@ export type ContributionData = {
   totalIssues: number;
   totalReviews: number;
   totalContributions: number;
+  longestStreak: number;
+  currentStreak: number;
+  mostActiveDay: string;
   calendar: { date: string; count: number }[];
+};
+
+export type InterestsData = {
+  topTopics: { name: string; count: number }[];
+  topLanguages: { name: string; count: number }[];
+  totalStarred: number;
 };
 
 export type ActivityData = {
@@ -66,6 +76,7 @@ export type UserSummary = {
   repositories: RepositoryData | null;
   contributions: ContributionData | null;
   activity: ActivityData | null;
+  interests: InterestsData | null;
   errors: { section: string; message: string }[];
 };
 

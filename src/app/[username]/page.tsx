@@ -15,6 +15,7 @@ import SkillsCard from "@/components/SkillsCard";
 import ContributionsCard from "@/components/ContributionsCard";
 import ReposCard from "@/components/ReposCard";
 import ActivityCard from "@/components/ActivityCard";
+import InterestsCard from "@/components/InterestsCard";
 
 type Props = {
   params: Promise<{ username: string }>;
@@ -58,7 +59,10 @@ export default async function UserPage({ params }: Props) {
       {/* Header */}
       <header className="border-b border-card-border px-6 py-4">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <Link href="/" className="text-lg font-semibold text-foreground hover:text-accent transition-colors">
+          <Link
+            href="/"
+            className="text-lg font-semibold text-foreground hover:text-accent transition-colors"
+          >
             GitHub User Summary
           </Link>
           <div className="flex items-center gap-4">
@@ -109,10 +113,11 @@ export default async function UserPage({ params }: Props) {
             <ReposCard repositories={summary.repositories} />
           )}
 
+          {/* Interests */}
+          {summary.interests && <InterestsCard interests={summary.interests} />}
+
           {/* Activity */}
-          {summary.activity && (
-            <ActivityCard activity={summary.activity} />
-          )}
+          {summary.activity && <ActivityCard activity={summary.activity} />}
         </div>
       </main>
 

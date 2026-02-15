@@ -5,6 +5,7 @@ import type {
   RepositoryData,
   ContributionData,
   ActivityData,
+  InterestsData,
   UserSummary,
   LanguageStats,
   TopRepo,
@@ -207,6 +208,13 @@ type RepoNode = {
       node: RepoLanguageNode;
     }[];
   };
+  repositoryTopics: {
+    nodes: {
+      topic: {
+        name: string;
+      } | null;
+    }[];
+  };
 };
 
 type RepositoriesResponse = {
@@ -251,6 +259,11 @@ export async function fetchRepositories(
               node { name color }
             }
           }
+          repositoryTopics(first: 10) {
+            nodes {
+              topic { name }
+            }
+          }
         }
       }
     }
@@ -262,7 +275,7 @@ export async function fetchRepositories(
   }
 
   const repos = data.user.repositories.nodes.filter((r) => !r.isFork);
-  return processRepoData(repos, data.user.repositories.totalCount);
+  return processRepoData(repos);
 }
 
 async function fetchRepositoriesREST(username: string): Promise<RepositoryData> {
@@ -312,11 +325,12 @@ async function fetchRepositoriesREST(username: string): Promise<RepositoryData> 
       : null,
   }));
 
-  return { languages, topRepos, totalCount: nonFork.length };
+  return { languages, topics: [], topRepos, totalCount: nonFork.length };
 }
 
-function processRepoData(repos: RepoNode[], totalCount: number): RepositoryData {
+function processRepoData(repos: RepoNode[]): RepositoryData {
   const languageMap = new Map<string, { bytes: number; color: string }>();
+  const topicCountMap = new Map<string, number>();
 
   for (const repo of repos) {
     for (const edge of repo.languages.edges) {
@@ -326,6 +340,14 @@ function processRepoData(repos: RepoNode[], totalCount: number): RepositoryData 
       } else {
         languageMap.set(edge.node.name, { bytes: edge.size, color: edge.node.color });
       }
+    }
+
+    for (const node of repo.repositoryTopics.nodes) {
+      const topicName = node.topic?.name?.trim();
+      if (!topicName) {
+        continue;
+      }
+      topicCountMap.set(topicName, (topicCountMap.get(topicName) ?? 0) + 1);
     }
   }
 
@@ -349,7 +371,12 @@ function processRepoData(repos: RepoNode[], totalCount: number): RepositoryData 
     primaryLanguage: r.primaryLanguage,
   }));
 
-  return { languages, topRepos, totalCount: repos.length };
+  const topics = Array.from(topicCountMap.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([name, count]) => ({ name, count }));
+
+  return { languages, topics, topRepos, totalCount: repos.length };
 }
 
 // ===== 3. fetchContributions =====
@@ -428,17 +455,136 @@ export async function fetchContributions(
     }))
   );
 
+  calendar.sort((a, b) => a.date.localeCompare(b.date));
+
+  let longestStreak = 0;
+  let currentStreak = 0;
+  let streak = 0;
+
+  for (const day of calendar) {
+    if (day.count > 0) {
+      streak += 1;
+      longestStreak = Math.max(longestStreak, streak);
+    } else {
+      streak = 0;
+    }
+  }
+
+  let startIdx = calendar.length - 1;
+  if (startIdx >= 0 && calendar[startIdx].count === 0) {
+    startIdx -= 1;
+  }
+  for (let i = startIdx; i >= 0; i -= 1) {
+    if (calendar[i].count > 0) {
+      currentStreak += 1;
+    } else {
+      break;
+    }
+  }
+
+  const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const weekdayTotals = Array.from({ length: 7 }, () => 0);
+
+  for (const day of calendar) {
+    if (day.count === 0) {
+      continue;
+    }
+    const weekday = new Date(`${day.date}T00:00:00Z`).getUTCDay();
+    weekdayTotals[weekday] += day.count;
+  }
+
+  const maxWeekdayTotal = Math.max(...weekdayTotals);
+  const mostActiveDay = maxWeekdayTotal > 0
+    ? weekdayNames[weekdayTotals.findIndex((count) => count === maxWeekdayTotal)]
+    : "";
+
   return {
     totalCommits: cc.totalCommitContributions,
     totalPRs: cc.totalPullRequestContributions,
     totalIssues: cc.totalIssueContributions,
     totalReviews: cc.totalPullRequestReviewContributions,
     totalContributions: cc.contributionCalendar.totalContributions,
+    longestStreak,
+    currentStreak,
+    mostActiveDay,
     calendar,
   };
 }
 
-// ===== 4. fetchActivity =====
+// ===== 4.5 fetchStarredRepos =====
+
+type StarredRepo = {
+  topics?: string[];
+  language: string | null;
+};
+
+/**
+ * Task⑫: starred リポジトリから興味分野を推定
+ * REST /users/:username/starred (最大200件, topics/language 集計)
+ * @throws {UserNotFoundError} ユーザーが見つからない場合
+ * @throws {RateLimitError} APIレート制限に達した場合
+ */
+export async function fetchStarredRepos(
+  username: string,
+  token?: string
+): Promise<InterestsData> {
+  const allStarred: StarredRepo[] = [];
+
+  for (let page = 1; page <= 2; page += 1) {
+    const res = await fetch(
+      `${GITHUB_API}/users/${username}/starred?per_page=100&page=${page}`,
+      {
+        headers: {
+          ...headers(token),
+          Accept: "application/vnd.github+json",
+        },
+        next: { revalidate: 300 },
+      }
+    );
+
+    const starred = await handleResponse<StarredRepo[]>(res);
+    allStarred.push(...starred);
+
+    if (starred.length < 100) {
+      break;
+    }
+  }
+
+  const topicCounts = new Map<string, number>();
+  const languageCounts = new Map<string, number>();
+
+  for (const repo of allStarred) {
+    for (const topic of repo.topics ?? []) {
+      const normalized = topic.trim();
+      if (!normalized) {
+        continue;
+      }
+      topicCounts.set(normalized, (topicCounts.get(normalized) ?? 0) + 1);
+    }
+
+    if (repo.language) {
+      languageCounts.set(repo.language, (languageCounts.get(repo.language) ?? 0) + 1);
+    }
+  }
+
+  const topTopics = Array.from(topicCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([name, count]) => ({ name, count }));
+
+  const topLanguages = Array.from(languageCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([name, count]) => ({ name, count }));
+
+  return {
+    topTopics,
+    topLanguages,
+    totalStarred: allStarred.length,
+  };
+}
+
+// ===== 5. fetchActivity =====
 
 type GitHubEvent = {
   type: string;
@@ -505,7 +651,7 @@ export async function fetchActivity(
   };
 }
 
-// ===== 5. fetchUserSummary =====
+// ===== 6. fetchUserSummary =====
 
 /**
  * 全セクションを並行取得し、UserSummary として集約
@@ -521,10 +667,11 @@ export async function fetchUserSummary(
     fetchRepositories(username, token),
     fetchContributions(username, token),
     fetchActivity(username, token),
+    fetchStarredRepos(username, token),
   ]);
 
   const errors: { section: string; message: string }[] = [];
-  const sections = ["profile", "repositories", "contributions", "activity"] as const;
+  const sections = ["profile", "repositories", "contributions", "activity", "interests"] as const;
 
   const values = results.map((r, i) => {
     if (r.status === "fulfilled") {
@@ -544,6 +691,7 @@ export async function fetchUserSummary(
     repositories: values[1] as RepositoryData | null,
     contributions: values[2] as ContributionData | null,
     activity: values[3] as ActivityData | null,
+    interests: values[4] as InterestsData | null,
     errors,
   };
 }
