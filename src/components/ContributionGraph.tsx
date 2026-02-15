@@ -24,10 +24,12 @@ export default function ContributionGraph({ contributions }: Props) {
 
   // Group entries by week columns
   // Parse dates and arrange into week columns (Sun = start of week)
-  const entries = calendar.map((d) => {
-    const date = new Date(d.date + "T00:00:00");
-    return { ...d, dateObj: date, dayOfWeek: date.getDay() };
-  });
+  const entries = calendar
+    .map((d) => {
+      const date = new Date(d.date + "T00:00:00");
+      return { ...d, dateObj: date, dayOfWeek: date.getDay() };
+    })
+    .sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
 
   // Build columns: each column = one week
   const weeks: (typeof entries)[] = [];
@@ -68,10 +70,10 @@ export default function ContributionGraph({ contributions }: Props) {
     if (count === 0) return "var(--card-border)";
     const level = Math.ceil((count / maxCount) * 4);
     const colors: Record<number, string> = {
-      1: "rgba(88,166,255,0.25)",
-      2: "rgba(88,166,255,0.50)",
-      3: "rgba(88,166,255,0.75)",
-      4: "rgba(88,166,255,1)",
+      1: "rgba(var(--accent-rgb),0.25)",
+      2: "rgba(var(--accent-rgb),0.50)",
+      3: "rgba(var(--accent-rgb),0.75)",
+      4: "rgba(var(--accent-rgb),1)",
     };
     return colors[level] ?? "var(--card-border)";
   }
@@ -146,7 +148,7 @@ export default function ContributionGraph({ contributions }: Props) {
               backgroundColor:
                 level === 0
                   ? "var(--card-border)"
-                  : `rgba(88,166,255,${level * 0.25})`,
+                  : `rgba(var(--accent-rgb),${level * 0.25})`,
             }}
           />
         ))}
