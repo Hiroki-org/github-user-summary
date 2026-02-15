@@ -1,4 +1,5 @@
 import type { RepositoryData } from "@/lib/types";
+import LanguageChart from "./LanguageChart";
 
 type Props = {
   repositories: RepositoryData;
@@ -21,6 +22,11 @@ export default function SkillsCard({ repositories }: Props) {
   return (
     <div className="rounded-lg border border-card-border bg-card-bg p-6">
       <h3 className="mb-4 text-lg font-semibold text-foreground">Skills & Languages</h3>
+
+      {/* Donut Chart Visualization */}
+      <div className="mb-6">
+        <LanguageChart languages={languages} />
+      </div>
 
       {/* Language Bar */}
       <div className="mb-4 flex h-3 overflow-hidden rounded-full">
