@@ -29,7 +29,8 @@ export async function GET(
       followers = data.followers ?? 0;
       publicRepos = data.public_repos ?? 0;
     }
-  } catch {
+  } catch (error) {
+    console.error(`Failed to fetch GitHub profile for OG image: ${username}`, error);
     // fallback to defaults
   }
 

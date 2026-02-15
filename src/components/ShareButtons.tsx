@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type Props = {
   username: string;
@@ -8,6 +8,19 @@ type Props = {
 
 export default function ShareButtons({ username }: Props) {
   const [copied, setCopied] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  const showCopiedFeedback = useCallback(() => {
+    setCopied(true);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setCopied(false), 2000);
+  }, []);
 
   const getShareUrl = useCallback(() => {
     if (typeof window === "undefined") return "";
@@ -17,8 +30,6 @@ export default function ShareButtons({ username }: Props) {
   const handleCopy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(getShareUrl());
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     } catch {
       // Fallback for older browsers
       const textArea = document.createElement("textarea");
@@ -27,13 +38,12 @@ export default function ShareButtons({ username }: Props) {
       textArea.select();
       document.execCommand("copy");
       document.body.removeChild(textArea);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     }
-  }, [getShareUrl]);
+    showCopiedFeedback();
+  }, [getShareUrl, showCopiedFeedback]);
 
   const handleTwitterShare = useCallback(() => {
-    const text = `Check out @${username}'s GitHub profile summary!`;
+    const text = `Check out ${username}'s GitHub profile summary!`;
     const url = getShareUrl();
     const twitterUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
     window.open(twitterUrl, "_blank", "noopener,noreferrer");
