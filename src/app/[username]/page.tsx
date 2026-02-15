@@ -9,6 +9,7 @@ import { UserNotFoundError } from "@/lib/types";
 
 import LoginButton from "@/components/LoginButton";
 import SearchForm from "@/components/SearchForm";
+import ShareButtons from "@/components/ShareButtons";
 import ProfileCard from "@/components/ProfileCard";
 import SkillsCard from "@/components/SkillsCard";
 import ContributionsCard from "@/components/ContributionsCard";
@@ -82,6 +83,11 @@ export default async function UserPage({ params }: Props) {
             ))}
           </div>
         )}
+
+        {/* Share */}
+        <div className="mb-6 flex justify-end">
+          <ShareButtons username={username} />
+        </div>
 
         {/* Profile Section */}
         {summary.profile && <ProfileCard profile={summary.profile} />}
