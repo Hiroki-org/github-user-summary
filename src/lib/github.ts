@@ -379,6 +379,7 @@ type ContributionsResponse = {
  * GraphQL contributionsCollection (認証必須)
  * コミット・PR・Issue・レビュー数 + 日別カレンダーデータ
  * @throws {GitHubApiError} 認証トークンがない場合
+ * @throws {UserNotFoundError} ユーザーが見つからない場合
  * @throws {RateLimitError} APIレート制限に達した場合
  */
 export async function fetchContributions(
@@ -448,6 +449,7 @@ type GitHubEvent = {
  * Task⑦: アクティビティヒートマップ・イベント内訳を取得
  * REST /users/:username/events/public (最大3ページ)
  * 曜日×時間帯の7×24ヒートマップ + イベント種別集計
+ * @throws {UserNotFoundError} ユーザーが見つからない場合
  * @throws {RateLimitError} APIレート制限に達した場合
  */
 export async function fetchActivity(
@@ -465,7 +467,13 @@ export async function fetchActivity(
       );
       allEvents.push(...events);
       if (events.length < 100) break;
-    } catch {
+    } catch (error) {
+      if (
+        error instanceof UserNotFoundError ||
+        error instanceof RateLimitError
+      ) {
+        throw error;
+      }
       break;
     }
   }
