@@ -1,0 +1,554 @@
+import type {
+  UserProfile,
+  RepositoryData,
+  ContributionData,
+  ActivityData,
+  UserSummary,
+  LanguageStats,
+  TopRepo,
+  PinnedRepo,
+} from "./types";
+import {
+  UserNotFoundError,
+  RateLimitError,
+  GitHubApiError,
+} from "./types";
+
+// ===== ヘルパー =====
+
+const GITHUB_API = "https://api.github.com";
+const GITHUB_GRAPHQL = "https://api.github.com/graphql";
+
+function headers(token?: string): HeadersInit {
+  const h: HeadersInit = {
+    Accept: "application/vnd.github+json",
+    "User-Agent": "github-user-summary",
+  };
+  if (token) {
+    h.Authorization = `Bearer ${token}`;
+  }
+  return h;
+}
+
+async function handleResponse<T>(res: Response): Promise<T> {
+  if (res.status === 404) {
+    throw new UserNotFoundError("unknown");
+  }
+  if (res.status === 403) {
+    const resetHeader = res.headers.get("X-RateLimit-Reset");
+    const resetTimestamp = resetHeader ? parseInt(resetHeader, 10) : Math.floor(Date.now() / 1000) + 3600;
+    throw new RateLimitError(resetTimestamp);
+  }
+  if (!res.ok) {
+    const body = await res.text().catch(() => "Unknown error");
+    throw new GitHubApiError(body, res.status);
+  }
+  return res.json() as Promise<T>;
+}
+
+async function graphql<T>(query: string, token?: string): Promise<T> {
+  if (!token) {
+    throw new GitHubApiError("GraphQL API requires authentication token", 401);
+  }
+  const res = await fetch(GITHUB_GRAPHQL, {
+    method: "POST",
+    headers: headers(token),
+    body: JSON.stringify({ query }),
+    next: { revalidate: 300 },
+  });
+  if (res.status === 403) {
+    const resetHeader = res.headers.get("X-RateLimit-Reset");
+    const resetTimestamp = resetHeader ? parseInt(resetHeader, 10) : Math.floor(Date.now() / 1000) + 3600;
+    throw new RateLimitError(resetTimestamp);
+  }
+  if (!res.ok) {
+    const body = await res.text().catch(() => "Unknown error");
+    throw new GitHubApiError(body, res.status);
+  }
+  const json = (await res.json()) as { data?: T; errors?: { message: string }[] };
+  if (json.errors && json.errors.length > 0) {
+    throw new GitHubApiError(json.errors[0].message, 422);
+  }
+  if (!json.data) {
+    throw new GitHubApiError("No data returned from GraphQL", 500);
+  }
+  return json.data;
+}
+
+// ===== REST ヘルパー =====
+
+async function restGet<T>(path: string, token?: string): Promise<T> {
+  const res = await fetch(`${GITHUB_API}${path}`, {
+    headers: headers(token),
+    next: { revalidate: 300 },
+  });
+  return handleResponse<T>(res);
+}
+
+// ===== 1. fetchUserProfile =====
+
+type GitHubUser = {
+  login: string;
+  avatar_url: string;
+  name: string | null;
+  bio: string | null;
+  company: string | null;
+  location: string | null;
+  blog: string | null;
+  created_at: string;
+  followers: number;
+  following: number;
+  public_repos: number;
+};
+
+type GitHubOrg = {
+  login: string;
+  avatar_url: string;
+};
+
+type PinnedItemsResponse = {
+  user: {
+    pinnedItems: {
+      nodes: {
+        name: string;
+        description: string | null;
+        url: string;
+        stargazerCount: number;
+        primaryLanguage: { name: string; color: string } | null;
+      }[];
+    };
+  } | null;
+};
+
+export async function fetchUserProfile(
+  username: string,
+  token?: string
+): Promise<UserProfile> {
+  const pinnedQuery = `{
+    user(login: "${username}") {
+      pinnedItems(first: 6, types: REPOSITORY) {
+        nodes {
+          ... on Repository {
+            name
+            description
+            url
+            stargazerCount
+            primaryLanguage { name color }
+          }
+        }
+      }
+    }
+  }`;
+
+  // REST は認証なしでも可，GraphQL は token 必須
+  const profilePromise = restGet<GitHubUser>(`/users/${username}`, token);
+  const orgsPromise = restGet<GitHubOrg[]>(`/users/${username}/orgs`, token);
+  const pinnedPromise = token
+    ? graphql<PinnedItemsResponse>(pinnedQuery, token).catch(() => null)
+    : Promise.resolve(null);
+
+  const [profile, orgs, pinned] = await Promise.all([
+    profilePromise,
+    orgsPromise,
+    pinnedPromise,
+  ]);
+
+  const pinnedRepos: PinnedRepo[] = pinned?.user?.pinnedItems?.nodes?.map((n) => ({
+    name: n.name,
+    description: n.description,
+    url: n.url,
+    stargazerCount: n.stargazerCount,
+    primaryLanguage: n.primaryLanguage,
+  })) ?? [];
+
+  return {
+    login: profile.login,
+    avatar_url: profile.avatar_url,
+    name: profile.name,
+    bio: profile.bio,
+    company: profile.company,
+    location: profile.location,
+    blog: profile.blog,
+    created_at: profile.created_at,
+    followers: profile.followers,
+    following: profile.following,
+    public_repos: profile.public_repos,
+    orgs,
+    pinnedRepos,
+  };
+}
+
+// ===== 2. fetchRepositories =====
+
+type RepoLanguageNode = {
+  name: string;
+  color: string;
+};
+
+type RepoNode = {
+  name: string;
+  description: string | null;
+  url: string;
+  stargazerCount: number;
+  forkCount: number;
+  isFork: boolean;
+  primaryLanguage: { name: string; color: string } | null;
+  languages: {
+    edges: {
+      size: number;
+      node: RepoLanguageNode;
+    }[];
+  };
+};
+
+type RepositoriesResponse = {
+  user: {
+    repositories: {
+      totalCount: number;
+      nodes: RepoNode[];
+    };
+  } | null;
+};
+
+export async function fetchRepositories(
+  username: string,
+  token?: string
+): Promise<RepositoryData> {
+  // GraphQL は認証必須。token がない場合は REST フォールバック
+  if (!token) {
+    return fetchRepositoriesREST(username);
+  }
+
+  const query = `{
+    user(login: "${username}") {
+      repositories(first: 100, ownerAffiliations: OWNER, orderBy: {field: STARGAZERS, direction: DESC}, isFork: false) {
+        totalCount
+        nodes {
+          name
+          description
+          url
+          stargazerCount
+          forkCount
+          isFork
+          primaryLanguage { name color }
+          languages(first: 10) {
+            edges {
+              size
+              node { name color }
+            }
+          }
+        }
+      }
+    }
+  }`;
+
+  const data = await graphql<RepositoriesResponse>(query, token);
+  if (!data.user) {
+    throw new UserNotFoundError(username);
+  }
+
+  const repos = data.user.repositories.nodes.filter((r) => !r.isFork);
+  return processRepoData(repos, data.user.repositories.totalCount);
+}
+
+async function fetchRepositoriesREST(username: string): Promise<RepositoryData> {
+  type RESTRepo = {
+    name: string;
+    description: string | null;
+    html_url: string;
+    stargazers_count: number;
+    forks_count: number;
+    fork: boolean;
+    language: string | null;
+  };
+
+  const repos = await restGet<RESTRepo[]>(
+    `/users/${username}/repos?per_page=100&sort=stars&direction=desc`
+  );
+
+  const nonFork = repos.filter((r) => !r.fork);
+  // REST API は言語のバイト数を提供しないため、リポジトリ数を代用
+  const languageRepoCount = new Map<string, number>();
+
+  for (const repo of nonFork) {
+    if (repo.language) {
+      languageRepoCount.set(repo.language, (languageRepoCount.get(repo.language) ?? 0) + 1);
+    }
+  }
+
+  const totalRepoCount = Array.from(languageRepoCount.values()).reduce((a, b) => a + b, 0);
+  const languages: LanguageStats[] = Array.from(languageRepoCount.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([name, repoCount]) => ({
+      name,
+      bytes: repoCount,
+      percentage: totalRepoCount > 0 ? Math.round((repoCount / totalRepoCount) * 1000) / 10 : 0,
+      color: getLanguageColor(name),
+    }));
+
+  const topRepos: TopRepo[] = nonFork.slice(0, 5).map((r) => ({
+    name: r.name,
+    description: r.description,
+    url: r.html_url,
+    stargazerCount: r.stargazers_count,
+    forkCount: r.forks_count,
+    primaryLanguage: r.language
+      ? { name: r.language, color: getLanguageColor(r.language) }
+      : null,
+  }));
+
+  return { languages, topRepos, totalCount: nonFork.length };
+}
+
+function processRepoData(repos: RepoNode[], totalCount: number): RepositoryData {
+  const languageMap = new Map<string, { bytes: number; color: string }>();
+
+  for (const repo of repos) {
+    for (const edge of repo.languages.edges) {
+      const existing = languageMap.get(edge.node.name);
+      if (existing) {
+        existing.bytes += edge.size;
+      } else {
+        languageMap.set(edge.node.name, { bytes: edge.size, color: edge.node.color });
+      }
+    }
+  }
+
+  const totalBytes = Array.from(languageMap.values()).reduce((a, b) => a + b.bytes, 0);
+  const languages: LanguageStats[] = Array.from(languageMap.entries())
+    .sort((a, b) => b[1].bytes - a[1].bytes)
+    .slice(0, 10)
+    .map(([name, { bytes, color }]) => ({
+      name,
+      bytes,
+      percentage: totalBytes > 0 ? Math.round((bytes / totalBytes) * 1000) / 10 : 0,
+      color,
+    }));
+
+  const topRepos: TopRepo[] = repos.slice(0, 5).map((r) => ({
+    name: r.name,
+    description: r.description,
+    url: r.url,
+    stargazerCount: r.stargazerCount,
+    forkCount: r.forkCount,
+    primaryLanguage: r.primaryLanguage,
+  }));
+
+  return { languages, topRepos, totalCount: repos.length };
+}
+
+// ===== 3. fetchContributions =====
+
+type ContributionsResponse = {
+  user: {
+    contributionsCollection: {
+      totalCommitContributions: number;
+      totalPullRequestContributions: number;
+      totalIssueContributions: number;
+      totalPullRequestReviewContributions: number;
+      contributionCalendar: {
+        totalContributions: number;
+        weeks: {
+          contributionDays: {
+            date: string;
+            contributionCount: number;
+          }[];
+        }[];
+      };
+    };
+  } | null;
+};
+
+export async function fetchContributions(
+  username: string,
+  token?: string
+): Promise<ContributionData> {
+  if (!token) {
+    // GraphQL 必須なので、token なしの場合はデフォルト値を返す
+    throw new GitHubApiError("Contributions data requires authentication", 401);
+  }
+
+  const now = new Date();
+  const oneYearAgo = new Date(now);
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+  const query = `{
+    user(login: "${username}") {
+      contributionsCollection(from: "${oneYearAgo.toISOString()}", to: "${now.toISOString()}") {
+        totalCommitContributions
+        totalPullRequestContributions
+        totalIssueContributions
+        totalPullRequestReviewContributions
+        contributionCalendar {
+          totalContributions
+          weeks {
+            contributionDays {
+              date
+              contributionCount
+            }
+          }
+        }
+      }
+    }
+  }`;
+
+  const data = await graphql<ContributionsResponse>(query, token);
+  if (!data.user) {
+    throw new UserNotFoundError(username);
+  }
+
+  const cc = data.user.contributionsCollection;
+  const calendar = cc.contributionCalendar.weeks.flatMap((w) =>
+    w.contributionDays.map((d) => ({
+      date: d.date,
+      count: d.contributionCount,
+    }))
+  );
+
+  return {
+    totalCommits: cc.totalCommitContributions,
+    totalPRs: cc.totalPullRequestContributions,
+    totalIssues: cc.totalIssueContributions,
+    totalReviews: cc.totalPullRequestReviewContributions,
+    totalContributions: cc.contributionCalendar.totalContributions,
+    calendar,
+  };
+}
+
+// ===== 4. fetchActivity =====
+
+type GitHubEvent = {
+  type: string;
+  created_at: string;
+};
+
+export async function fetchActivity(
+  username: string,
+  token?: string
+): Promise<ActivityData> {
+  const pages = [1, 2, 3];
+  const allEvents: GitHubEvent[] = [];
+
+  for (const page of pages) {
+    try {
+      const events = await restGet<GitHubEvent[]>(
+        `/users/${username}/events/public?per_page=100&page=${page}`,
+        token
+      );
+      allEvents.push(...events);
+      if (events.length < 100) break;
+    } catch {
+      break;
+    }
+  }
+
+  // 曜日×時間帯ヒートマップ (7×24)
+  const heatmap: number[][] = Array.from({ length: 7 }, () =>
+    Array.from({ length: 24 }, () => 0)
+  );
+
+  const eventCountMap = new Map<string, number>();
+
+  for (const event of allEvents) {
+    const date = new Date(event.created_at);
+    const day = date.getUTCDay(); // 0=Sun, 6=Sat
+    const hour = date.getUTCHours();
+    heatmap[day][hour]++;
+
+    eventCountMap.set(event.type, (eventCountMap.get(event.type) ?? 0) + 1);
+  }
+
+  const eventBreakdown = Array.from(eventCountMap.entries())
+    .sort((a, b) => b[1] - a[1])
+    .map(([type, count]) => ({ type, count }));
+
+  return {
+    heatmap,
+    eventBreakdown,
+    totalEvents: allEvents.length,
+  };
+}
+
+// ===== 5. fetchUserSummary =====
+
+export async function fetchUserSummary(
+  username: string,
+  token?: string
+): Promise<UserSummary> {
+  const results = await Promise.allSettled([
+    fetchUserProfile(username, token),
+    fetchRepositories(username, token),
+    fetchContributions(username, token),
+    fetchActivity(username, token),
+  ]);
+
+  const errors: { section: string; message: string }[] = [];
+  const sections = ["profile", "repositories", "contributions", "activity"] as const;
+
+  const values = results.map((r, i) => {
+    if (r.status === "fulfilled") {
+      return r.value;
+    }
+    errors.push({ section: sections[i], message: r.reason?.message ?? "Unknown error" });
+    return null;
+  });
+
+  // profileが404の場合はUserNotFoundErrorを再スロー
+  if (results[0].status === "rejected" && results[0].reason instanceof UserNotFoundError) {
+    throw results[0].reason;
+  }
+
+  return {
+    profile: values[0] as UserProfile | null,
+    repositories: values[1] as RepositoryData | null,
+    contributions: values[2] as ContributionData | null,
+    activity: values[3] as ActivityData | null,
+    errors,
+  };
+}
+
+// ===== ユーティリティ =====
+
+function getLanguageColor(language: string): string {
+  const colors: Record<string, string> = {
+    JavaScript: "#f1e05a",
+    TypeScript: "#3178c6",
+    Python: "#3572A5",
+    Java: "#b07219",
+    Go: "#00ADD8",
+    Rust: "#dea584",
+    "C++": "#f34b7d",
+    C: "#555555",
+    "C#": "#178600",
+    Ruby: "#701516",
+    PHP: "#4F5D95",
+    Swift: "#F05138",
+    Kotlin: "#A97BFF",
+    Dart: "#00B4AB",
+    Scala: "#c22d40",
+    Shell: "#89e051",
+    HTML: "#e34c26",
+    CSS: "#563d7c",
+    Vue: "#41b883",
+    Svelte: "#ff3e00",
+    Lua: "#000080",
+    R: "#198CE7",
+    Elixir: "#6e4a7e",
+    Haskell: "#5e5086",
+    Clojure: "#db5855",
+    Erlang: "#B83998",
+    Zig: "#ec915c",
+    Nim: "#ffc200",
+    OCaml: "#3be133",
+    Julia: "#a270ba",
+    Perl: "#0298c3",
+    Jupyter: "#DA5B0B",
+    "Jupyter Notebook": "#DA5B0B",
+    Dockerfile: "#384d54",
+    Makefile: "#427819",
+    HCL: "#844FBA",
+    Nix: "#7e7eff",
+  };
+  return colors[language] ?? "#8b949e";
+}
