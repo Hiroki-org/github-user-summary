@@ -9,21 +9,16 @@ const MONTHS = [
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
-/**
- * GitHub-style contribution calendar grid using pure SVG.
- * Renders the calendar data as a grid of colored rects.
- */
 export default function ContributionGraph({ contributions }: Props) {
   const { calendar } = contributions;
   if (calendar.length === 0) return null;
 
   const cellSize = 12;
-  const cellGap = 2;
+  const cellGap = 3;
   const step = cellSize + cellGap;
   const maxCount = Math.max(...calendar.map((d) => d.count), 1);
 
   // Group entries by week columns
-  // Parse dates and arrange into week columns (Sun = start of week)
   const entries = calendar
     .map((d) => {
       const date = new Date(d.date + "T00:00:00");
@@ -31,7 +26,6 @@ export default function ContributionGraph({ contributions }: Props) {
     })
     .sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
 
-  // Build columns: each column = one week
   const weeks: (typeof entries)[] = [];
   let currentWeek: typeof entries = [];
 
@@ -47,9 +41,8 @@ export default function ContributionGraph({ contributions }: Props) {
 
   const dayLabelWidth = 28;
   const svgWidth = dayLabelWidth + weeks.length * step + cellGap;
-  const svgHeight = 7 * step + 20; // 7 rows + month labels
+  const svgHeight = 7 * step + 20;
 
-  // Month labels
   const monthLabels: { label: string; x: number }[] = [];
   let lastMonth = -1;
   weeks.forEach((week, wIdx) => {
@@ -67,19 +60,19 @@ export default function ContributionGraph({ contributions }: Props) {
   const dayLabels = ["", "Mon", "", "Wed", "", "Fri", ""];
 
   function getIntensityColor(count: number): string {
-    if (count === 0) return "var(--card-border)";
+    if (count === 0) return "rgba(48, 54, 61, 0.4)"; // card-border equivalent
     const level = Math.ceil((count / maxCount) * 4);
     const colors: Record<number, string> = {
-      1: "rgba(var(--accent-rgb),0.25)",
-      2: "rgba(var(--accent-rgb),0.50)",
-      3: "rgba(var(--accent-rgb),0.75)",
-      4: "rgba(var(--accent-rgb),1)",
+      1: "rgba(88, 166, 255, 0.4)",
+      2: "rgba(88, 166, 255, 0.6)",
+      3: "rgba(88, 166, 255, 0.8)",
+      4: "rgba(88, 166, 255, 1)",
     };
-    return colors[level] ?? "var(--card-border)";
+    return colors[level] ?? "rgba(48, 54, 61, 0.4)";
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto pb-2 scrollbar-hide">
       <svg
         width={svgWidth}
         height={svgHeight}
@@ -88,35 +81,30 @@ export default function ContributionGraph({ contributions }: Props) {
         aria-label="Contribution calendar"
         className="min-w-full"
       >
-        {/* Month labels */}
         {monthLabels.map((m, i) => (
           <text
             key={`${m.label}-${i}`}
             x={m.x}
             y={10}
-            className="fill-muted"
-            style={{ fontSize: 10 }}
+            className="fill-muted text-[10px] font-medium"
           >
             {m.label}
           </text>
         ))}
 
-        {/* Day labels */}
         {dayLabels.map((label, idx) =>
           label ? (
             <text
               key={idx}
               x={0}
               y={18 + idx * step + cellSize / 2 + 3}
-              className="fill-muted"
-              style={{ fontSize: 10 }}
+              className="fill-muted text-[10px]"
             >
               {label}
             </text>
           ) : null,
         )}
 
-        {/* Grid cells */}
         {weeks.map((week, wIdx) =>
           week.map((entry) => (
             <rect
@@ -127,7 +115,8 @@ export default function ContributionGraph({ contributions }: Props) {
               height={cellSize}
               rx={2}
               fill={getIntensityColor(entry.count)}
-              className="transition-colors duration-300"
+              className="transition-all duration-200 hover:opacity-70 hover:stroke-foreground/20"
+              style={{ strokeWidth: 1 }}
             >
               <title>
                 {entry.date}: {entry.count} contribution{entry.count !== 1 ? "s" : ""}
@@ -137,7 +126,6 @@ export default function ContributionGraph({ contributions }: Props) {
         )}
       </svg>
 
-      {/* Legend */}
       <div className="mt-2 flex items-center justify-end gap-1 text-xs text-muted">
         <span>Less</span>
         {[0, 1, 2, 3, 4].map((level) => (
@@ -147,8 +135,8 @@ export default function ContributionGraph({ contributions }: Props) {
             style={{
               backgroundColor:
                 level === 0
-                  ? "var(--card-border)"
-                  : `rgba(var(--accent-rgb),${level * 0.25})`,
+                  ? "rgba(48, 54, 61, 0.4)"
+                  : `rgba(88, 166, 255, ${0.2 + level * 0.2})`,
             }}
           />
         ))}

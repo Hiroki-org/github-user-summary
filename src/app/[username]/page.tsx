@@ -55,10 +55,16 @@ export default async function UserPage({ params }: Props) {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col overflow-hidden relative">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none fixed">
+        <div className="absolute -top-[10%] -right-[10%] w-[60%] h-[60%] rounded-full bg-accent opacity-5 blur-[120px] animate-pulse" />
+        <div className="absolute top-[40%] -left-[10%] w-[50%] h-[50%] rounded-full bg-success opacity-5 blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
+      </div>
+
       {/* Header */}
-      <header className="border-b border-card-border px-6 py-4">
-        <div className="mx-auto flex max-w-5xl items-center justify-between">
+      <header className="border-b border-card-border/50 bg-background/50 backdrop-blur-md px-6 py-4 sticky top-0 z-50">
+        <div className="mx-auto flex max-w-6xl items-center justify-between">
           <Link
             href="/"
             className="text-lg font-semibold text-foreground hover:text-accent transition-colors"
@@ -66,17 +72,19 @@ export default async function UserPage({ params }: Props) {
             GitHub User Summary
           </Link>
           <div className="flex items-center gap-4">
-            <SearchForm />
+            <div className="hidden sm:block">
+               <SearchForm />
+            </div>
             <LoginButton />
           </div>
         </div>
       </header>
 
       {/* Main */}
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 relative z-10 animate-fade-in">
         {/* Errors */}
         {summary.errors.length > 0 && (
-          <div className="mb-6 space-y-2">
+          <div className="mb-6 space-y-2 animate-slide-up">
             {summary.errors.map((err) => (
               <div
                 key={err.section}
@@ -89,40 +97,58 @@ export default async function UserPage({ params }: Props) {
         )}
 
         {/* Share */}
-        <div className="mb-6 flex justify-end">
+        <div className="mb-6 flex justify-end animate-fade-in" style={{ animationDelay: '0.2s' }}>
           <ShareButtons username={username} />
         </div>
 
         {/* Profile Section */}
-        {summary.profile && <ProfileCard profile={summary.profile} />}
+        {summary.profile && (
+          <div className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
+            <ProfileCard profile={summary.profile} />
+          </div>
+        )}
 
         {/* Grid */}
         <div className="mt-8 grid gap-6 lg:grid-cols-2">
           {/* Skills */}
           {summary.repositories && (
-            <SkillsCard repositories={summary.repositories} />
+            <div className="animate-slide-up" style={{ animationDelay: '0.2s' }}>
+              <SkillsCard repositories={summary.repositories} />
+            </div>
           )}
 
           {/* Contributions */}
           {summary.contributions && (
-            <ContributionsCard contributions={summary.contributions} />
+            <div className="animate-slide-up" style={{ animationDelay: '0.3s' }}>
+              <ContributionsCard contributions={summary.contributions} />
+            </div>
           )}
 
           {/* Repos */}
           {summary.repositories && (
-            <ReposCard repositories={summary.repositories} />
+            <div className="animate-slide-up" style={{ animationDelay: '0.4s' }}>
+              <ReposCard repositories={summary.repositories} />
+            </div>
           )}
 
           {/* Interests */}
-          {summary.interests && <InterestsCard interests={summary.interests} />}
+          {summary.interests && (
+            <div className="animate-slide-up" style={{ animationDelay: '0.5s' }}>
+              <InterestsCard interests={summary.interests} />
+            </div>
+          )}
 
           {/* Activity */}
-          {summary.activity && <ActivityCard activity={summary.activity} />}
+          {summary.activity && (
+            <div className="animate-slide-up" style={{ animationDelay: '0.6s' }}>
+              <ActivityCard activity={summary.activity} />
+            </div>
+          )}
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-card-border px-6 py-4 text-center text-sm text-muted">
+      <footer className="border-t border-card-border/50 bg-background/50 backdrop-blur-sm px-6 py-8 text-center text-sm text-muted">
         Built with Next.js &amp; GitHub API
       </footer>
     </div>

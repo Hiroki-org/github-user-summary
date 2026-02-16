@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function NotFoundPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4">
@@ -10,12 +12,12 @@ export default function NotFoundPage() {
           The GitHub user you&apos;re looking for doesn&apos;t exist. Please check the
           username and try again.
         </p>
-        <a
+        <Link
           href="/"
           className="inline-block rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-hover transition-colors"
         >
           Go home
-        </a>
+        </Link>
       </div>
     </div>
   );

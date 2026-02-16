@@ -21,52 +21,54 @@ export default function SkillsCard({ repositories }: Props) {
       : 0;
 
   return (
-    <div className="rounded-lg border border-card-border bg-card-bg p-6">
-      <h3 className="mb-4 text-lg font-semibold text-foreground">
+    <div className="glass-card rounded-xl p-6 h-full flex flex-col">
+      <h3 className="mb-6 text-lg font-semibold text-foreground flex items-center gap-2">
+        <svg className="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
         Skills & Languages
       </h3>
 
       {topLanguages.length > 0 && (
         <>
-          {/* Donut Chart Visualization */}
-          <div className="mb-6">
+          <div className="mb-8 flex justify-center">
             <LanguageChart languages={languages} />
           </div>
 
-          {/* Language Bar */}
-          <div className="mb-4 flex h-3 overflow-hidden rounded-full">
-            {topLanguages.map((lang) => (
+          <div className="mb-6 flex h-3 overflow-hidden rounded-full bg-card-bg/50 ring-1 ring-card-border/50">
+            {topLanguages.map((lang, i) => (
               <div
                 key={lang.name}
-                className="transition-all duration-300"
+                className="transition-all duration-1000 ease-out hover:brightness-110"
                 style={{
                   width: `${lang.percentage}%`,
                   backgroundColor: lang.color,
+                  animation: `scaleIn 0.8s ease-out ${i * 0.1}s backwards`,
+                  transformOrigin: 'left',
                 }}
                 title={`${lang.name}: ${lang.percentage.toFixed(1)}%`}
               />
             ))}
           </div>
 
-          {/* Language List */}
-          <div className="space-y-3">
-            {topLanguages.map((lang) => (
-              <div key={lang.name}>
+          <div className="space-y-4">
+            {topLanguages.slice(0, 5).map((lang, i) => (
+              <div key={lang.name} className="group" style={{ animation: `slideUp 0.5s ease-out ${i * 0.1}s backwards` }}>
                 <div className="mb-1 flex items-center justify-between text-sm">
-                  <span className="flex items-center gap-2 text-foreground">
+                  <span className="flex items-center gap-2 text-foreground font-medium">
                     <span
-                      className="inline-block h-3 w-3 rounded-full"
+                      className="inline-block h-3 w-3 rounded-full ring-2 ring-card-bg"
                       style={{ backgroundColor: lang.color }}
                     />
                     {lang.name}
                   </span>
-                  <span className="text-muted">
+                  <span className="text-muted font-mono text-xs">
                     {lang.percentage.toFixed(1)}%
                   </span>
                 </div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-background">
+                <div className="h-2 overflow-hidden rounded-full bg-card-bg/50">
                   <div
-                    className="h-full rounded-full transition-all duration-500"
+                    className="h-full rounded-full transition-all duration-1000 ease-out group-hover:brightness-110"
                     style={{
                       width: `${lang.percentage}%`,
                       backgroundColor: lang.color,
@@ -76,35 +78,24 @@ export default function SkillsCard({ repositories }: Props) {
               </div>
             ))}
           </div>
-
-          {languages.length > 10 && (
-            <p className="mt-3 text-xs text-muted">
-              +{languages.length - 10} more languages
-            </p>
-          )}
         </>
       )}
 
       {topTopics.length > 0 && (
-        <div
-          className={
-            topLanguages.length > 0
-              ? "mt-6 border-t border-card-border pt-4"
-              : ""
-          }
-        >
-          <h4 className="mb-2 text-sm font-medium text-muted">
+        <div className={`mt-auto ${topLanguages.length > 0 ? "pt-6 border-t border-card-border/50" : ""}`}>
+          <h4 className="mb-3 text-sm font-medium text-muted uppercase tracking-wider">
             Repository Topics
           </h4>
           <div className="flex flex-wrap gap-2">
-            {topTopics.map((topic) => (
+            {topTopics.map((topic, i) => (
               <span
                 key={topic.name}
-                className={`inline-flex items-center gap-1 rounded-full border border-card-border bg-background px-2.5 py-1 text-foreground ${getTopicSizeClass(topic.count, maxTopicCount)}`}
+                className={`inline-flex items-center gap-1 rounded-full border border-card-border bg-card-bg/50 px-3 py-1 text-foreground transition-all duration-300 hover:border-accent hover:bg-accent/10 hover:scale-105 cursor-default ${getTopicSizeClass(topic.count, maxTopicCount)}`}
                 title={`${topic.name}: ${topic.count}`}
+                style={{ animation: `scaleIn 0.4s ease-out ${0.5 + i * 0.05}s backwards` }}
               >
                 {topic.name}
-                <span className="text-muted">{topic.count}</span>
+                <span className="text-muted/70 text-xs ml-1 font-mono">{topic.count}</span>
               </span>
             ))}
           </div>
