@@ -26,15 +26,15 @@ export default function ActivityHeatmap({ heatmap, totalEvents }: Props) {
   const maxVal = Math.max(...heatmap.flat(), 1);
 
   function getColor(count: number): string {
-    if (count === 0) return "rgba(48, 54, 61, 0.4)";
+    if (count === 0) return "rgba(var(--card-border-rgb), 0.4)";
     const level = Math.ceil((count / maxVal) * 4);
     const colors: Record<number, string> = {
-      1: "rgba(88, 166, 255, 0.4)",
-      2: "rgba(88, 166, 255, 0.6)",
-      3: "rgba(88, 166, 255, 0.8)",
-      4: "rgba(88, 166, 255, 1)",
+      1: "rgba(var(--accent-rgb), 0.4)",
+      2: "rgba(var(--accent-rgb), 0.6)",
+      3: "rgba(var(--accent-rgb), 0.8)",
+      4: "rgba(var(--accent-rgb), 1)",
     };
-    return colors[level] ?? "rgba(48, 54, 61, 0.4)";
+    return colors[level] ?? "rgba(var(--card-border-rgb), 0.4)";
   }
 
   return (
@@ -100,8 +100,8 @@ export default function ActivityHeatmap({ heatmap, totalEvents }: Props) {
             style={{
               backgroundColor:
                 level === 0
-                  ? "rgba(48, 54, 61, 0.4)"
-                  : `rgba(88, 166, 255, ${0.2 + level * 0.2})`,
+                  ? "rgba(var(--card-border-rgb), 0.4)"
+                  : `rgba(var(--accent-rgb), ${0.2 + level * 0.2})`,
             }}
           />
         ))}

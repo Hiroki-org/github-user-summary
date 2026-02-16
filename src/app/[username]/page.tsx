@@ -16,6 +16,7 @@ import ContributionsCard from "@/components/ContributionsCard";
 import ReposCard from "@/components/ReposCard";
 import ActivityCard from "@/components/ActivityCard";
 import InterestsCard from "@/components/InterestsCard";
+import AnimatedWrapper from "@/components/AnimatedWrapper";
 
 type Props = {
   params: Promise<{ username: string }>;
@@ -103,46 +104,46 @@ export default async function UserPage({ params }: Props) {
 
         {/* Profile Section */}
         {summary.profile && (
-          <div className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
+          <AnimatedWrapper delay="0.1s">
             <ProfileCard profile={summary.profile} />
-          </div>
+          </AnimatedWrapper>
         )}
 
         {/* Grid */}
         <div className="mt-8 grid gap-6 lg:grid-cols-2">
           {/* Skills */}
           {summary.repositories && (
-            <div className="animate-slide-up" style={{ animationDelay: '0.2s' }}>
+            <AnimatedWrapper delay="0.2s">
               <SkillsCard repositories={summary.repositories} />
-            </div>
+            </AnimatedWrapper>
           )}
 
           {/* Contributions */}
           {summary.contributions && (
-            <div className="animate-slide-up" style={{ animationDelay: '0.3s' }}>
+            <AnimatedWrapper delay="0.3s">
               <ContributionsCard contributions={summary.contributions} />
-            </div>
+            </AnimatedWrapper>
           )}
 
           {/* Repos */}
           {summary.repositories && (
-            <div className="animate-slide-up" style={{ animationDelay: '0.4s' }}>
+            <AnimatedWrapper delay="0.4s">
               <ReposCard repositories={summary.repositories} />
-            </div>
+            </AnimatedWrapper>
           )}
 
           {/* Interests */}
           {summary.interests && (
-            <div className="animate-slide-up" style={{ animationDelay: '0.5s' }}>
+            <AnimatedWrapper delay="0.5s">
               <InterestsCard interests={summary.interests} />
-            </div>
+            </AnimatedWrapper>
           )}
 
           {/* Activity */}
           {summary.activity && (
-            <div className="animate-slide-up" style={{ animationDelay: '0.6s' }}>
+            <AnimatedWrapper delay="0.6s">
               <ActivityCard activity={summary.activity} />
-            </div>
+            </AnimatedWrapper>
           )}
         </div>
       </main>
