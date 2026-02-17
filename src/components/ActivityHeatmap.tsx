@@ -8,13 +8,12 @@ const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 /**
  * SVG-based 7×24 activity heatmap.
- * Pure SVG — no external chart libraries.
  */
 export default function ActivityHeatmap({ heatmap, totalEvents }: Props) {
   if (totalEvents === 0) return null;
 
-  const cellSize = 16;
-  const cellGap = 2;
+  const cellSize = 14;
+  const cellGap = 3;
   const step = cellSize + cellGap;
   const labelWidth = 32;
   const headerHeight = 20;
@@ -27,49 +26,45 @@ export default function ActivityHeatmap({ heatmap, totalEvents }: Props) {
   const maxVal = Math.max(...heatmap.flat(), 1);
 
   function getColor(count: number): string {
-    if (count === 0) return "var(--card-border)";
+    if (count === 0) return "rgba(var(--card-border-rgb), 0.4)";
     const level = Math.ceil((count / maxVal) * 4);
     const colors: Record<number, string> = {
-      1: "rgba(var(--accent-rgb),0.25)",
-      2: "rgba(var(--accent-rgb),0.50)",
-      3: "rgba(var(--accent-rgb),0.75)",
-      4: "rgba(var(--accent-rgb),1)",
+      1: "rgba(var(--accent-rgb), 0.4)",
+      2: "rgba(var(--accent-rgb), 0.6)",
+      3: "rgba(var(--accent-rgb), 0.8)",
+      4: "rgba(var(--accent-rgb), 1)",
     };
-    return colors[level] ?? "var(--card-border)";
+    return colors[level] ?? "rgba(var(--card-border-rgb), 0.4)";
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto pb-2 scrollbar-hide">
       <svg
         width={svgWidth}
         height={svgHeight}
         viewBox={`0 0 ${svgWidth} ${svgHeight}`}
         role="img"
-        aria-label="Activity heatmap — hours of day vs days of week"
+        aria-label="Activity heatmap"
         className="min-w-full"
       >
-        {/* Hour labels (every 3h) */}
         {Array.from({ length: 8 }, (_, i) => i * 3).map((h) => (
           <text
             key={h}
             x={labelWidth + h * step + cellSize / 2}
             y={12}
             textAnchor="middle"
-            className="fill-muted"
-            style={{ fontSize: 9 }}
+            className="fill-muted text-[10px]"
           >
             {h.toString().padStart(2, "0")}
           </text>
         ))}
 
-        {/* Day labels & cells */}
         {DAYS.map((day, dIdx) => (
           <g key={day}>
             <text
               x={0}
               y={headerHeight + dIdx * step + cellSize / 2 + 3}
-              className="fill-muted"
-              style={{ fontSize: 9 }}
+              className="fill-muted text-[10px]"
             >
               {day}
             </text>
@@ -84,7 +79,7 @@ export default function ActivityHeatmap({ heatmap, totalEvents }: Props) {
                   height={cellSize}
                   rx={3}
                   fill={getColor(count)}
-                  className="transition-colors duration-300"
+                  className="transition-all duration-200 hover:opacity-70"
                 >
                   <title>
                     {day} {hIdx}:00 — {count} event{count !== 1 ? "s" : ""}
@@ -96,7 +91,6 @@ export default function ActivityHeatmap({ heatmap, totalEvents }: Props) {
         ))}
       </svg>
 
-      {/* Legend */}
       <div className="mt-2 flex items-center justify-end gap-1 text-xs text-muted">
         <span>Less</span>
         {[0, 1, 2, 3, 4].map((level) => (
@@ -106,8 +100,8 @@ export default function ActivityHeatmap({ heatmap, totalEvents }: Props) {
             style={{
               backgroundColor:
                 level === 0
-                  ? "var(--card-border)"
-                  : `rgba(var(--accent-rgb),${level * 0.25})`,
+                  ? "rgba(var(--card-border-rgb), 0.4)"
+                  : `rgba(var(--accent-rgb), ${0.2 + level * 0.2})`,
             }}
           />
         ))}

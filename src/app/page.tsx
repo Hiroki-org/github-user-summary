@@ -3,11 +3,17 @@ import SearchForm from "@/components/SearchForm";
 
 export default function HomePage() {
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col overflow-hidden relative">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-accent opacity-10 blur-[100px] animate-pulse" />
+        <div className="absolute top-[20%] -right-[10%] w-[40%] h-[40%] rounded-full bg-success opacity-5 blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+      </div>
+
       {/* Header */}
-      <header className="border-b border-card-border px-6 py-4">
+      <header className="border-b border-card-border/50 bg-background/50 backdrop-blur-md px-6 py-4 sticky top-0 z-50 transition-all duration-300">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <h1 className="text-lg font-semibold text-foreground">
+          <h1 className="text-lg font-semibold text-foreground tracking-tight hover:text-accent transition-colors cursor-default">
             GitHub User Summary
           </h1>
           <LoginButton />
@@ -15,27 +21,31 @@ export default function HomePage() {
       </header>
 
       {/* Hero */}
-      <main className="flex flex-1 flex-col items-center justify-center px-4">
-        <div className="mb-8 text-center">
-          <h2 className="mb-3 text-4xl font-bold text-foreground">
-            GitHub User Summary
-          </h2>
-          <p className="text-lg text-muted">
-            Explore any GitHub user&apos;s profile, skills, and contributions at
-            a glance.
+      <main className="flex flex-1 flex-col items-center justify-center px-4 relative z-10">
+        <div className="w-full max-w-3xl text-center space-y-8 animate-slide-up">
+          <div className="space-y-4">
+            <h2 className="text-5xl sm:text-7xl font-bold tracking-tighter">
+              <span className="text-gradient">Unlock Your</span> <br/>
+              <span className="text-gradient-accent">GitHub Profile</span>
+            </h2>
+            <p className="text-xl text-muted max-w-2xl mx-auto leading-relaxed">
+              Explore user profiles, visualize contributions, and analyze coding habits with a beautiful, data-driven summary.
+            </p>
+          </div>
+
+          <div className="w-full max-w-md mx-auto p-1 scale-100 hover:scale-[1.02] transition-transform duration-300">
+            <SearchForm />
+          </div>
+
+          <p className="text-sm text-muted animate-fade-in" style={{ animationDelay: '0.4s' }}>
+            Sign in with GitHub to access detailed insights and contribution graphs.
           </p>
         </div>
-
-        <SearchForm />
-
-        <p className="mt-6 text-sm text-muted">
-          Sign in with GitHub to see contribution graphs and more detailed data.
-        </p>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-card-border px-6 py-4 text-center text-sm text-muted">
-        Built with Next.js &amp; GitHub API
+      <footer className="border-t border-card-border/50 bg-background/50 backdrop-blur-sm px-6 py-8 text-center text-sm text-muted">
+        <p>Built with Next.js &amp; GitHub API</p>
       </footer>
     </div>
   );
