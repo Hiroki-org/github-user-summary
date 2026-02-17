@@ -98,6 +98,7 @@ type GitHubUser = {
   company: string | null;
   location: string | null;
   blog: string | null;
+  twitter_username: string | null;
   created_at: string;
   followers: number;
   following: number;
@@ -178,6 +179,7 @@ export async function fetchUserProfile(
     company: profile.company,
     location: profile.location,
     blog: profile.blog,
+    twitter_username: profile.twitter_username,
     created_at: profile.created_at,
     followers: profile.followers,
     following: profile.following,
@@ -287,6 +289,7 @@ async function fetchRepositoriesREST(username: string): Promise<RepositoryData> 
     forks_count: number;
     fork: boolean;
     language: string | null;
+    topics?: string[];
   };
 
   const repos = await restGet<RESTRepo[]>(
@@ -296,10 +299,16 @@ async function fetchRepositoriesREST(username: string): Promise<RepositoryData> 
   const nonFork = repos.filter((r) => !r.fork);
   // REST API は言語のバイト数を提供しないため、リポジトリ数を代用
   const languageRepoCount = new Map<string, number>();
+  const topicCountMap = new Map<string, number>();
 
   for (const repo of nonFork) {
     if (repo.language) {
       languageRepoCount.set(repo.language, (languageRepoCount.get(repo.language) ?? 0) + 1);
+    }
+    for (const topic of repo.topics ?? []) {
+      const normalized = topic.trim();
+      if (!normalized) continue;
+      topicCountMap.set(normalized, (topicCountMap.get(normalized) ?? 0) + 1);
     }
   }
 
@@ -325,7 +334,12 @@ async function fetchRepositoriesREST(username: string): Promise<RepositoryData> 
       : null,
   }));
 
-  return { languages, topics: [], topRepos, totalCount: nonFork.length };
+  const topics = Array.from(topicCountMap.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([name, count]) => ({ name, count }));
+
+  return { languages, topics, topRepos, totalCount: nonFork.length };
 }
 
 function processRepoData(repos: RepoNode[]): RepositoryData {
