@@ -18,9 +18,16 @@ export default function CardGenerator({ summary }: Props) {
   const [mounted, setMounted] = useState(false);
 
   const cardRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  const handleClose = useCallback(() => {
+    setIsOpen(false);
+    setPreviewUrl(null);
   }, []);
 
   // 画像生成処理
@@ -40,6 +47,35 @@ export default function CardGenerator({ summary }: Props) {
   }, []);
 
   // モーダルが開いたときにプレビューを生成
+  useEffect(() => {
+    if (isOpen) {
+      // Save current focus
+      previousFocusRef.current = document.activeElement as HTMLElement;
+
+      // Focus the modal container
+      if (modalRef.current) {
+        modalRef.current.focus();
+      }
+
+      // Handle Escape key
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === "Escape") {
+          handleClose();
+        }
+      };
+
+      document.addEventListener("keydown", handleKeyDown);
+
+      return () => {
+        document.removeEventListener("keydown", handleKeyDown);
+        // Restore focus
+        if (previousFocusRef.current) {
+          previousFocusRef.current.focus();
+        }
+      };
+    }
+  }, [isOpen, handleClose]);
+
   useEffect(() => {
     if (isOpen && !previewUrl) {
       let isCancelled = false;
@@ -125,15 +161,23 @@ export default function CardGenerator({ summary }: Props) {
               className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in"
               role="dialog"
               aria-modal="true"
+              onClick={handleClose}
             >
-              <div className="relative w-full max-w-4xl rounded-xl bg-card-bg border border-card-border p-6 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+              <div
+                ref={modalRef}
+                className="relative w-full max-w-4xl rounded-xl bg-card-bg border border-card-border p-6 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] focus:outline-none"
+                onClick={(e) => e.stopPropagation()}
+                tabIndex={-1}
+              >
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-bold text-foreground">Profile Card</h2>
                   <button
-                    onClick={() => setIsOpen(false)}
+                    type="button"
+                    onClick={handleClose}
                     className="rounded-full p-2 text-muted hover:bg-white/10 hover:text-foreground transition-colors"
+                    aria-label="Close"
                   >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                   </button>
                 </div>
 
@@ -153,29 +197,31 @@ export default function CardGenerator({ summary }: Props) {
 
                 <div className="mt-6 flex flex-wrap justify-end gap-4">
                   <button
+                    type="button"
                     onClick={handleCopy}
                     disabled={!previewUrl}
                     className="inline-flex items-center gap-2 rounded-md border border-card-border bg-card-bg px-4 py-2 text-sm font-medium text-foreground hover:bg-white/5 transition-colors disabled:opacity-50"
                   >
                     {copyStatus === "copied" ? (
                       <>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                         Copied!
                       </>
                     ) : (
                       <>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                         Copy Image
                       </>
                     )}
                   </button>
 
                   <button
+                    type="button"
                     onClick={handleDownload}
                     disabled={!previewUrl}
                     className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:brightness-110 transition-all disabled:opacity-50"
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                    <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
                     Download PNG
                   </button>
                 </div>
