@@ -1,14 +1,24 @@
 import { forwardRef } from "react";
-import type { UserSummary } from "@/lib/types";
+import type { UserSummary, CardConfig } from "@/lib/types";
 
 type Props = {
   summary: UserSummary;
+  config?: CardConfig;
 };
 
-const BusinessCard = forwardRef<HTMLDivElement, Props>(({ summary }, ref) => {
+const BusinessCard = forwardRef<HTMLDivElement, Props>(({ summary, config }, ref) => {
   const { profile, repositories, contributions } = summary;
 
   if (!profile) return null;
+
+  const {
+    showAvatar = true,
+    showBio = true,
+    showStats = true,
+    showTopLanguages = true,
+    showTopRepos = true,
+    swapColumns = false,
+  } = config || {};
 
   const topLanguages = repositories?.languages.slice(0, 5) || [];
   // Pinned repos or top repos
@@ -26,18 +36,20 @@ const BusinessCard = forwardRef<HTMLDivElement, Props>(({ summary }, ref) => {
       <div className="absolute -right-[10%] -top-[10%] h-[600px] w-[600px] rounded-full bg-accent/10 blur-[100px]" />
       <div className="absolute -bottom-[10%] -left-[10%] h-[500px] w-[500px] rounded-full bg-success/10 blur-[100px]" />
 
-      <div className="z-10 flex flex-1 gap-16">
+      <div className={`z-10 flex flex-1 gap-16 ${swapColumns ? "flex-row-reverse" : ""}`}>
         {/* Left Column: Profile & Stats */}
         <div className="flex flex-1 flex-col justify-center">
           <div className="mb-10 flex items-center gap-8">
             {/* Avatar - using img tag for html-to-image compatibility */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={profile.avatar_url}
-              alt={profile.login}
-              className="h-40 w-40 rounded-full border-4 border-card-border shadow-xl"
-              crossOrigin="anonymous"
-            />
+            {showAvatar && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={profile.avatar_url}
+                alt={profile.login}
+                className="h-40 w-40 rounded-full border-4 border-card-border shadow-xl"
+                crossOrigin="anonymous"
+              />
+            )}
             <div>
               <h1 className="text-5xl font-bold tracking-tight text-white mb-2">
                 {profile.name || profile.login}
@@ -46,38 +58,42 @@ const BusinessCard = forwardRef<HTMLDivElement, Props>(({ summary }, ref) => {
             </div>
           </div>
 
-          <div className="mb-12">
-            <p className="text-2xl leading-relaxed text-gray-300 line-clamp-3 max-w-2xl">
-              {profile.bio || "No bio available."}
-            </p>
-          </div>
+          {showBio && (
+            <div className="mb-12">
+              <p className="text-2xl leading-relaxed text-gray-300 line-clamp-3 max-w-2xl">
+                {profile.bio || "No bio available."}
+              </p>
+            </div>
+          )}
 
-          <div className="grid grid-cols-3 gap-8">
-            <div>
-              <div className="text-4xl font-bold text-white mb-1">
-                {contributions?.totalContributions.toLocaleString() || 0}
+          {showStats && (
+            <div className="grid grid-cols-3 gap-8">
+              <div>
+                <div className="text-4xl font-bold text-white mb-1">
+                  {contributions?.totalContributions.toLocaleString() || 0}
+                </div>
+                <div className="text-lg text-gray-400 uppercase tracking-wide">Contributions</div>
               </div>
-              <div className="text-lg text-gray-400 uppercase tracking-wide">Contributions</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-white mb-1">
-                {profile.followers.toLocaleString()}
+              <div>
+                <div className="text-4xl font-bold text-white mb-1">
+                  {profile.followers.toLocaleString()}
+                </div>
+                <div className="text-lg text-gray-400 uppercase tracking-wide">Followers</div>
               </div>
-              <div className="text-lg text-gray-400 uppercase tracking-wide">Followers</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-white mb-1">
-                {profile.public_repos.toLocaleString()}
+              <div>
+                <div className="text-4xl font-bold text-white mb-1">
+                  {profile.public_repos.toLocaleString()}
+                </div>
+                <div className="text-lg text-gray-400 uppercase tracking-wide">Repositories</div>
               </div>
-              <div className="text-lg text-gray-400 uppercase tracking-wide">Repositories</div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Right Column: Skills & Repos */}
         <div className="flex w-[400px] flex-col justify-center space-y-10">
           {/* Top Languages */}
-          {topLanguages.length > 0 && (
+          {showTopLanguages && topLanguages.length > 0 && (
             <div>
               <h3 className="mb-5 text-2xl font-semibold text-accent flex items-center gap-2">
                 Top Languages
@@ -102,7 +118,7 @@ const BusinessCard = forwardRef<HTMLDivElement, Props>(({ summary }, ref) => {
           )}
 
           {/* Top Repositories */}
-          {reposToShow.length > 0 && (
+          {showTopRepos && reposToShow.length > 0 && (
             <div>
               <h3 className="mb-5 text-2xl font-semibold text-accent flex items-center gap-2">
                  Top Repositories
