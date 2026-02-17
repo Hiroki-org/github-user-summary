@@ -17,6 +17,7 @@ import ReposCard from "@/components/ReposCard";
 import ActivityCard from "@/components/ActivityCard";
 import InterestsCard from "@/components/InterestsCard";
 import AnimatedWrapper from "@/components/AnimatedWrapper";
+import ThemeController from "@/components/ThemeController";
 
 type Props = {
   params: Promise<{ username: string }>;
@@ -57,6 +58,11 @@ export default async function UserPage({ params }: Props) {
 
   return (
     <div className="flex min-h-screen flex-col overflow-hidden relative">
+      <ThemeController
+        avatarUrl={summary.profile?.avatar_url}
+        topLanguageColor={summary.repositories?.languages[0]?.color}
+      />
+
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none fixed">
         <div className="absolute -top-[10%] -right-[10%] w-[60%] h-[60%] rounded-full bg-accent opacity-5 blur-[120px] animate-pulse" />
