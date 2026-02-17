@@ -36,6 +36,7 @@ export type RepositoryData = {
   topics: { name: string; count: number }[];
   topRepos: TopRepo[];
   totalCount: number;
+
 };
 
 export type TopRepo = {
@@ -78,6 +79,15 @@ export type UserSummary = {
   activity: ActivityData | null;
   interests: InterestsData | null;
   errors: { section: string; message: string }[];
+};
+
+export type CardConfig = {
+  showAvatar: boolean;
+  showBio: boolean;
+  showStats: boolean;
+  showTopLanguages: boolean;
+  showTopRepos: boolean;
+  swapColumns: boolean;
 };
 
 // ===== カスタムエラー =====

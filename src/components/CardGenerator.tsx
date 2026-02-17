@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { toPng, toBlob } from "html-to-image";
-import { UserSummary } from "@/lib/types";
+import { UserSummary, CardConfig } from "@/lib/types";
 import BusinessCard from "./BusinessCard";
 
 type Props = {
@@ -16,6 +16,16 @@ export default function CardGenerator({ summary }: Props) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">("idle");
   const [mounted, setMounted] = useState(false);
+
+  // Configuration state
+  const [config, setConfig] = useState<CardConfig>({
+    showAvatar: true,
+    showBio: true,
+    showStats: true,
+    showTopLanguages: true,
+    showTopRepos: true,
+    swapColumns: false,
+  });
 
   const cardRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
@@ -76,6 +86,7 @@ export default function CardGenerator({ summary }: Props) {
     }
   }, [isOpen, handleClose]);
 
+  // When config changes or modal opens, regenerate
   useEffect(() => {
     if (isOpen && !previewUrl) {
       let isCancelled = false;
@@ -102,14 +113,27 @@ export default function CardGenerator({ summary }: Props) {
       };
 
       // わずかな遅延でレンダリングの安定を待ちます。
-      const timer = setTimeout(generate, 100);
+      let rafId: number;
+      const timer = setTimeout(() => {
+        rafId = requestAnimationFrame(() => {
+          generate();
+        });
+      }, 100);
 
       return () => {
         isCancelled = true;
         clearTimeout(timer);
+        if (rafId) cancelAnimationFrame(rafId);
       };
     }
   }, [isOpen, previewUrl, generateImage]);
+
+  // Reset preview when config changes to trigger regeneration
+  useEffect(() => {
+    if (isOpen) {
+      setPreviewUrl(null);
+    }
+  }, [config, isOpen]);
 
   const handleDownload = useCallback(() => {
     if (!previewUrl) return;
@@ -136,6 +160,10 @@ export default function CardGenerator({ summary }: Props) {
       setCopyStatus("error");
     }
   }, []);
+
+  const toggleConfig = (key: keyof CardConfig) => {
+    setConfig((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   if (!summary.profile) return null;
 
@@ -169,7 +197,7 @@ export default function CardGenerator({ summary }: Props) {
                 onClick={(e) => e.stopPropagation()}
                 tabIndex={-1}
               >
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-bold text-foreground">Profile Card</h2>
                   <button
                     type="button"
@@ -179,6 +207,28 @@ export default function CardGenerator({ summary }: Props) {
                   >
                     <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                   </button>
+                </div>
+
+                {/* Configuration Controls */}
+                <div className="mb-4 grid grid-cols-2 md:grid-cols-3 gap-3 p-4 bg-card-bg/50 rounded-lg border border-card-border/50">
+                  {([
+                    { key: 'showAvatar', label: 'Show Avatar' },
+                    { key: 'showBio', label: 'Show Bio' },
+                    { key: 'showStats', label: 'Show Stats' },
+                    { key: 'showTopLanguages', label: 'Top Languages' },
+                    { key: 'showTopRepos', label: 'Top Repositories' },
+                    { key: 'swapColumns', label: 'Swap Layout' },
+                  ] as const).map(({ key, label }) => (
+                    <label key={key} className="flex items-center gap-2 text-sm text-muted hover:text-foreground cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={config[key]}
+                        onChange={() => toggleConfig(key)}
+                        className="rounded border-card-border bg-background text-accent focus:ring-accent"
+                      />
+                      {label}
+                    </label>
+                  ))}
                 </div>
 
                 <div className="flex-1 flex items-center justify-center min-h-[300px] overflow-auto bg-[#0d1117]/50 rounded-lg border border-dashed border-card-border p-4">
@@ -231,7 +281,7 @@ export default function CardGenerator({ summary }: Props) {
             <div className="fixed left-[-9999px] top-[-9999px] overflow-hidden">
               {/* Always render but keep hidden offscreen, so it's ready for capture */}
               <div className="block">
-                <BusinessCard ref={cardRef} summary={summary} />
+                <BusinessCard ref={cardRef} summary={summary} config={config} />
               </div>
             </div>
           </>

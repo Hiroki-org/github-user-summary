@@ -6,8 +6,8 @@ export default function HomePage() {
     <div className="flex min-h-screen flex-col overflow-hidden relative">
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-accent opacity-10 blur-[100px] animate-pulse" />
-        <div className="absolute top-[20%] -right-[10%] w-[40%] h-[40%] rounded-full bg-success opacity-5 blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-accent opacity-10 blur-[100px] animate-pulse-slow" />
+        <div className="absolute top-[20%] -right-[10%] w-[40%] h-[40%] rounded-full bg-success opacity-5 blur-[100px] animate-pulse-slow" style={{ animationDelay: '1s' }} />
       </div>
 
       {/* Header */}
