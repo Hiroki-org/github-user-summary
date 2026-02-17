@@ -243,7 +243,7 @@ export async function fetchRepositories(
 
   const query = `{
     user(login: "${username}") {
-      repositories(first: 100, ownerAffiliations: [OWNER, ORGANIZATION_MEMBER], orderBy: {field: STARGAZERS, direction: DESC}, isFork: false) {
+      repositories(first: 100, ownerAffiliations: [OWNER, ORGANIZATION_MEMBER, COLLABORATOR], orderBy: {field: STARGAZERS, direction: DESC}, isFork: false) {
         totalCount
         nodes {
           name
