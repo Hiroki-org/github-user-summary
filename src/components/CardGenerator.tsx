@@ -205,60 +205,24 @@ export default function CardGenerator({ summary }: Props) {
 
                 {/* Configuration Controls */}
                 <div className="mb-4 grid grid-cols-2 md:grid-cols-3 gap-3 p-4 bg-card-bg/50 rounded-lg border border-card-border/50">
-                  <label className="flex items-center gap-2 text-sm text-muted hover:text-foreground cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={config.showAvatar}
-                      onChange={() => toggleConfig("showAvatar")}
-                      className="rounded border-card-border bg-background text-accent focus:ring-accent"
-                    />
-                    Show Avatar
-                  </label>
-                  <label className="flex items-center gap-2 text-sm text-muted hover:text-foreground cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={config.showBio}
-                      onChange={() => toggleConfig("showBio")}
-                      className="rounded border-card-border bg-background text-accent focus:ring-accent"
-                    />
-                    Show Bio
-                  </label>
-                  <label className="flex items-center gap-2 text-sm text-muted hover:text-foreground cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={config.showStats}
-                      onChange={() => toggleConfig("showStats")}
-                      className="rounded border-card-border bg-background text-accent focus:ring-accent"
-                    />
-                    Show Stats
-                  </label>
-                  <label className="flex items-center gap-2 text-sm text-muted hover:text-foreground cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={config.showTopLanguages}
-                      onChange={() => toggleConfig("showTopLanguages")}
-                      className="rounded border-card-border bg-background text-accent focus:ring-accent"
-                    />
-                    Top Languages
-                  </label>
-                  <label className="flex items-center gap-2 text-sm text-muted hover:text-foreground cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={config.showTopRepos}
-                      onChange={() => toggleConfig("showTopRepos")}
-                      className="rounded border-card-border bg-background text-accent focus:ring-accent"
-                    />
-                    Top Repositories
-                  </label>
-                  <label className="flex items-center gap-2 text-sm text-muted hover:text-foreground cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={config.swapColumns}
-                      onChange={() => toggleConfig("swapColumns")}
-                      className="rounded border-card-border bg-background text-accent focus:ring-accent"
-                    />
-                    Swap Layout
-                  </label>
+                  {([
+                    { key: 'showAvatar', label: 'Show Avatar' },
+                    { key: 'showBio', label: 'Show Bio' },
+                    { key: 'showStats', label: 'Show Stats' },
+                    { key: 'showTopLanguages', label: 'Top Languages' },
+                    { key: 'showTopRepos', label: 'Top Repositories' },
+                    { key: 'swapColumns', label: 'Swap Layout' },
+                  ] as const).map(({ key, label }) => (
+                    <label key={key} className="flex items-center gap-2 text-sm text-muted hover:text-foreground cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={config[key]}
+                        onChange={() => toggleConfig(key)}
+                        className="rounded border-card-border bg-background text-accent focus:ring-accent"
+                      />
+                      {label}
+                    </label>
+                  ))}
                 </div>
 
                 <div className="flex-1 flex items-center justify-center min-h-[300px] overflow-auto bg-[#0d1117]/50 rounded-lg border border-dashed border-card-border p-4">
