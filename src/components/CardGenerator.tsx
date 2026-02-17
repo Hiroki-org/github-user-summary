@@ -31,6 +31,10 @@ export default function CardGenerator({ summary }: Props) {
     showTwitter: false,
     showJoinedDate: false,
     showTopics: false,
+    showContributionBreakdown: false,
+    showStreaks: false,
+    showInterests: false,
+    showActivityBreakdown: false,
   });
 
   const cardRef = useRef<HTMLDivElement>(null);
@@ -230,6 +234,10 @@ export default function CardGenerator({ summary }: Props) {
                     { key: 'showTwitter', label: 'Show Twitter' },
                     { key: 'showJoinedDate', label: 'Joined Date' },
                     { key: 'showTopics', label: 'Show Topics' },
+                    { key: 'showContributionBreakdown', label: 'Contribution Details' },
+                    { key: 'showStreaks', label: 'Show Streaks' },
+                    { key: 'showInterests', label: 'Show Interests' },
+                    { key: 'showActivityBreakdown', label: 'Activity Breakdown' },
                   ] as const).map(({ key, label }) => (
                     <label key={key} className="flex items-center gap-2 text-sm text-muted hover:text-foreground cursor-pointer select-none">
                       <input

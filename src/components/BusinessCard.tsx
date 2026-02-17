@@ -7,7 +7,7 @@ type Props = {
 };
 
 const BusinessCard = forwardRef<HTMLDivElement, Props>(({ summary, config }, ref) => {
-  const { profile, repositories, contributions } = summary;
+  const { profile, repositories, contributions, interests, activity } = summary;
 
   if (!profile) return null;
 
@@ -24,6 +24,10 @@ const BusinessCard = forwardRef<HTMLDivElement, Props>(({ summary, config }, ref
     showTwitter = false,
     showJoinedDate = false,
     showTopics = false,
+    showContributionBreakdown = false,
+    showStreaks = false,
+    showInterests = false,
+    showActivityBreakdown = false,
   } = config || {};
 
   const topLanguages = repositories?.languages.slice(0, 5) || [];
@@ -143,17 +147,55 @@ const BusinessCard = forwardRef<HTMLDivElement, Props>(({ summary, config }, ref
               </div>
             </div>
           )}
+
+          {showContributionBreakdown && contributions && (
+            <div className="mt-8 grid grid-cols-2 gap-x-8 gap-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-lg text-gray-400">Commits</span>
+                <span className="text-xl font-bold text-white">{contributions.totalCommits.toLocaleString()}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-lg text-gray-400">Pull Requests</span>
+                <span className="text-xl font-bold text-white">{contributions.totalPRs.toLocaleString()}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-lg text-gray-400">Issues</span>
+                <span className="text-xl font-bold text-white">{contributions.totalIssues.toLocaleString()}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-lg text-gray-400">Code Reviews</span>
+                <span className="text-xl font-bold text-white">{contributions.totalReviews.toLocaleString()}</span>
+              </div>
+            </div>
+          )}
+
+          {showStreaks && contributions && (
+             <div className="mt-8 grid grid-cols-2 gap-8">
+              <div>
+                <div className="text-3xl font-bold text-white mb-1">
+                  {contributions.longestStreak} days
+                </div>
+                <div className="text-base text-gray-400 uppercase tracking-wide">Longest Streak</div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold text-white mb-1">
+                  {contributions.currentStreak} days
+                </div>
+                <div className="text-base text-gray-400 uppercase tracking-wide">Current Streak</div>
+              </div>
+             </div>
+          )}
         </div>
 
         {/* Right Column: Skills & Repos */}
-        <div className="flex w-[400px] flex-col justify-center space-y-10">
+        <div className="flex w-[400px] flex-col justify-center space-y-8">
           {/* Top Languages */}
           {showTopLanguages && topLanguages.length > 0 && (
-            <div className="mb-8">
-              <h3 className="mb-5 text-2xl font-semibold text-accent flex items-center gap-2">
+            <div>
+              <h3 className="mb-4 text-2xl font-semibold text-accent flex items-center gap-2">
                 Top Languages
               </h3>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {topLanguages.map((lang) => (
                   <div key={lang.name} className="flex items-center gap-4">
                     <span
@@ -174,8 +216,8 @@ const BusinessCard = forwardRef<HTMLDivElement, Props>(({ summary, config }, ref
 
           {/* Top Topics */}
           {showTopics && topTopics.length > 0 && (
-            <div className="mb-8">
-               <h3 className="mb-5 text-2xl font-semibold text-accent flex items-center gap-2">
+            <div>
+               <h3 className="mb-4 text-2xl font-semibold text-accent flex items-center gap-2">
                 Top Topics
               </h3>
               <div className="flex flex-wrap gap-2">
@@ -191,19 +233,55 @@ const BusinessCard = forwardRef<HTMLDivElement, Props>(({ summary, config }, ref
             </div>
           )}
 
+           {/* Interests (Starred Topics) */}
+           {showInterests && interests && interests.topTopics.length > 0 && (
+            <div>
+               <h3 className="mb-4 text-2xl font-semibold text-accent flex items-center gap-2">
+                Interests
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {interests.topTopics.slice(0, 8).map((topic) => (
+                  <span
+                    key={topic.name}
+                    className="rounded-full bg-accent/20 px-3 py-1 text-sm font-medium text-accent-light"
+                  >
+                    #{topic.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Activity Breakdown */}
+          {showActivityBreakdown && activity && activity.eventBreakdown.length > 0 && (
+             <div>
+              <h3 className="mb-4 text-2xl font-semibold text-accent flex items-center gap-2">
+                Recent Activity
+              </h3>
+              <div className="space-y-2">
+                {activity.eventBreakdown.slice(0, 5).map((event) => (
+                   <div key={event.type} className="flex items-center justify-between text-gray-300">
+                      <span>{event.type}</span>
+                      <span className="font-bold">{event.count}</span>
+                   </div>
+                ))}
+              </div>
+             </div>
+          )}
+
           {/* Top Repositories */}
           {showTopRepos && reposToShow.length > 0 && (
             <div>
-              <h3 className="mb-5 text-2xl font-semibold text-accent flex items-center gap-2">
+              <h3 className="mb-4 text-2xl font-semibold text-accent flex items-center gap-2">
                  Top Repositories
               </h3>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {reposToShow.map((repo) => (
                   <div
                     key={repo.name}
-                    className="rounded-xl border border-white/10 bg-white/5 p-5 shadow-lg backdrop-blur-sm"
+                    className="rounded-xl border border-white/10 bg-white/5 p-4 shadow-lg backdrop-blur-sm"
                   >
-                    <div className="mb-2 truncate text-xl font-bold text-white">
+                    <div className="mb-1 truncate text-xl font-bold text-white">
                       {repo.name}
                     </div>
                     <div className="flex items-center gap-6 text-base text-gray-400">

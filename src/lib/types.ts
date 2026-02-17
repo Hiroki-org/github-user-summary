@@ -95,6 +95,10 @@ export type CardConfig = {
   showTwitter?: boolean;
   showJoinedDate?: boolean;
   showTopics?: boolean;
+  showContributionBreakdown?: boolean;
+  showStreaks?: boolean;
+  showInterests?: boolean;
+  showActivityBreakdown?: boolean;
 };
 
 // ===== カスタムエラー =====
