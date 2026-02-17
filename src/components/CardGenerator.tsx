@@ -36,14 +36,36 @@ export default function CardGenerator({ summary }: Props) {
   // モーダルが開いたときにプレビューを生成
   useEffect(() => {
     if (isOpen && !previewUrl) {
+      let isCancelled = false;
       setIsGenerating(true);
-      // 少し待ってから生成（レンダリング完了待ち）
-      const timer = setTimeout(async () => {
-        const url = await generateImage();
-        setPreviewUrl(url);
-        setIsGenerating(false);
-      }, 800);
-      return () => clearTimeout(timer);
+
+      const generate = async () => {
+        try {
+          // フォントの読み込みを待つことで、レンダリングの信頼性を高めます。
+          await document.fonts.ready;
+          const url = await generateImage();
+          if (!isCancelled) {
+            setPreviewUrl(url);
+          }
+        } catch (err) {
+          console.error("Failed to generate image", err);
+          if (!isCancelled) {
+            setPreviewUrl(null);
+          }
+        } finally {
+          if (!isCancelled) {
+            setIsGenerating(false);
+          }
+        }
+      };
+
+      // わずかな遅延でレンダリングの安定を待ちます。
+      const timer = setTimeout(generate, 100);
+
+      return () => {
+        isCancelled = true;
+        clearTimeout(timer);
+      };
     }
   }, [isOpen, previewUrl, generateImage]);
 

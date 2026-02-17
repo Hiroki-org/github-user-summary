@@ -55,7 +55,6 @@ def verify_card():
                     print(f"Preview generation timed out: {e}")
 
                 # スクリーンショット撮影
-                page.wait_for_timeout(2000) # 念のため少し待つ
                 page.screenshot(path="verification/verification_card.png")
                 print("Screenshot saved to verification/verification_card.png")
             else:
