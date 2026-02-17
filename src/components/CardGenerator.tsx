@@ -119,8 +119,8 @@ export default function CardGenerator({ summary }: Props) {
       </button>
 
       {mounted && createPortal(
-        <>
-          {isOpen && (
+        isOpen && (
+          <>
             <div
               className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in"
               role="dialog"
@@ -181,16 +181,15 @@ export default function CardGenerator({ summary }: Props) {
                 </div>
               </div>
             </div>
-          )}
-
-          {/* Hidden container for rendering the card */}
-          <div className="fixed left-[-9999px] top-[-9999px] overflow-hidden">
-            {/* Always render but keep hidden offscreen, so it's ready for capture */}
-            <div className="block">
-              <BusinessCard ref={cardRef} summary={summary} />
+            {/* Hidden container for rendering the card */}
+            <div className="fixed left-[-9999px] top-[-9999px] overflow-hidden">
+              {/* Always render but keep hidden offscreen, so it's ready for capture */}
+              <div className="block">
+                <BusinessCard ref={cardRef} summary={summary} />
+              </div>
             </div>
-          </div>
-        </>,
+          </>
+        ),
         document.body
       )}
     </>
