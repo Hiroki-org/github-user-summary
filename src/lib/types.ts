@@ -8,6 +8,7 @@ export type UserProfile = {
   company: string | null;
   location: string | null;
   blog: string | null;
+  twitter_username: string | null;
   created_at: string;
   followers: number;
   following: number;
@@ -82,12 +83,22 @@ export type UserSummary = {
 };
 
 export type CardConfig = {
-  showAvatar: boolean;
-  showBio: boolean;
-  showStats: boolean;
-  showTopLanguages: boolean;
-  showTopRepos: boolean;
-  swapColumns: boolean;
+  showAvatar?: boolean;
+  showBio?: boolean;
+  showStats?: boolean;
+  showTopLanguages?: boolean;
+  showTopRepos?: boolean;
+  swapColumns?: boolean;
+  showCompany?: boolean;
+  showLocation?: boolean;
+  showWebsite?: boolean;
+  showTwitter?: boolean;
+  showJoinedDate?: boolean;
+  showTopics?: boolean;
+  showContributionBreakdown?: boolean;
+  showStreaks?: boolean;
+  showInterests?: boolean;
+  showActivityBreakdown?: boolean;
 };
 
 // ===== カスタムエラー =====

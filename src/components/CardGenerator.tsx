@@ -25,6 +25,16 @@ export default function CardGenerator({ summary }: Props) {
     showTopLanguages: true,
     showTopRepos: true,
     swapColumns: false,
+    showCompany: false,
+    showLocation: false,
+    showWebsite: false,
+    showTwitter: false,
+    showJoinedDate: false,
+    showTopics: false,
+    showContributionBreakdown: false,
+    showStreaks: false,
+    showInterests: false,
+    showActivityBreakdown: false,
   });
 
   const cardRef = useRef<HTMLDivElement>(null);
@@ -218,6 +228,16 @@ export default function CardGenerator({ summary }: Props) {
                     { key: 'showTopLanguages', label: 'Top Languages' },
                     { key: 'showTopRepos', label: 'Top Repositories' },
                     { key: 'swapColumns', label: 'Swap Layout' },
+                    { key: 'showCompany', label: 'Show Company' },
+                    { key: 'showLocation', label: 'Show Location' },
+                    { key: 'showWebsite', label: 'Show Website' },
+                    { key: 'showTwitter', label: 'Show Twitter' },
+                    { key: 'showJoinedDate', label: 'Joined Date' },
+                    { key: 'showTopics', label: 'Show Topics' },
+                    { key: 'showContributionBreakdown', label: 'Contribution Details' },
+                    { key: 'showStreaks', label: 'Show Streaks' },
+                    { key: 'showInterests', label: 'Show Interests' },
+                    { key: 'showActivityBreakdown', label: 'Activity Breakdown' },
                   ] as const).map(({ key, label }) => (
                     <label key={key} className="flex items-center gap-2 text-sm text-muted hover:text-foreground cursor-pointer select-none">
                       <input
