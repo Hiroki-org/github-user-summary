@@ -70,7 +70,7 @@ const BusinessCard = forwardRef<HTMLDivElement, Props>(({ summary, config }, ref
             <div className="grid grid-cols-3 gap-8">
               <div>
                 <div className="text-4xl font-bold text-white mb-1">
-                  {contributions?.totalContributions.toLocaleString() || 0}
+                  {(contributions?.totalContributions ?? 0).toLocaleString()}
                 </div>
                 <div className="text-lg text-gray-400 uppercase tracking-wide">Contributions</div>
               </div>
