@@ -11,6 +11,7 @@
   "dependencies": {
     "colord": "^2.9.3",
     "fast-average-color": "^9.5.0",
+    "html-to-image": "^1.11.13",
     "next": "16.1.6",
     "next-auth": "^4.24.13",
     "react": "19.2.3",

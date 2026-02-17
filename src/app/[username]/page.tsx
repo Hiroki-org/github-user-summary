@@ -10,6 +10,7 @@ import { UserNotFoundError } from "@/lib/types";
 import LoginButton from "@/components/LoginButton";
 import SearchForm from "@/components/SearchForm";
 import ShareButtons from "@/components/ShareButtons";
+import CardGenerator from "@/components/CardGenerator";
 import ProfileCard from "@/components/ProfileCard";
 import SkillsCard from "@/components/SkillsCard";
 import ContributionsCard from "@/components/ContributionsCard";
@@ -104,7 +105,8 @@ export default async function UserPage({ params }: Props) {
         )}
 
         {/* Share */}
-        <div className="mb-6 flex justify-end animate-fade-in" style={{ animationDelay: '0.2s' }}>
+        <div className="mb-6 flex justify-end items-center gap-3 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+          <CardGenerator summary={summary} />
           <ShareButtons username={username} />
         </div>
 

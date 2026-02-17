@@ -243,7 +243,7 @@ export async function fetchRepositories(
 
   const query = `{
     user(login: "${username}") {
-      repositories(first: 100, ownerAffiliations: OWNER, orderBy: {field: STARGAZERS, direction: DESC}, isFork: false) {
+      repositories(first: 100, ownerAffiliations: [OWNER, ORGANIZATION_MEMBER, COLLABORATOR], orderBy: {field: STARGAZERS, direction: DESC}, isFork: false, privacy: PUBLIC) {
         totalCount
         nodes {
           name
@@ -290,7 +290,7 @@ async function fetchRepositoriesREST(username: string): Promise<RepositoryData> 
   };
 
   const repos = await restGet<RESTRepo[]>(
-    `/users/${username}/repos?per_page=100&sort=stars&direction=desc`
+    `/users/${username}/repos?per_page=100&sort=stars&direction=desc&type=all`
   );
 
   const nonFork = repos.filter((r) => !r.fork);
