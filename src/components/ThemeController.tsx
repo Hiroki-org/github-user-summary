@@ -43,6 +43,7 @@ export default function ThemeController({ avatarUrl, topLanguageColor }: Props) 
     // Cleanup: Reset to default theme colors on unmount
     return () => {
       isMounted = false;
+      fac.destroy();
       resetColor();
     };
   }, [avatarUrl, topLanguageColor]);
