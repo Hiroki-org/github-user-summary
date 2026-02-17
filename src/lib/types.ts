@@ -83,12 +83,12 @@ export type UserSummary = {
 };
 
 export type CardConfig = {
-  showAvatar: boolean;
-  showBio: boolean;
-  showStats: boolean;
-  showTopLanguages: boolean;
-  showTopRepos: boolean;
-  swapColumns: boolean;
+  showAvatar?: boolean;
+  showBio?: boolean;
+  showStats?: boolean;
+  showTopLanguages?: boolean;
+  showTopRepos?: boolean;
+  swapColumns?: boolean;
   showCompany?: boolean;
   showLocation?: boolean;
   showWebsite?: boolean;
