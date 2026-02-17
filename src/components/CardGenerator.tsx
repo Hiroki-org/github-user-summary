@@ -113,11 +113,17 @@ export default function CardGenerator({ summary }: Props) {
       };
 
       // わずかな遅延でレンダリングの安定を待ちます。
-      const timer = setTimeout(generate, 100);
+      let rafId: number;
+      const timer = setTimeout(() => {
+        rafId = requestAnimationFrame(() => {
+          generate();
+        });
+      }, 100);
 
       return () => {
         isCancelled = true;
         clearTimeout(timer);
+        if (rafId) cancelAnimationFrame(rafId);
       };
     }
   }, [isOpen, previewUrl, generateImage]);
