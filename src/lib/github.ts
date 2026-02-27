@@ -49,14 +49,14 @@ async function handleResponse<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-async function graphql<T>(query: string, token?: string): Promise<T> {
+async function graphql<T>(query: string, token?: string, variables?: Record<string, unknown>): Promise<T> {
   if (!token) {
     throw new GitHubApiError("GraphQL API requires authentication token", 401);
   }
   const res = await fetch(GITHUB_GRAPHQL, {
     method: "POST",
     headers: headers(token),
-    body: JSON.stringify({ query }),
+    body: JSON.stringify({ query, variables }),
     next: { revalidate: 300 },
   });
   if (res.status === 403) {
@@ -134,8 +134,8 @@ export async function fetchUserProfile(
   username: string,
   token?: string
 ): Promise<UserProfile> {
-  const pinnedQuery = `{
-    user(login: "${username}") {
+  const pinnedQuery = `query($login: String!) {
+    user(login: $login) {
       pinnedItems(first: 6, types: REPOSITORY) {
         nodes {
           ... on Repository {
@@ -151,10 +151,11 @@ export async function fetchUserProfile(
   }`;
 
   // REST は認証なしでも可，GraphQL は token 必須
-  const profilePromise = restGet<GitHubUser>(`/users/${username}`, token);
-  const orgsPromise = restGet<GitHubOrg[]>(`/users/${username}/orgs`, token);
+  const safeUsername = encodeURIComponent(username);
+  const profilePromise = restGet<GitHubUser>(`/users/${safeUsername}`, token);
+  const orgsPromise = restGet<GitHubOrg[]>(`/users/${safeUsername}/orgs`, token);
   const pinnedPromise = token
-    ? graphql<PinnedItemsResponse>(pinnedQuery, token).catch(() => null)
+    ? graphql<PinnedItemsResponse>(pinnedQuery, token, { login: username }).catch(() => null)
     : Promise.resolve(null);
 
   const [profile, orgs, pinned] = await Promise.all([
@@ -243,8 +244,8 @@ export async function fetchRepositories(
     return fetchRepositoriesREST(username);
   }
 
-  const query = `{
-    user(login: "${username}") {
+  const query = `query($login: String!) {
+    user(login: $login) {
       repositories(first: 100, ownerAffiliations: [OWNER, ORGANIZATION_MEMBER, COLLABORATOR], orderBy: {field: STARGAZERS, direction: DESC}, isFork: false, privacy: PUBLIC) {
         totalCount
         nodes {
@@ -271,7 +272,7 @@ export async function fetchRepositories(
     }
   }`;
 
-  const data = await graphql<RepositoriesResponse>(query, token);
+  const data = await graphql<RepositoriesResponse>(query, token, { login: username });
   if (!data.user) {
     throw new UserNotFoundError(username);
   }
@@ -292,8 +293,9 @@ async function fetchRepositoriesREST(username: string): Promise<RepositoryData> 
     topics?: string[];
   };
 
+  const safeUsername = encodeURIComponent(username);
   const repos = await restGet<RESTRepo[]>(
-    `/users/${username}/repos?per_page=100&sort=stars&direction=desc&type=all`
+    `/users/${safeUsername}/repos?per_page=100&sort=stars&direction=desc&type=all`
   );
 
   const nonFork = repos.filter((r) => !r.fork);
@@ -436,9 +438,9 @@ export async function fetchContributions(
   const oneYearAgo = new Date(now);
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
-  const query = `{
-    user(login: "${username}") {
-      contributionsCollection(from: "${oneYearAgo.toISOString()}", to: "${now.toISOString()}") {
+  const query = `query($login: String!, $from: DateTime!, $to: DateTime!) {
+    user(login: $login) {
+      contributionsCollection(from: $from, to: $to) {
         totalCommitContributions
         totalPullRequestContributions
         totalIssueContributions
@@ -456,7 +458,11 @@ export async function fetchContributions(
     }
   }`;
 
-  const data = await graphql<ContributionsResponse>(query, token);
+  const data = await graphql<ContributionsResponse>(query, token, {
+    login: username,
+    from: oneYearAgo.toISOString(),
+    to: now.toISOString(),
+  });
   if (!data.user) {
     throw new UserNotFoundError(username);
   }
@@ -543,10 +549,11 @@ export async function fetchStarredRepos(
   token?: string
 ): Promise<InterestsData> {
   const allStarred: StarredRepo[] = [];
+  const safeUsername = encodeURIComponent(username);
 
   for (let page = 1; page <= 2; page += 1) {
     const res = await fetch(
-      `${GITHUB_API}/users/${username}/starred?per_page=100&page=${page}`,
+      `${GITHUB_API}/users/${safeUsername}/starred?per_page=100&page=${page}`,
       {
         headers: {
           ...headers(token),
@@ -618,11 +625,12 @@ export async function fetchActivity(
 ): Promise<ActivityData> {
   const pages = [1, 2, 3];
   const allEvents: GitHubEvent[] = [];
+  const safeUsername = encodeURIComponent(username);
 
   for (const page of pages) {
     try {
       const events = await restGet<GitHubEvent[]>(
-        `/users/${username}/events/public?per_page=100&page=${page}`,
+        `/users/${safeUsername}/events/public?per_page=100&page=${page}`,
         token
       );
       allEvents.push(...events);
