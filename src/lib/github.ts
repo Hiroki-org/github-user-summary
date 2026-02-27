@@ -617,17 +617,24 @@ export async function fetchActivity(
   token?: string
 ): Promise<ActivityData> {
   const pages = [1, 2, 3];
-  const allEvents: GitHubEvent[] = [];
 
-  for (const page of pages) {
-    try {
-      const events = await restGet<GitHubEvent[]>(
-        `/users/${username}/events/public?per_page=100&page=${page}`,
-        token
-      );
-      allEvents.push(...events);
-      if (events.length < 100) break;
-    } catch (error) {
+  const results = await Promise.all(
+    pages.map(async (page) => {
+      try {
+        const events = await restGet<GitHubEvent[]>(
+          `/users/${username}/events/public?per_page=100&page=${page}`,
+          token
+        );
+        return { events, error: null };
+      } catch (error) {
+        return { events: [], error };
+      }
+    })
+  );
+
+  const allEvents: GitHubEvent[] = [];
+  for (const { events, error } of results) {
+    if (error) {
       if (
         error instanceof UserNotFoundError ||
         error instanceof RateLimitError
@@ -636,6 +643,8 @@ export async function fetchActivity(
       }
       break;
     }
+    allEvents.push(...events);
+    if (events.length < 100) break;
   }
 
   // 曜日×時間帯ヒートマップ (7×24)
