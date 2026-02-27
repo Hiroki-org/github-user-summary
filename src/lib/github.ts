@@ -49,14 +49,14 @@ async function handleResponse<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-async function graphql<T>(query: string, token?: string): Promise<T> {
+async function graphql<T>(query: string, token?: string, variables: Record<string, unknown> = {}): Promise<T> {
   if (!token) {
     throw new GitHubApiError("GraphQL API requires authentication token", 401);
   }
   const res = await fetch(GITHUB_GRAPHQL, {
     method: "POST",
     headers: headers(token),
-    body: JSON.stringify({ query }),
+    body: JSON.stringify({ query, variables }),
     next: { revalidate: 300 },
   });
   if (res.status === 403) {
@@ -134,8 +134,9 @@ export async function fetchUserProfile(
   username: string,
   token?: string
 ): Promise<UserProfile> {
-  const pinnedQuery = `{
-    user(login: "${username}") {
+  const pinnedQuery = `
+    query($login: String!) {
+      user(login: $login) {
       pinnedItems(first: 6, types: REPOSITORY) {
         nodes {
           ... on Repository {
@@ -154,7 +155,7 @@ export async function fetchUserProfile(
   const profilePromise = restGet<GitHubUser>(`/users/${username}`, token);
   const orgsPromise = restGet<GitHubOrg[]>(`/users/${username}/orgs`, token);
   const pinnedPromise = token
-    ? graphql<PinnedItemsResponse>(pinnedQuery, token).catch(() => null)
+    ? graphql<PinnedItemsResponse>(pinnedQuery, token, { login: username }).catch(() => null)
     : Promise.resolve(null);
 
   const [profile, orgs, pinned] = await Promise.all([
@@ -243,8 +244,9 @@ export async function fetchRepositories(
     return fetchRepositoriesREST(username);
   }
 
-  const query = `{
-    user(login: "${username}") {
+  const query = `
+    query($login: String!) {
+      user(login: $login) {
       repositories(first: 100, ownerAffiliations: [OWNER, ORGANIZATION_MEMBER, COLLABORATOR], orderBy: {field: STARGAZERS, direction: DESC}, isFork: false, privacy: PUBLIC) {
         totalCount
         nodes {
@@ -271,7 +273,7 @@ export async function fetchRepositories(
     }
   }`;
 
-  const data = await graphql<RepositoriesResponse>(query, token);
+  const data = await graphql<RepositoriesResponse>(query, token, { login: username });
   if (!data.user) {
     throw new UserNotFoundError(username);
   }
@@ -436,9 +438,10 @@ export async function fetchContributions(
   const oneYearAgo = new Date(now);
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
-  const query = `{
-    user(login: "${username}") {
-      contributionsCollection(from: "${oneYearAgo.toISOString()}", to: "${now.toISOString()}") {
+  const query = `
+    query($login: String!, $from: DateTime!, $to: DateTime!) {
+      user(login: $login) {
+      contributionsCollection(from: $from, to: $to) {
         totalCommitContributions
         totalPullRequestContributions
         totalIssueContributions
@@ -456,7 +459,7 @@ export async function fetchContributions(
     }
   }`;
 
-  const data = await graphql<ContributionsResponse>(query, token);
+  const data = await graphql<ContributionsResponse>(query, token, { login: username, from: oneYearAgo.toISOString(), to: now.toISOString() });
   if (!data.user) {
     throw new UserNotFoundError(username);
   }
