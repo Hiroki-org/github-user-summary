@@ -4,7 +4,6 @@ import { getServerSession } from "next-auth";
 import { notFound } from "next/navigation";
 
 import { authOptions } from "@/lib/auth";
-import { isValidGitHubUsername } from "@/lib/validators";
 import { fetchUserSummary } from "@/lib/github";
 import { UserNotFoundError } from "@/lib/types";
 
@@ -27,9 +26,6 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { username } = await params;
-  if (!isValidGitHubUsername(username)) {
-    notFound();
-  }
   return {
     title: `${username} - GitHub User Summary`,
     description: `GitHub profile summary for ${username}.`,
@@ -48,9 +44,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function UserPage({ params }: Props) {
   const { username } = await params;
-  if (!isValidGitHubUsername(username)) {
-    notFound();
-  }
   const session = await getServerSession(authOptions);
   const token = session?.accessToken;
 
