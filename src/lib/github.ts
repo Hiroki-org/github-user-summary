@@ -135,7 +135,7 @@ export async function fetchUserProfile(
   token?: string
 ): Promise<UserProfile> {
   const pinnedQuery = `{
-    user(login: "${username}") {
+    user(login: "${encodeURIComponent(username)}") {
       pinnedItems(first: 6, types: REPOSITORY) {
         nodes {
           ... on Repository {
@@ -151,8 +151,8 @@ export async function fetchUserProfile(
   }`;
 
   // REST は認証なしでも可，GraphQL は token 必須
-  const profilePromise = restGet<GitHubUser>(`/users/${username}`, token);
-  const orgsPromise = restGet<GitHubOrg[]>(`/users/${username}/orgs`, token);
+  const profilePromise = restGet<GitHubUser>(`/users/${encodeURIComponent(username)}`, token);
+  const orgsPromise = restGet<GitHubOrg[]>(`/users/${encodeURIComponent(username)}/orgs`, token);
   const pinnedPromise = token
     ? graphql<PinnedItemsResponse>(pinnedQuery, token).catch(() => null)
     : Promise.resolve(null);
@@ -244,7 +244,7 @@ export async function fetchRepositories(
   }
 
   const query = `{
-    user(login: "${username}") {
+    user(login: "${encodeURIComponent(username)}") {
       repositories(first: 100, ownerAffiliations: [OWNER, ORGANIZATION_MEMBER, COLLABORATOR], orderBy: {field: STARGAZERS, direction: DESC}, isFork: false, privacy: PUBLIC) {
         totalCount
         nodes {
@@ -293,7 +293,7 @@ async function fetchRepositoriesREST(username: string): Promise<RepositoryData> 
   };
 
   const repos = await restGet<RESTRepo[]>(
-    `/users/${username}/repos?per_page=100&sort=stars&direction=desc&type=all`
+    `/users/${encodeURIComponent(username)}/repos?per_page=100&sort=stars&direction=desc&type=all`
   );
 
   const nonFork = repos.filter((r) => !r.fork);
@@ -437,7 +437,7 @@ export async function fetchContributions(
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
   const query = `{
-    user(login: "${username}") {
+    user(login: "${encodeURIComponent(username)}") {
       contributionsCollection(from: "${oneYearAgo.toISOString()}", to: "${now.toISOString()}") {
         totalCommitContributions
         totalPullRequestContributions
@@ -546,7 +546,7 @@ export async function fetchStarredRepos(
 
   for (let page = 1; page <= 2; page += 1) {
     const res = await fetch(
-      `${GITHUB_API}/users/${username}/starred?per_page=100&page=${page}`,
+      `${GITHUB_API}/users/${encodeURIComponent(username)}/starred?per_page=100&page=${page}`,
       {
         headers: {
           ...headers(token),
@@ -622,7 +622,7 @@ export async function fetchActivity(
   for (const page of pages) {
     try {
       const events = await restGet<GitHubEvent[]>(
-        `/users/${username}/events/public?per_page=100&page=${page}`,
+        `/users/${encodeURIComponent(username)}/events/public?per_page=100&page=${page}`,
         token
       );
       allEvents.push(...events);
