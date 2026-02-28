@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GitHub User Summary
+
+Unlock Your GitHub Profile! Explore user profiles, visualize contributions, and analyze coding habits with a beautiful, data-driven summary.
+
+## Features
+
+*   **Profile Analysis:** Gain insights into any GitHub user's profile.
+*   **Contribution Visualization:** View contribution graphs and statistics in an engaging format.
+*   **Data-Driven Summary:** Understand coding habits and language usage.
+*   **Modern UI:** Built with Next.js App Router and Tailwind CSS for a sleek, responsive design.
+*   **Dynamic Theming:** Extracts colors from user avatars to create personalized themes.
+*   **Fast & Reliable:** Utilizes GitHub GraphQL API with REST fallbacks for optimal performance.
+
+## Tech Stack
+
+*   [Next.js](https://nextjs.org/) (App Router)
+*   [React](https://react.dev/)
+*   [Tailwind CSS](https://tailwindcss.com/)
+*   [NextAuth.js](https://next-auth.js.org/)
+*   [Recharts](https://recharts.org/)
+*   [Vitest](https://vitest.dev/)
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+*   Node.js (v20 or newer recommended)
+*   npm, yarn, pnpm, or bun
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Installation
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1.  Clone the repository:
+    ```bash
+    git clone https://github.com/your-username/github-user-summary.git
+    cd github-user-summary
+    ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2.  Install dependencies:
+    ```bash
+    npm install
+    ```
 
-## Learn More
+3.  Set up environment variables:
+    Create a `.env.local` file in the root directory and add the necessary environment variables (e.g., for NextAuth and GitHub API access). For local development, you may need a dummy secret:
+    ```bash
+    export NEXTAUTH_SECRET=mysecret123
+    ```
 
-To learn more about Next.js, take a look at the following resources:
+4.  Start the development server:
+    ```bash
+    npm run dev
+    ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+5.  Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Testing & Verification
 
-## Deploy on Vercel
+This project uses Vitest for unit testing.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+*   Run tests:
+    ```bash
+    npm test
+    ```
+*   Run linting:
+    ```bash
+    npm run lint
+    ```
+*   Build the project:
+    ```bash
+    npm run build
+    ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is open source and available under the [MIT License](LICENSE).
