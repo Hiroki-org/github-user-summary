@@ -82,13 +82,19 @@ export type UserSummary = {
   errors: { section: string; message: string }[];
 };
 
-export type CardConfig = {
-  showAvatar?: boolean;
-  showBio?: boolean;
-  showStats?: boolean;
-  showTopLanguages?: boolean;
-  showTopRepos?: boolean;
-  swapColumns?: boolean;
+export type CardBlockId = "avatar" | "bio" | "stats" | "topLanguages" | "topRepos";
+
+export type CardBlock = {
+  id: CardBlockId;
+  visible: boolean;
+  column: "left" | "right" | "full";
+};
+
+export type CardLayout = {
+  blocks: CardBlock[];
+};
+
+export type CardDisplayOptions = {
   showCompany?: boolean;
   showLocation?: boolean;
   showWebsite?: boolean;
@@ -99,6 +105,16 @@ export type CardConfig = {
   showStreaks?: boolean;
   showInterests?: boolean;
   showActivityBreakdown?: boolean;
+};
+
+export const DEFAULT_CARD_LAYOUT: CardLayout = {
+  blocks: [
+    { id: "avatar", visible: true, column: "left" },
+    { id: "bio", visible: true, column: "left" },
+    { id: "stats", visible: true, column: "left" },
+    { id: "topLanguages", visible: true, column: "right" },
+    { id: "topRepos", visible: true, column: "right" },
+  ],
 };
 
 // ===== カスタムエラー =====
