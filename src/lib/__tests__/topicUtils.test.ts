@@ -2,67 +2,67 @@ import { describe, it, expect } from "vitest";
 import { getTopicSizeClass } from "../topicUtils";
 
 /**
- * Unit tests for getTopicSizeClass
+ * getTopicSizeClass のユニットテスト
  *
- * Test targets:
+ * テスト対象:
  * - ratio >= 0.8 → "text-base font-semibold"
  * - 0.5 <= ratio < 0.8 → "text-sm font-medium"
  * - ratio < 0.5 → "text-xs"
- * - maxCount <= 0 edge cases
- * - Boundary value tests
+ * - maxCount <= 0 のエッジケース
+ * - 境界値テスト
  */
 
 describe("getTopicSizeClass", () => {
-  // ---------- maxCount edge cases ----------
-  it("returns 'text-xs' when maxCount is 0", () => {
+  // ---------- maxCount のエッジケース ----------
+  it("maxCount が 0 の場合 'text-xs' を返す", () => {
     expect(getTopicSizeClass(0, 0)).toBe("text-xs");
   });
 
-  it("returns 'text-xs' when maxCount is negative", () => {
+  it("maxCount が負の値の場合 'text-xs' を返す", () => {
     expect(getTopicSizeClass(5, -1)).toBe("text-xs");
   });
 
-  // ---------- Large size (ratio >= 0.8) ----------
-  it("returns 'text-base font-semibold' when ratio = 1.0 (count == maxCount)", () => {
+  // ---------- 大サイズ (ratio >= 0.8) ----------
+  it("ratio = 1.0 (count == maxCount) の場合 'text-base font-semibold' を返す", () => {
     expect(getTopicSizeClass(10, 10)).toBe("text-base font-semibold");
   });
 
-  it("returns 'text-base font-semibold' when ratio = 0.8 (exact boundary)", () => {
+  it("ratio = 0.8 (ちょうど境界) の場合 'text-base font-semibold' を返す", () => {
     expect(getTopicSizeClass(8, 10)).toBe("text-base font-semibold");
   });
 
-  it("returns 'text-base font-semibold' when ratio > 0.8", () => {
+  it("ratio > 0.8 の場合 'text-base font-semibold' を返す", () => {
     expect(getTopicSizeClass(9, 10)).toBe("text-base font-semibold");
   });
 
-  // ---------- Medium size (0.5 <= ratio < 0.8) ----------
-  it("returns 'text-sm font-medium' when ratio = 0.5 (exact boundary)", () => {
+  // ---------- 中サイズ (0.5 <= ratio < 0.8) ----------
+  it("ratio = 0.5 (ちょうど境界) の場合 'text-sm font-medium' を返す", () => {
     expect(getTopicSizeClass(5, 10)).toBe("text-sm font-medium");
   });
 
-  it("returns 'text-sm font-medium' when ratio = 0.79", () => {
+  it("ratio = 0.79 の場合 'text-sm font-medium' を返す", () => {
     expect(getTopicSizeClass(79, 100)).toBe("text-sm font-medium");
   });
 
-  it("returns 'text-sm font-medium' when ratio = 0.6", () => {
+  it("ratio = 0.6 の場合 'text-sm font-medium' を返す", () => {
     expect(getTopicSizeClass(6, 10)).toBe("text-sm font-medium");
   });
 
-  // ---------- Small size (ratio < 0.5) ----------
-  it("returns 'text-xs' when ratio = 0.49", () => {
+  // ---------- 小サイズ (ratio < 0.5) ----------
+  it("ratio = 0.49 の場合 'text-xs' を返す", () => {
     expect(getTopicSizeClass(49, 100)).toBe("text-xs");
   });
 
-  it("returns 'text-xs' when ratio = 0.1", () => {
+  it("ratio = 0.1 の場合 'text-xs' を返す", () => {
     expect(getTopicSizeClass(1, 10)).toBe("text-xs");
   });
 
-  it("returns 'text-xs' when count = 0 and maxCount > 0", () => {
+  it("count = 0 で maxCount > 0 の場合 'text-xs' を返す", () => {
     expect(getTopicSizeClass(0, 10)).toBe("text-xs");
   });
 
-  // ---------- Practical scenarios ----------
-  it("returns correct size class for different topic frequencies", () => {
+  // ---------- 実用的なシナリオ ----------
+  it("トピック頻度の違いで正しいサイズクラスが返される", () => {
     const maxCount = 20;
     const topics = [
       { name: "react", count: 20 },      // ratio 1.0 → text-base font-semibold

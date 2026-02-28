@@ -1,26 +1,26 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 /**
- * Unit tests for github.ts
+ * github.ts のユニットテスト
  *
- * github.ts includes `import "server-only"`, so it requires mocking during tests.
- * Simulate API responses using fetch mock,
- * and verify data transformation logic.
+ * github.ts は `import "server-only"` を含むため、テスト時にモック化が必要。
+ * fetch のモックを使って API レスポンスをシミュレートし、
+ * データ変換ロジックを検証する。
  *
- * Test targets:
- * - fetchUserProfile: Fetch profile, organization, and pinned repos
- * - fetchRepositories: Fetch repos, language stats, and topic aggregate
- * - fetchContributions: Fetch contribution stats and calculate streak
- * - fetchActivity: Fetch heatmap and event breakdown aggregate
- * - fetchStarredRepos: Estimate interests from starred repos
- * - fetchUserSummary: Fetch all sections in parallel + handle partial failures
- * - Error handling: 404, 403, 500
+ * テスト対象:
+ * - fetchUserProfile: プロフィール・組織・ピン留め取得
+ * - fetchRepositories: リポジトリ・言語統計・トピック集計
+ * - fetchContributions: コントリビューション統計・ストリーク計算
+ * - fetchActivity: ヒートマップ・イベント内訳集計
+ * - fetchStarredRepos: スター済みリポジトリの興味推定
+ * - fetchUserSummary: 全セクション並行取得 + 部分失敗対応
+ * - エラーハンドリング: 404, 403, 500
  */
 
-// mock "server-only" beforehand
+// "server-only" を事前にモック
 vi.mock("server-only", () => ({}));
 
-// mock fetch globally
+// fetch をグローバルモック
 const mockFetch = vi.fn();
 
 beforeEach(() => {
@@ -32,7 +32,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-// ---------- Helpers ----------
+// ---------- ヘルパー ----------
 
 function jsonResponse(data: unknown, status = 200, headers: Record<string, string> = {}): Response {
   return {
@@ -44,7 +44,7 @@ function jsonResponse(data: unknown, status = 200, headers: Record<string, strin
   } as unknown as Response;
 }
 
-// ---------- Test Data ----------
+// ---------- テストデータ ----------
 
 const MOCK_USER = {
   login: "testuser",
@@ -185,7 +185,7 @@ const MOCK_STARRED_PAGE1 = [
 // ---------- fetchUserProfile ----------
 
 describe("fetchUserProfile", () => {
-  it("fetches and combines profile, organization, and pinned repos correctly", async () => {
+  it("プロフィール・組織・ピン留めを正しく取得して結合する", async () => {
     mockFetch
       .mockResolvedValueOnce(jsonResponse(MOCK_USER))                    // GET /users/testuser
       .mockResolvedValueOnce(jsonResponse(MOCK_ORGS))                    // GET /users/testuser/orgs
@@ -205,7 +205,7 @@ describe("fetchUserProfile", () => {
     expect(result.pinnedRepos[0].stargazerCount).toBe(150);
   });
 
-  it("returns empty pinned repos when token is missing", async () => {
+  it("token なしの場合ピン留めリポジトリを空で返す", async () => {
     mockFetch
       .mockResolvedValueOnce(jsonResponse(MOCK_USER))
       .mockResolvedValueOnce(jsonResponse(MOCK_ORGS));
@@ -217,7 +217,7 @@ describe("fetchUserProfile", () => {
     expect(result.pinnedRepos).toEqual([]);
   });
 
-  it("throws UserNotFoundError when user does not exist", async () => {
+  it("ユーザーが存在しない場合 UserNotFoundError をスローする", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse(null, 404));
 
     const { fetchUserProfile } = await import("../github");
@@ -228,7 +228,7 @@ describe("fetchUserProfile", () => {
     );
   });
 
-  it("throws RateLimitError on rate limit", async () => {
+  it("レート制限の場合 RateLimitError をスローする", async () => {
     mockFetch.mockResolvedValueOnce(
       jsonResponse(null, 403, { "X-RateLimit-Reset": "1700000000" })
     );
@@ -245,16 +245,16 @@ describe("fetchUserProfile", () => {
 // ---------- fetchRepositories ----------
 
 describe("fetchRepositories", () => {
-  it("aggregates language stats correctly from GraphQL response", async () => {
+  it("GraphQL レスポンスから言語統計を正しく集計する", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse(MOCK_REPOS_GRAPHQL)); // POST graphql
 
     const { fetchRepositories } = await import("../github");
     const result = await fetchRepositories("testuser", "fake-token");
 
-    // 2 repos excluding forks
+    // フォークを除外した2リポジトリ
     expect(result.totalCount).toBe(2);
 
-    // Language stats: Python 8000bytes, TypeScript 5000bytes, JavaScript 2000bytes
+    // 言語統計: Python 8000bytes, TypeScript 5000bytes, JavaScript 2000bytes
     expect(result.languages.length).toBeGreaterThanOrEqual(2);
     expect(result.languages[0].name).toBe("Python");
     expect(result.languages[0].bytes).toBe(8000);
@@ -262,7 +262,7 @@ describe("fetchRepositories", () => {
     expect(result.languages[1].bytes).toBe(5000);
   });
 
-  it("aggregates topics correctly from GraphQL response", async () => {
+  it("GraphQL レスポンスからトピックを正しく集計する", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse(MOCK_REPOS_GRAPHQL));
 
     const { fetchRepositories } = await import("../github");
@@ -274,7 +274,7 @@ describe("fetchRepositories", () => {
     expect(topicNames).toContain("machine-learning");
   });
 
-  it("calculates language percentages correctly", async () => {
+  it("言語のパーセンテージが正しく計算される", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse(MOCK_REPOS_GRAPHQL));
 
     const { fetchRepositories } = await import("../github");
@@ -289,7 +289,7 @@ describe("fetchRepositories", () => {
     }
   });
 
-  it("returns up to 5 topRepos ordered by stargazerCount", async () => {
+  it("topRepos は最大5件で stargazerCount 順に返される", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse(MOCK_REPOS_GRAPHQL));
 
     const { fetchRepositories } = await import("../github");
@@ -300,7 +300,7 @@ describe("fetchRepositories", () => {
     expect(result.topRepos[0].stargazerCount).toBe(50);
   });
 
-  it("falls back to REST when token is missing", async () => {
+  it("token なしの場合 REST にフォールバックする", async () => {
     const restRepos = [
       {
         name: "rest-repo",
@@ -323,7 +323,7 @@ describe("fetchRepositories", () => {
     expect(result.languages[0].name).toBe("JavaScript");
   });
 
-  it("throws UserNotFoundError when user does not exist", async () => {
+  it("ユーザーが存在しない場合 UserNotFoundError をスローする", async () => {
     mockFetch.mockResolvedValueOnce(
       jsonResponse({ data: { user: null } })
     );
@@ -340,7 +340,7 @@ describe("fetchRepositories", () => {
 // ---------- fetchContributions ----------
 
 describe("fetchContributions", () => {
-  it("returns correct number of commits, PRs, issues, and reviews", async () => {
+  it("コミット・PR・Issue・レビュー数を正しく返す", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse(MOCK_CONTRIBUTIONS));
 
     const { fetchContributions } = await import("../github");
@@ -353,28 +353,28 @@ describe("fetchContributions", () => {
     expect(result.totalContributions).toBe(680);
   });
 
-  it("calculates longest streak correctly", async () => {
+  it("最長ストリークを正しく計算する", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse(MOCK_CONTRIBUTIONS));
 
     const { fetchContributions } = await import("../github");
     const result = await fetchContributions("testuser", "fake-token");
 
     // Calendar: 5, 3, 0, 7, 2, 0, 1
-    // Streak: [5,3] = 2, [7,2] = 2, [1] = 1
+    // ストリーク: [5,3] = 2, [7,2] = 2, [1] = 1
     expect(result.longestStreak).toBe(2);
   });
 
-  it("calculates current streak correctly", async () => {
+  it("現在のストリークを正しく計算する", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse(MOCK_CONTRIBUTIONS));
 
     const { fetchContributions } = await import("../github");
     const result = await fetchContributions("testuser", "fake-token");
 
-    // Last day (2024-01-07) = 1, so currentStreak = 1
+    // 最後の日 (2024-01-07) = 1 なので currentStreak = 1
     expect(result.currentStreak).toBe(1);
   });
 
-  it("sorts calendar data by date", async () => {
+  it("カレンダーデータが日付順にソートされている", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse(MOCK_CONTRIBUTIONS));
 
     const { fetchContributions } = await import("../github");
@@ -385,7 +385,7 @@ describe("fetchContributions", () => {
     }
   });
 
-  it("throws GitHubApiError when token is missing", async () => {
+  it("token なしの場合 GitHubApiError をスローする", async () => {
     const { fetchContributions } = await import("../github");
     const { GitHubApiError } = await import("../types");
 
@@ -398,7 +398,7 @@ describe("fetchContributions", () => {
 // ---------- fetchActivity ----------
 
 describe("fetchActivity", () => {
-  it("initializes heatmap to 7x24", async () => {
+  it("ヒートマップが 7×24 で初期化される", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse(MOCK_EVENTS));
 
     const { fetchActivity } = await import("../github");
@@ -410,7 +410,7 @@ describe("fetchActivity", () => {
     }
   });
 
-  it("adds event to correct day/hour slot", async () => {
+  it("イベントが正しい曜日×時間帯スロットに加算される", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse(MOCK_EVENTS));
 
     const { fetchActivity } = await import("../github");
@@ -422,7 +422,7 @@ describe("fetchActivity", () => {
     expect(result.heatmap[1][14]).toBeGreaterThanOrEqual(1);
   });
 
-  it("orders event breakdown by count", async () => {
+  it("イベント内訳がカウント順に並ぶ", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse(MOCK_EVENTS));
 
     const { fetchActivity } = await import("../github");
@@ -433,7 +433,7 @@ describe("fetchActivity", () => {
     expect(result.eventBreakdown[0].count).toBe(2);
   });
 
-  it("totalEvents matches total number of events", async () => {
+  it("totalEvents がイベント総数と一致する", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse(MOCK_EVENTS));
 
     const { fetchActivity } = await import("../github");
@@ -442,7 +442,7 @@ describe("fetchActivity", () => {
     expect(result.totalEvents).toBe(MOCK_EVENTS.length);
   });
 
-  it("handles empty event array correctly", async () => {
+  it("空のイベント配列を正しく処理する", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse([]));
 
     const { fetchActivity } = await import("../github");
@@ -450,7 +450,7 @@ describe("fetchActivity", () => {
 
     expect(result.totalEvents).toBe(0);
     expect(result.eventBreakdown).toEqual([]);
-    // heatmap is all zeros
+    // ヒートマップはすべてゼロ
     const totalHeatmap = result.heatmap.flat().reduce((a, b) => a + b, 0);
     expect(totalHeatmap).toBe(0);
   });
@@ -459,7 +459,7 @@ describe("fetchActivity", () => {
 // ---------- fetchStarredRepos ----------
 
 describe("fetchStarredRepos", () => {
-  it("aggregates topics correctly from starred repos", async () => {
+  it("スター済みリポジトリのトピックを正しく集計する", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse(MOCK_STARRED_PAGE1));
 
     const { fetchStarredRepos } = await import("../github");
@@ -469,12 +469,12 @@ describe("fetchStarredRepos", () => {
     expect(topicNames).toContain("react");
     expect(topicNames).toContain("typescript");
 
-    // react is in 2 repos, so count = 2
+    // react は2つのリポジトリに含まれるので count = 2
     const reactTopic = result.topTopics.find((t) => t.name === "react");
     expect(reactTopic?.count).toBe(2);
   });
 
-  it("aggregates languages correctly from starred repos", async () => {
+  it("スター済みリポジトリの言語を正しく集計する", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse(MOCK_STARRED_PAGE1));
 
     const { fetchStarredRepos } = await import("../github");
@@ -484,12 +484,12 @@ describe("fetchStarredRepos", () => {
     expect(langNames).toContain("TypeScript");
     expect(langNames).toContain("Python");
 
-    // TypeScript is in 2 repos
+    // TypeScript は2リポジトリ
     const tsLang = result.topLanguages.find((l) => l.name === "TypeScript");
     expect(tsLang?.count).toBe(2);
   });
 
-  it("totalStarred matches number of repos", async () => {
+  it("totalStarred がリポジトリ数と一致する", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse(MOCK_STARRED_PAGE1));
 
     const { fetchStarredRepos } = await import("../github");
@@ -503,17 +503,17 @@ describe("fetchStarredRepos", () => {
 
 describe("fetchUserSummary", () => {
   /**
-   * fetchUserSummary executes 5 functions in parallel using Promise.allSettled,
-   * so fetch call order is non-deterministic. Return mock based on URL.
+   * fetchUserSummary は Promise.allSettled で5関数を並行実行するため、
+   * fetch の呼び出し順は非決定的。URL ベースでモックを返す。
    */
   function setupUrlBasedMock() {
-    // GraphQL call counter (returns different data in order: pinned -> repos -> contributions)
+    // GraphQL 呼び出しカウンター (pinned → repos → contributions の順で異なるデータを返す)
     let graphqlCallCount = 0;
 
     mockFetch.mockImplementation((url: string | URL | Request, options?: RequestInit) => {
       const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : url.url;
 
-      // GraphQL endpoint
+      // GraphQL エンドポイント
       if (urlStr.includes("/graphql")) {
         graphqlCallCount++;
         const body = options?.body ? JSON.parse(options.body as string) : {};
@@ -553,7 +553,7 @@ describe("fetchUserSummary", () => {
     });
   }
 
-  it("returns complete UserSummary when all sections succeed", async () => {
+  it("全セクション成功時に完全な UserSummary を返す", async () => {
     setupUrlBasedMock();
 
     const { fetchUserSummary } = await import("../github");
@@ -568,8 +568,8 @@ describe("fetchUserSummary", () => {
     expect(result.errors).toHaveLength(0);
   });
 
-  it("returns other sections with error info when some sections fail", async () => {
-    // Set mock based on URL and return 500 for repos GraphQL
+  it("一部セクション失敗時にエラー情報を含みつつ他のセクションは返す", async () => {
+    // URL ベースでモックを設定し、repos の GraphQL を 500 にする
     mockFetch.mockImplementation((url: string | URL | Request, options?: RequestInit) => {
       const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : url.url;
 
@@ -613,7 +613,7 @@ describe("fetchUserSummary", () => {
     expect(result.errors.some((e) => e.section === "repositories")).toBe(true);
   });
 
-  it("re-throws UserNotFoundError when profile is 404", async () => {
+  it("profile が 404 の場合 UserNotFoundError を再スローする", async () => {
     mockFetch.mockImplementation((url: string | URL | Request) => {
       const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : url.url;
 
@@ -622,7 +622,7 @@ describe("fetchUserSummary", () => {
         return Promise.resolve(jsonResponse(null, 404));
       }
 
-      // Fail other endpoints too (no problem since it throws if profile fails)
+      // 他のエンドポイントも失敗させる (profile が失敗すればスローされるので問題なし)
       return Promise.resolve(jsonResponse([], 200));
     });
 

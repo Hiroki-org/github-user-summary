@@ -2,17 +2,17 @@ import { describe, it, expect } from "vitest";
 import { adjustAccentColor, type ColorResult } from "../color";
 
 /**
- * Unit tests for adjustAccentColor
+ * adjustAccentColor のユニットテスト
  *
- * Test targets:
- * - Hex string input
- * - RGB array input
- * - RGB object input
- * - Invalid color fallback
- * - Low saturation color adjustment
- * - Lighten too dark colors
- * - Darken too bright colors
- * - hover color should be brighter than original
+ * テスト対象:
+ * - Hex文字列入力
+ * - RGB配列入力
+ * - RGBオブジェクト入力
+ * - 無効な色のフォールバック
+ * - 彩度の低い色の調整
+ * - 暗すぎる色の明度引き上げ
+ * - 明るすぎる色の明度抑制
+ * - hover 色が元の色より明るいこと
  */
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
@@ -34,8 +34,8 @@ function relativeLuminance(hex: string): number {
 }
 
 describe("adjustAccentColor", () => {
-  // ---------- Return structure ----------
-  it("returns accent, accentRgb, accentHover on hex string input", () => {
+  // ---------- 戻り値の構造 ----------
+  it("hex文字列入力で accent, accentRgb, accentHover を返す", () => {
     const result = adjustAccentColor("#3178c6");
     expect(result).toHaveProperty("accent");
     expect(result).toHaveProperty("accentRgb");
@@ -45,18 +45,18 @@ describe("adjustAccentColor", () => {
     expect(result.accentHover).toMatch(/^#[0-9a-f]{6}$/i);
   });
 
-  // ---------- Input formats ----------
-  it("accepts RGB array [r, g, b]", () => {
+  // ---------- 入力形式 ----------
+  it("RGB配列 [r, g, b] を受け取れる", () => {
     const result = adjustAccentColor([49, 120, 198]);
     expect(result.accent).toMatch(/^#[0-9a-f]{6}$/i);
   });
 
-  it("accepts RGB object { r, g, b }", () => {
+  it("RGBオブジェクト { r, g, b } を受け取れる", () => {
     const result = adjustAccentColor({ r: 49, g: 120, b: 198 });
     expect(result.accent).toMatch(/^#[0-9a-f]{6}$/i);
   });
 
-  it("returns same result for different input formats of the same color", () => {
+  it("同じ色の異なる入力形式で同じ結果を返す", () => {
     const fromHex = adjustAccentColor("#3178c6");
     const fromArray = adjustAccentColor([49, 120, 198]);
     const fromObj = adjustAccentColor({ r: 49, g: 120, b: 198 });
@@ -64,80 +64,80 @@ describe("adjustAccentColor", () => {
     expect(fromHex.accent).toBe(fromObj.accent);
   });
 
-  // ---------- Invalid color fallback ----------
-  it("falls back to default color (#58a6ff) for invalid color string", () => {
+  // ---------- 無効な色のフォールバック ----------
+  it("無効な色文字列の場合デフォルトカラー (#58a6ff) にフォールバックする", () => {
     const result = adjustAccentColor("not-a-color");
-    // default #58a6ff is used (adjusted value)
+    // デフォルトの #58a6ff が使われる（調整後の値）
     expect(result.accent).toMatch(/^#[0-9a-f]{6}$/i);
   });
 
-  it("falls back to default color for empty string", () => {
+  it("空文字列の場合デフォルトカラーにフォールバックする", () => {
     const resultEmpty = adjustAccentColor("");
     const resultInvalid = adjustAccentColor("not-a-color");
     expect(resultEmpty.accent).toBe(resultInvalid.accent);
   });
 
-  // ---------- Saturation adjustment ----------
-  it("adjusts saturation for very low saturation colors (gray)", () => {
-    const result = adjustAccentColor("#808080"); // pure gray s=0
-    // result should not be pure gray anymore
+  // ---------- 彩度調整 ----------
+  it("彩度の非常に低い色 (グレー) が彩度を補正される", () => {
+    const result = adjustAccentColor("#808080"); // 純粋なグレー s=0
+    // 結果は完全な灰色ではなくなっているはず
     expect(result.accent).not.toBe("#808080");
   });
 
-  // ---------- Lightness adjustment ----------
-  it("adjusts lightness up for too dark colors (l < 45)", () => {
-    const darkColor = "#1a1a6e"; // very dark blue
+  // ---------- 明度調整 ----------
+  it("暗すぎる色 (l < 45) が明るく調整される", () => {
+    const darkColor = "#1a1a6e"; // 非常に暗い青
     const result = adjustAccentColor(darkColor);
-    // adjusted should be brighter than original
+    // 調整後は元より明るいはず
     const originalLum = relativeLuminance(darkColor);
     const adjustedLum = relativeLuminance(result.accent);
     expect(adjustedLum).toBeGreaterThan(originalLum);
   });
 
-  it("adjusts lightness down for too bright colors (l > 85)", () => {
-    const brightColor = "#f0f0ff"; // very bright color
+  it("明るすぎる色 (l > 85) が暗く調整される", () => {
+    const brightColor = "#f0f0ff"; // 非常に明るい色
     const result = adjustAccentColor(brightColor);
     const originalLum = relativeLuminance(brightColor);
     const adjustedLum = relativeLuminance(result.accent);
     expect(adjustedLum).toBeLessThan(originalLum);
   });
 
-  it("maintains colors in good range almost as is", () => {
-    // TypeScript blue - already in good range
+  it("適切な範囲の色はほぼそのまま維持される", () => {
+    // TypeScript blue - 既に良い範囲にある
     const result = adjustAccentColor("#3178c6");
-    // verify color doesnt change significantly
+    // 色が大幅に変わらないことを確認
     expect(result.accent).toMatch(/^#[0-9a-f]{6}$/i);
   });
 
-  // ---------- hover color ----------
-  it("accentHover is brighter than accent", () => {
+  // ---------- hover カラー ----------
+  it("accentHover は accent より明るい", () => {
     const result = adjustAccentColor("#3178c6");
     const accentLum = relativeLuminance(result.accent);
     const hoverLum = relativeLuminance(result.accentHover);
     expect(hoverLum).toBeGreaterThan(accentLum);
   });
 
-  it("accentHover returns different color than accent", () => {
+  it("accentHover は accent と異なる色を返す", () => {
     const result = adjustAccentColor("#e34c26");
     expect(result.accentHover).not.toBe(result.accent);
   });
 
-  // ---------- accentRgb format ----------
-  it("accentRgb matches accent RGB values", () => {
+  // ---------- accentRgb フォーマット ----------
+  it("accentRgb が accent の RGB値と一致する", () => {
     const result = adjustAccentColor("#3178c6");
     const rgb = hexToRgb(result.accent);
     expect(result.accentRgb).toBe(`${rgb.r}, ${rgb.g}, ${rgb.b}`);
   });
 
-  // ---------- various language colors ----------
+  // ---------- さまざまな言語カラー ----------
   describe.each([
     { language: "JavaScript", color: "#f1e05a" },
     { language: "Python", color: "#3572A5" },
     { language: "Rust", color: "#dea584" },
     { language: "Go", color: "#00ADD8" },
     { language: "Ruby", color: "#701516" },
-  ])("language color: $language ($color)", ({ color }) => {
-    it("returns valid ColorResult", () => {
+  ])("言語カラー: $language ($color)", ({ color }) => {
+    it("有効な ColorResult を返す", () => {
       const result = adjustAccentColor(color);
       expect(result.accent).toMatch(/^#[0-9a-f]{6}$/i);
       expect(result.accentRgb).toMatch(/^\d+, \d+, \d+$/);

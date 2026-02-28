@@ -6,64 +6,64 @@ import {
 } from "../types";
 
 /**
- * Unit tests for custom error classes
+ * カスタムエラークラスのユニットテスト
  *
- * Test targets:
- * - UserNotFoundError: message, name, instanceof chain
- * - RateLimitError: message, name, resetAt calculation
- * - GitHubApiError: message, name, status property
- * - All errors inherit from Error
+ * テスト対象:
+ * - UserNotFoundError: メッセージ, name, instanceofチェーン
+ * - RateLimitError: メッセージ, name, resetAt計算
+ * - GitHubApiError: メッセージ, name, statusプロパティ
+ * - 全エラーが Error を継承
  */
 
 describe("UserNotFoundError", () => {
-  it("sets message containing username", () => {
+  it("ユーザー名を含むメッセージを設定する", () => {
     const error = new UserNotFoundError("testuser");
     expect(error.message).toBe('User "testuser" not found');
   });
 
-  it('sets name to "UserNotFoundError"', () => {
+  it('name が "UserNotFoundError" に設定される', () => {
     const error = new UserNotFoundError("testuser");
     expect(error.name).toBe("UserNotFoundError");
   });
 
-  it("is instance of Error", () => {
+  it("Error のインスタンスである", () => {
     const error = new UserNotFoundError("testuser");
     expect(error).toBeInstanceOf(Error);
     expect(error).toBeInstanceOf(UserNotFoundError);
   });
 
-  it("works correctly even with usernames containing special characters", () => {
+  it("特殊文字を含むユーザー名でも正しく動作する", () => {
     const error = new UserNotFoundError("user-with-dashes_123");
     expect(error.message).toContain("user-with-dashes_123");
   });
 });
 
 describe("RateLimitError", () => {
-  it("holds resetAt as a Date object", () => {
+  it("resetAt を Date オブジェクトとして保持する", () => {
     const timestamp = Math.floor(Date.now() / 1000) + 3600;
     const error = new RateLimitError(timestamp);
     expect(error.resetAt).toBeInstanceOf(Date);
   });
 
-  it("calculates resetAt correctly from timestamp", () => {
+  it("resetAt がタイムスタンプから正しく計算される", () => {
     const timestamp = 1700000000; // 2023-11-14T22:13:20Z
     const error = new RateLimitError(timestamp);
     expect(error.resetAt.getTime()).toBe(timestamp * 1000);
   });
 
-  it("includes ISO date string in message", () => {
+  it("メッセージに ISO 日付文字列を含む", () => {
     const timestamp = 1700000000;
     const error = new RateLimitError(timestamp);
     expect(error.message).toContain("rate limit exceeded");
     expect(error.message).toContain(new Date(timestamp * 1000).toISOString());
   });
 
-  it('sets name to "RateLimitError"', () => {
+  it('name が "RateLimitError" に設定される', () => {
     const error = new RateLimitError(1700000000);
     expect(error.name).toBe("RateLimitError");
   });
 
-  it("is instance of Error", () => {
+  it("Error のインスタンスである", () => {
     const error = new RateLimitError(1700000000);
     expect(error).toBeInstanceOf(Error);
     expect(error).toBeInstanceOf(RateLimitError);
@@ -71,24 +71,24 @@ describe("RateLimitError", () => {
 });
 
 describe("GitHubApiError", () => {
-  it("holds message and status code", () => {
+  it("メッセージとステータスコードを保持する", () => {
     const error = new GitHubApiError("Bad Request", 400);
     expect(error.message).toBe("Bad Request");
     expect(error.status).toBe(400);
   });
 
-  it('sets name to "GitHubApiError"', () => {
+  it('name が "GitHubApiError" に設定される', () => {
     const error = new GitHubApiError("Internal Server Error", 500);
     expect(error.name).toBe("GitHubApiError");
   });
 
-  it("is instance of Error", () => {
+  it("Error のインスタンスである", () => {
     const error = new GitHubApiError("Not Found", 404);
     expect(error).toBeInstanceOf(Error);
     expect(error).toBeInstanceOf(GitHubApiError);
   });
 
-  it("holds various HTTP status codes correctly", () => {
+  it("さまざまなHTTPステータスコードを正しく保持する", () => {
     const codes = [400, 401, 403, 404, 422, 500, 502, 503];
     for (const code of codes) {
       const error = new GitHubApiError(`Error ${code}`, code);

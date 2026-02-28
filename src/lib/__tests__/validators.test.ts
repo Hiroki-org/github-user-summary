@@ -2,79 +2,79 @@ import { describe, it, expect } from "vitest";
 import { isValidGitHubUsername } from "../validators";
 
 /**
- * Unit tests for isValidGitHubUsername
+ * isValidGitHubUsername のユニットテスト
  *
- * GitHub username rules:
- * - Alphanumeric or hyphen
- * - Cannot start/end with hyphen
- * - No consecutive hyphens (handled by lookahead)
- * - Max 39 characters
+ * GitHub ユーザー名ルール:
+ * - 英数字またはハイフン
+ * - ハイフンで開始/終了不可
+ * - 連続ハイフン不可 (ルック・アヘッドで対応)
+ * - 最大39文字
  */
 
 describe("isValidGitHubUsername", () => {
-  // ---------- Valid usernames ----------
-  it("valid for alphanumeric only usernames", () => {
+  // ---------- 有効なユーザー名 ----------
+  it("英数字のみのユーザー名は有効", () => {
     expect(isValidGitHubUsername("testuser")).toBe(true);
   });
 
-  it("valid for 1 character usernames", () => {
+  it("1文字のユーザー名は有効", () => {
     expect(isValidGitHubUsername("a")).toBe(true);
   });
 
-  it("valid for numbers only usernames", () => {
+  it("数字のみのユーザー名は有効", () => {
     expect(isValidGitHubUsername("12345")).toBe(true);
   });
 
-  it("valid for usernames containing hyphens", () => {
+  it("ハイフンを含むユーザー名は有効", () => {
     expect(isValidGitHubUsername("test-user")).toBe(true);
   });
 
-  it("valid for usernames containing multiple hyphens", () => {
+  it("複数ハイフンを含むユーザー名は有効", () => {
     expect(isValidGitHubUsername("my-test-user")).toBe(true);
   });
 
-  it("valid for 39 characters usernames", () => {
+  it("39文字のユーザー名は有効", () => {
     expect(isValidGitHubUsername("a".repeat(39))).toBe(true);
   });
 
-  it("valid for usernames containing uppercase letters", () => {
+  it("大文字を含むユーザー名は有効", () => {
     expect(isValidGitHubUsername("TestUser")).toBe(true);
   });
 
-  // ---------- Invalid usernames ----------
-  it("invalid for empty string", () => {
+  // ---------- 無効なユーザー名 ----------
+  it("空文字列は無効", () => {
     expect(isValidGitHubUsername("")).toBe(false);
   });
 
-  it("invalid for usernames starting with hyphen", () => {
+  it("ハイフンで始まるユーザー名は無効", () => {
     expect(isValidGitHubUsername("-testuser")).toBe(false);
   });
 
-  it("invalid for usernames ending with hyphen", () => {
+  it("ハイフンで終わるユーザー名は無効", () => {
     expect(isValidGitHubUsername("testuser-")).toBe(false);
   });
 
-  it("invalid for usernames containing consecutive hyphens", () => {
+  it("連続ハイフンを含むユーザー名は無効", () => {
     expect(isValidGitHubUsername("test--user")).toBe(false);
   });
 
-  it("invalid for 40 characters or more usernames", () => {
+  it("40文字以上のユーザー名は無効", () => {
     expect(isValidGitHubUsername("a".repeat(40))).toBe(false);
   });
 
-  it("invalid for usernames containing special characters", () => {
+  it("特殊文字を含むユーザー名は無効", () => {
     expect(isValidGitHubUsername("test@user")).toBe(false);
     expect(isValidGitHubUsername("test.user")).toBe(false);
     expect(isValidGitHubUsername("test_user")).toBe(false);
     expect(isValidGitHubUsername("test user")).toBe(false);
   });
 
-  it("invalid for usernames containing slash (prevent path traversal)", () => {
+  it("スラッシュを含むユーザー名は無効 (パストラバーサル防止)", () => {
     expect(isValidGitHubUsername("test/user")).toBe(false);
     expect(isValidGitHubUsername("../etc/passwd")).toBe(false);
   });
 
-  it("invalid for SQL injection-like strings", () => {
+  it("SQLインジェクション的な文字列は無効", () => {
     expect(isValidGitHubUsername("'; DROP TABLE users; --")).toBe(false);
   });
 });
