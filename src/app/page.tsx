@@ -1,4 +1,3 @@
-import LoginButton from "@/components/LoginButton";
 import SearchForm from "@/components/SearchForm";
 
 export default function HomePage() {
@@ -7,29 +6,23 @@ export default function HomePage() {
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-accent opacity-10 blur-[100px] animate-pulse-slow" />
-        <div className="absolute top-[20%] -right-[10%] w-[40%] h-[40%] rounded-full bg-success opacity-5 blur-[100px] animate-pulse-slow" style={{ animationDelay: '1s' }} />
+        <div
+          className="absolute top-[20%] -right-[10%] w-[40%] h-[40%] rounded-full bg-success opacity-5 blur-[100px] animate-pulse-slow"
+          style={{ animationDelay: "1s" }}
+        />
       </div>
-
-      {/* Header */}
-      <header className="border-b border-card-border/50 bg-background/50 backdrop-blur-md px-6 py-4 sticky top-0 z-50 transition-all duration-300">
-        <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <h1 className="text-lg font-semibold text-foreground tracking-tight hover:text-accent transition-colors cursor-default">
-            GitHub User Summary
-          </h1>
-          <LoginButton />
-        </div>
-      </header>
 
       {/* Hero */}
       <main className="flex flex-1 flex-col items-center justify-center px-4 relative z-10">
         <div className="w-full max-w-3xl text-center space-y-8 animate-slide-up">
           <div className="space-y-4">
             <h2 className="text-5xl sm:text-7xl font-bold tracking-tighter">
-              <span className="text-gradient">Unlock Your</span> <br/>
+              <span className="text-gradient">Unlock Your</span> <br />
               <span className="text-gradient-accent">GitHub Profile</span>
             </h2>
             <p className="text-xl text-muted max-w-2xl mx-auto leading-relaxed">
-              Explore user profiles, visualize contributions, and analyze coding habits with a beautiful, data-driven summary.
+              Explore user profiles, visualize contributions, and analyze coding
+              habits with a beautiful, data-driven summary.
             </p>
           </div>
 
@@ -37,8 +30,12 @@ export default function HomePage() {
             <SearchForm />
           </div>
 
-          <p className="text-sm text-muted animate-fade-in" style={{ animationDelay: '0.4s' }}>
-            Sign in with GitHub to access detailed insights and contribution graphs.
+          <p
+            className="text-sm text-muted animate-fade-in"
+            style={{ animationDelay: "0.4s" }}
+          >
+            Sign in with GitHub to access detailed insights and contribution
+            graphs.
           </p>
         </div>
       </main>

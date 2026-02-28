@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Header from "@/components/Header";
 import Providers from "./providers";
 import "./globals.css";
 
@@ -15,7 +16,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "GitHub User Summary",
-  description: "Visualize any GitHub user's profile, skills, contributions, and activity at a glance.",
+  description:
+    "Visualize any GitHub user's profile, skills, contributions, and activity at a glance.",
 };
 
 export default function RootLayout({
@@ -28,7 +30,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[var(--background)] text-[var(--foreground)] min-h-screen`}
       >
-        <Providers>{children}</Providers>
+        <Providers>
+          <Header />
+          {children}
+        </Providers>
       </body>
     </html>
   );
