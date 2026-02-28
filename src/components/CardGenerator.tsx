@@ -3,12 +3,50 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { toPng, toBlob } from "html-to-image";
-import { UserSummary, CardConfig } from "@/lib/types";
+
+import type { CardBlockId, CardDisplayOptions, CardLayout, UserSummary } from "@/lib/types";
+import { cloneDefaultCardLayout, LAYOUT_STORAGE_KEY, normalizeCardLayout, toggleBlockVisibility } from "@/lib/cardLayout";
+
 import BusinessCard from "./BusinessCard";
+import LayoutEditor from "./LayoutEditor";
 
 type Props = {
   summary: UserSummary;
 };
+
+const DEFAULT_DISPLAY_OPTIONS: CardDisplayOptions = {
+  showCompany: false,
+  showLocation: false,
+  showWebsite: false,
+  showTwitter: false,
+  showJoinedDate: false,
+  showTopics: false,
+  showContributionBreakdown: false,
+  showStreaks: false,
+  showInterests: false,
+  showActivityBreakdown: false,
+};
+
+const MAIN_BLOCKS: Array<{ id: CardBlockId; label: string }> = [
+  { id: "avatar", label: "Show Avatar" },
+  { id: "bio", label: "Show Bio" },
+  { id: "stats", label: "Show Stats" },
+  { id: "topLanguages", label: "Top Languages" },
+  { id: "topRepos", label: "Top Repositories" },
+];
+
+const DETAIL_OPTIONS: Array<{ key: keyof CardDisplayOptions; label: string }> = [
+  { key: "showCompany", label: "Show Company" },
+  { key: "showLocation", label: "Show Location" },
+  { key: "showWebsite", label: "Show Website" },
+  { key: "showTwitter", label: "Show Twitter" },
+  { key: "showJoinedDate", label: "Joined Date" },
+  { key: "showTopics", label: "Show Topics" },
+  { key: "showContributionBreakdown", label: "Contribution Details" },
+  { key: "showStreaks", label: "Show Streaks" },
+  { key: "showInterests", label: "Show Interests" },
+  { key: "showActivityBreakdown", label: "Activity Breakdown" },
+];
 
 export default function CardGenerator({ summary }: Props) {
   const [isOpen, setIsOpen] = useState(false);
@@ -16,26 +54,10 @@ export default function CardGenerator({ summary }: Props) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">("idle");
   const [mounted, setMounted] = useState(false);
+  const [activeTab, setActiveTab] = useState<"settings" | "layout">("settings");
 
-  // Configuration state
-  const [config, setConfig] = useState<CardConfig>({
-    showAvatar: true,
-    showBio: true,
-    showStats: true,
-    showTopLanguages: true,
-    showTopRepos: true,
-    swapColumns: false,
-    showCompany: false,
-    showLocation: false,
-    showWebsite: false,
-    showTwitter: false,
-    showJoinedDate: false,
-    showTopics: false,
-    showContributionBreakdown: false,
-    showStreaks: false,
-    showInterests: false,
-    showActivityBreakdown: false,
-  });
+  const [layout, setLayout] = useState<CardLayout>(cloneDefaultCardLayout());
+  const [displayOptions, setDisplayOptions] = useState<CardDisplayOptions>(DEFAULT_DISPLAY_OPTIONS);
 
   const cardRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
@@ -45,39 +67,61 @@ export default function CardGenerator({ summary }: Props) {
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    if (!mounted) {
+      return;
+    }
+
+    try {
+      const raw = localStorage.getItem(LAYOUT_STORAGE_KEY);
+      if (!raw) {
+        setLayout(cloneDefaultCardLayout());
+        return;
+      }
+
+      const parsed = JSON.parse(raw);
+      setLayout(normalizeCardLayout(parsed));
+    } catch {
+      setLayout(cloneDefaultCardLayout());
+    }
+  }, [mounted]);
+
+  useEffect(() => {
+    if (!mounted) {
+      return;
+    }
+
+    localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(layout));
+  }, [layout, mounted]);
+
   const handleClose = useCallback(() => {
     setIsOpen(false);
     setPreviewUrl(null);
   }, []);
 
-  // 画像生成処理
   const generateImage = useCallback(async () => {
     if (!cardRef.current) return null;
     try {
-       const dataUrl = await toPng(cardRef.current, {
-          cacheBust: true,
-          pixelRatio: 1,
-          backgroundColor: '#0d1117',
-       });
-       return dataUrl;
+      const dataUrl = await toPng(cardRef.current, {
+        cacheBust: true,
+        pixelRatio: 1,
+        backgroundColor: "#0d1117",
+      });
+      return dataUrl;
     } catch (err) {
       console.error("Failed to generate image", err);
       return null;
     }
   }, []);
 
-  // モーダルが開いたときにプレビューを生成
   useEffect(() => {
     if (isOpen) {
-      // Save current focus
       previousFocusRef.current = document.activeElement as HTMLElement;
 
-      // Focus the modal container
       if (modalRef.current) {
         modalRef.current.focus();
       }
 
-      // Handle Escape key
       const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === "Escape") {
           handleClose();
@@ -88,7 +132,6 @@ export default function CardGenerator({ summary }: Props) {
 
       return () => {
         document.removeEventListener("keydown", handleKeyDown);
-        // Restore focus
         if (previousFocusRef.current) {
           previousFocusRef.current.focus();
         }
@@ -96,7 +139,6 @@ export default function CardGenerator({ summary }: Props) {
     }
   }, [isOpen, handleClose]);
 
-  // When config changes or modal opens, regenerate
   useEffect(() => {
     if (isOpen && !previewUrl) {
       let isCancelled = false;
@@ -104,7 +146,6 @@ export default function CardGenerator({ summary }: Props) {
 
       const generate = async () => {
         try {
-          // フォントの読み込みを待つことで、レンダリングの信頼性を高めます。
           await document.fonts.ready;
           const url = await generateImage();
           if (!isCancelled) {
@@ -122,7 +163,6 @@ export default function CardGenerator({ summary }: Props) {
         }
       };
 
-      // わずかな遅延でレンダリングの安定を待ちます。
       let rafId: number;
       const timer = setTimeout(() => {
         rafId = requestAnimationFrame(() => {
@@ -138,12 +178,11 @@ export default function CardGenerator({ summary }: Props) {
     }
   }, [isOpen, previewUrl, generateImage]);
 
-  // Reset preview when config changes to trigger regeneration
   useEffect(() => {
     if (isOpen) {
       setPreviewUrl(null);
     }
-  }, [config, isOpen]);
+  }, [layout, displayOptions, isOpen]);
 
   const handleDownload = useCallback(() => {
     if (!previewUrl) return;
@@ -157,7 +196,7 @@ export default function CardGenerator({ summary }: Props) {
     if (!cardRef.current) return;
     try {
       setCopyStatus("idle");
-      const blob = await toBlob(cardRef.current, { cacheBust: true, backgroundColor: '#0d1117' });
+      const blob = await toBlob(cardRef.current, { cacheBust: true, backgroundColor: "#0d1117" });
       if (!blob) throw new Error("Failed to create blob");
 
       await navigator.clipboard.write([
@@ -171,8 +210,16 @@ export default function CardGenerator({ summary }: Props) {
     }
   }, []);
 
-  const toggleConfig = (key: keyof CardConfig) => {
-    setConfig((prev) => ({ ...prev, [key]: !prev[key] }));
+  const toggleMainBlockVisibility = (blockId: CardBlockId) => {
+    setLayout((prev) => toggleBlockVisibility(prev, blockId));
+  };
+
+  const toggleDisplayOption = (key: keyof CardDisplayOptions) => {
+    setDisplayOptions((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const isBlockVisible = (blockId: CardBlockId): boolean => {
+    return layout.blocks.find((block) => block.id === blockId)?.visible ?? false;
   };
 
   if (!summary.profile) return null;
@@ -196,62 +243,85 @@ export default function CardGenerator({ summary }: Props) {
         isOpen && (
           <>
             <div
-              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in"
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-fade-in"
               role="dialog"
               aria-modal="true"
               onClick={handleClose}
             >
               <div
                 ref={modalRef}
-                className="relative w-full max-w-4xl rounded-xl bg-card-bg border border-card-border p-6 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] focus:outline-none"
+                className="relative flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl border border-card-border bg-card-bg p-6 shadow-2xl focus:outline-none"
                 onClick={(e) => e.stopPropagation()}
                 tabIndex={-1}
               >
-                <div className="flex items-center justify-between mb-4">
+                <div className="mb-4 flex items-center justify-between">
                   <h2 className="text-xl font-bold text-foreground">Profile Card</h2>
                   <button
                     type="button"
                     onClick={handleClose}
-                    className="rounded-full p-2 text-muted hover:bg-white/10 hover:text-foreground transition-colors"
+                    className="rounded-full p-2 text-muted transition-colors hover:bg-white/10 hover:text-foreground"
                     aria-label="Close"
                   >
                     <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                   </button>
                 </div>
 
-                {/* Configuration Controls */}
-                <div className="mb-4 grid grid-cols-2 md:grid-cols-3 gap-3 p-4 bg-card-bg/50 rounded-lg border border-card-border/50">
-                  {([
-                    { key: 'showAvatar', label: 'Show Avatar' },
-                    { key: 'showBio', label: 'Show Bio' },
-                    { key: 'showStats', label: 'Show Stats' },
-                    { key: 'showTopLanguages', label: 'Top Languages' },
-                    { key: 'showTopRepos', label: 'Top Repositories' },
-                    { key: 'swapColumns', label: 'Swap Layout' },
-                    { key: 'showCompany', label: 'Show Company' },
-                    { key: 'showLocation', label: 'Show Location' },
-                    { key: 'showWebsite', label: 'Show Website' },
-                    { key: 'showTwitter', label: 'Show Twitter' },
-                    { key: 'showJoinedDate', label: 'Joined Date' },
-                    { key: 'showTopics', label: 'Show Topics' },
-                    { key: 'showContributionBreakdown', label: 'Contribution Details' },
-                    { key: 'showStreaks', label: 'Show Streaks' },
-                    { key: 'showInterests', label: 'Show Interests' },
-                    { key: 'showActivityBreakdown', label: 'Activity Breakdown' },
-                  ] as const).map(({ key, label }) => (
-                    <label key={key} className="flex items-center gap-2 text-sm text-muted hover:text-foreground cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={config[key]}
-                        onChange={() => toggleConfig(key)}
-                        className="rounded border-card-border bg-background text-accent focus:ring-accent"
-                      />
-                      {label}
-                    </label>
-                  ))}
+                <div className="mb-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("settings")}
+                    className={`rounded-md px-3 py-1.5 text-sm transition-colors ${activeTab === "settings" ? "bg-accent text-white" : "bg-background text-muted hover:text-foreground"}`}
+                  >
+                    表示設定
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("layout")}
+                    className={`rounded-md px-3 py-1.5 text-sm transition-colors ${activeTab === "layout" ? "bg-accent text-white" : "bg-background text-muted hover:text-foreground"}`}
+                  >
+                    レイアウト編集
+                  </button>
                 </div>
 
-                <div className="flex-1 flex items-center justify-center min-h-[300px] overflow-auto bg-[#0d1117]/50 rounded-lg border border-dashed border-card-border p-4">
+                {activeTab === "settings" && (
+                  <div className="mb-4 grid grid-cols-2 gap-3 rounded-lg border border-card-border/50 bg-card-bg/50 p-4 md:grid-cols-3">
+                    {MAIN_BLOCKS.map(({ id, label }) => (
+                      <label key={id} className="flex cursor-pointer select-none items-center gap-2 text-sm text-muted hover:text-foreground">
+                        <input
+                          type="checkbox"
+                          checked={isBlockVisible(id)}
+                          onChange={() => toggleMainBlockVisibility(id)}
+                          className="rounded border-card-border bg-background text-accent focus:ring-accent"
+                        />
+                        {label}
+                      </label>
+                    ))}
+
+                    {DETAIL_OPTIONS.map(({ key, label }) => (
+                      <label key={key} className="flex cursor-pointer select-none items-center gap-2 text-sm text-muted hover:text-foreground">
+                        <input
+                          type="checkbox"
+                          checked={displayOptions[key] ?? false}
+                          onChange={() => toggleDisplayOption(key)}
+                          className="rounded border-card-border bg-background text-accent focus:ring-accent"
+                        />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
+                )}
+
+                {activeTab === "layout" && (
+                  <div className="mb-4 rounded-lg border border-card-border/50 bg-card-bg/50 p-4">
+                    <LayoutEditor
+                      layout={layout}
+                      onLayoutChange={setLayout}
+                      onToggleBlockVisibility={toggleMainBlockVisibility}
+                    />
+                  </div>
+                )}
+
+                <div className="flex min-h-[300px] flex-1 items-center justify-center overflow-auto rounded-lg border border-dashed border-card-border bg-[#0d1117]/50 p-4">
                   {isGenerating ? (
                     <div className="flex flex-col items-center gap-4">
                       <div className="h-8 w-8 animate-spin rounded-full border-4 border-accent border-t-transparent" />
@@ -259,7 +329,7 @@ export default function CardGenerator({ summary }: Props) {
                     </div>
                   ) : previewUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={previewUrl} alt="Card Preview" className="max-w-full max-h-full object-contain shadow-lg rounded-lg" />
+                    <img src={previewUrl} alt="Card Preview" className="max-h-full max-w-full rounded-lg object-contain shadow-lg" />
                   ) : (
                     <p className="text-danger">Failed to generate preview.</p>
                   )}
@@ -270,7 +340,7 @@ export default function CardGenerator({ summary }: Props) {
                     type="button"
                     onClick={handleCopy}
                     disabled={!previewUrl}
-                    className="inline-flex items-center gap-2 rounded-md border border-card-border bg-card-bg px-4 py-2 text-sm font-medium text-foreground hover:bg-white/5 transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-md border border-card-border bg-card-bg px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/5 disabled:opacity-50"
                   >
                     {copyStatus === "copied" ? (
                       <>
@@ -289,7 +359,7 @@ export default function CardGenerator({ summary }: Props) {
                     type="button"
                     onClick={handleDownload}
                     disabled={!previewUrl}
-                    className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:brightness-110 transition-all disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110 disabled:opacity-50"
                   >
                     <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
                     Download PNG
@@ -297,11 +367,10 @@ export default function CardGenerator({ summary }: Props) {
                 </div>
               </div>
             </div>
-            {/* Hidden container for rendering the card */}
+
             <div className="fixed left-[-9999px] top-[-9999px] overflow-hidden">
-              {/* Always render but keep hidden offscreen, so it's ready for capture */}
               <div className="block">
-                <BusinessCard ref={cardRef} summary={summary} config={config} />
+                <BusinessCard ref={cardRef} summary={summary} layout={layout} options={displayOptions} />
               </div>
             </div>
           </>
