@@ -1,4 +1,3 @@
-import LoginButton from "@/components/LoginButton";
 import SearchForm from "@/components/SearchForm";
 
 export default function HomePage() {
@@ -9,16 +8,6 @@ export default function HomePage() {
         <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-accent opacity-10 blur-[100px] animate-pulse-slow" />
         <div className="absolute top-[20%] -right-[10%] w-[40%] h-[40%] rounded-full bg-success opacity-5 blur-[100px] animate-pulse-slow" style={{ animationDelay: '1s' }} />
       </div>
-
-      {/* Header */}
-      <header className="border-b border-card-border/50 bg-background/50 backdrop-blur-md px-6 py-4 sticky top-0 z-50 transition-all duration-300">
-        <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <h1 className="text-lg font-semibold text-foreground tracking-tight hover:text-accent transition-colors cursor-default">
-            GitHub User Summary
-          </h1>
-          <LoginButton />
-        </div>
-      </header>
 
       {/* Hero */}
       <main className="flex flex-1 flex-col items-center justify-center px-4 relative z-10">

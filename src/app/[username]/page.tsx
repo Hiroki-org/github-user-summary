@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { notFound } from "next/navigation";
 
@@ -7,8 +6,6 @@ import { authOptions } from "@/lib/auth";
 import { fetchUserSummary } from "@/lib/github";
 import { UserNotFoundError } from "@/lib/types";
 
-import LoginButton from "@/components/LoginButton";
-import SearchForm from "@/components/SearchForm";
 import ShareButtons from "@/components/ShareButtons";
 import CardGenerator from "@/components/CardGenerator";
 import ProfileCard from "@/components/ProfileCard";
@@ -19,6 +16,7 @@ import ActivityCard from "@/components/ActivityCard";
 import InterestsCard from "@/components/InterestsCard";
 import AnimatedWrapper from "@/components/AnimatedWrapper";
 import ThemeController from "@/components/ThemeController";
+import MyPageBanner from "@/components/MyPageBanner";
 
 type Props = {
   params: Promise<{ username: string }>;
@@ -70,24 +68,6 @@ export default async function UserPage({ params }: Props) {
         <div className="absolute top-[40%] -left-[10%] w-[50%] h-[50%] rounded-full bg-success opacity-5 blur-[120px] animate-pulse-slow" style={{ animationDelay: '2s' }} />
       </div>
 
-      {/* Header */}
-      <header className="border-b border-card-border/50 bg-background/50 backdrop-blur-md px-6 py-4 sticky top-0 z-50">
-        <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <Link
-            href="/"
-            className="text-lg font-semibold text-foreground hover:text-accent transition-colors"
-          >
-            GitHub User Summary
-          </Link>
-          <div className="flex items-center gap-4">
-            <div className="hidden sm:block">
-               <SearchForm />
-            </div>
-            <LoginButton />
-          </div>
-        </div>
-      </header>
-
       {/* Main */}
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 relative z-10 animate-fade-in">
         {/* Errors */}
@@ -103,6 +83,8 @@ export default async function UserPage({ params }: Props) {
             ))}
           </div>
         )}
+
+        <MyPageBanner username={username} />
 
         {/* Share */}
         <div className="mb-6 flex justify-end items-center gap-3 animate-fade-in" style={{ animationDelay: '0.2s' }}>

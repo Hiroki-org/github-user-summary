@@ -82,6 +82,25 @@ export type UserSummary = {
   errors: { section: string; message: string }[];
 };
 
+export type YearInReviewData = {
+  year: number;
+  totalContributions: number;
+  totalCommits: number;
+  totalPRs: number;
+  totalIssues: number;
+  totalReviews: number;
+  mostActiveDay: string;
+  mostActiveHour: number;
+  topRepository: {
+    name: string;
+    contributions: number;
+  } | null;
+  contributionCalendar: {
+    date: string;
+    count: number;
+  }[];
+};
+
 export type CardBlockId = "avatar" | "bio" | "stats" | "topLanguages" | "topRepos";
 
 export type CardBlock = {
