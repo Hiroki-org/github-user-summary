@@ -332,14 +332,14 @@ export default function CardGenerator({ summary }: Props) {
                       onClick={() => setActiveTab("settings")}
                       className={`rounded-md px-3 py-1.5 text-sm transition-colors ${activeTab === "settings" ? "bg-accent text-white" : "bg-background text-muted hover:text-foreground"}`}
                     >
-                      表示設定
+                      Display Settings
                     </button>
                     <button
                       type="button"
                       onClick={() => setActiveTab("layout")}
                       className={`rounded-md px-3 py-1.5 text-sm transition-colors ${activeTab === "layout" ? "bg-accent text-white" : "bg-background text-muted hover:text-foreground"}`}
                     >
-                      レイアウト編集
+                      Edit Layout
                     </button>
                   </div>
 
