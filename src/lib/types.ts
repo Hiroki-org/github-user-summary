@@ -1,4 +1,4 @@
-// ===== GitHub User Summary 共通型定義 =====
+// ===== GitHub User Summary Common Type Definitions =====
 
 export type UserProfile = {
   login: string;
@@ -136,7 +136,7 @@ export const DEFAULT_CARD_LAYOUT: CardLayout = {
   ],
 };
 
-// ===== カスタムエラー =====
+// ===== Custom Errors =====
 
 export class UserNotFoundError extends Error {
   constructor(username: string) {

@@ -17,7 +17,7 @@ import {
   GitHubApiError,
 } from "./types";
 
-// ===== ヘルパー =====
+// ===== Helpers =====
 
 const GITHUB_API = "https://api.github.com";
 const GITHUB_GRAPHQL = "https://api.github.com/graphql";
@@ -83,7 +83,7 @@ async function graphql<T>(query: string, token?: string, variables?: Record<stri
   return json.data;
 }
 
-// ===== REST ヘルパー =====
+// ===== REST Helpers =====
 
 async function restGet<T>(path: string, token?: string): Promise<T> {
   const res = await fetch(`${GITHUB_API}${path}`, {
@@ -130,10 +130,10 @@ type PinnedItemsResponse = {
 };
 
 /**
- * Task④: ユーザープロフィール・組織・ピン留めリポジトリを取得
+ * Task 4: Fetch user profile, organizations, and pinned repositories
  * REST /users/:username + /users/:username/orgs + GraphQL pinnedItems
- * @throws {UserNotFoundError} ユーザーが存在しない場合
- * @throws {RateLimitError} APIレート制限に達した場合
+ * @throws {UserNotFoundError} If user is not found
+ * @throws {RateLimitError} If API rate limit is exceeded
  */
 export async function fetchUserProfile(
   username: string,
@@ -155,7 +155,7 @@ export async function fetchUserProfile(
     }
   }`;
 
-  // REST は認証なしでも可，GraphQL は token 必須
+  // REST works without auth, but GraphQL requires token
   const profilePromise = restGet<GitHubUser>(`/users/${encodeURIComponent(username)}`, token);
   const orgsPromise = restGet<GitHubOrg[]>(`/users/${encodeURIComponent(username)}/orgs`, token);
   const pinnedPromise = token
@@ -234,16 +234,16 @@ type RepositoriesResponse = {
 };
 
 /**
- * Task⑤: リポジトリ一覧・言語統計・トップリポジトリを取得
- * 認証時: GraphQL (言語バイト数ベース), 未認証時: REST フォールバック
- * @throws {UserNotFoundError} ユーザーが存在しない場合
- * @throws {RateLimitError} APIレート制限に達した場合
+ * Task 5: Fetch repositories, language stats, and top repos
+ * Authenticated: GraphQL (language bytes), Unauthenticated: REST fallback
+ * @throws {UserNotFoundError} If user is not found
+ * @throws {RateLimitError} If API rate limit is exceeded
  */
 export async function fetchRepositories(
   username: string,
   token?: string
 ): Promise<RepositoryData> {
-  // GraphQL は認証必須。token がない場合は REST フォールバック
+  // GraphQL requires auth. Fallback to REST if no token
   if (!token) {
     return fetchRepositoriesREST(username);
   }
@@ -302,7 +302,7 @@ async function fetchRepositoriesREST(username: string): Promise<RepositoryData> 
   );
 
   const nonFork = repos.filter((r) => !r.fork);
-  // REST API は言語のバイト数を提供しないため、リポジトリ数を代用
+  // REST API does not provide language byte count, use repo count instead
   const languageRepoCount = new Map<string, number>();
   const topicCountMap = new Map<string, number>();
 
@@ -421,19 +421,19 @@ type ContributionsResponse = {
 };
 
 /**
- * Task⑥: 過去1年間のコントリビューション統計を取得
- * GraphQL contributionsCollection (認証必須)
- * コミット・PR・Issue・レビュー数 + 日別カレンダーデータ
- * @throws {GitHubApiError} 認証トークンがない場合
- * @throws {UserNotFoundError} ユーザーが見つからない場合
- * @throws {RateLimitError} APIレート制限に達した場合
+ * Task 6: Fetch contribution stats for the past year
+ * GraphQL contributionsCollection (auth required)
+ * Commits, PRs, issues, reviews + daily calendar data
+ * @throws {GitHubApiError} If auth token is missing
+ * @throws {UserNotFoundError} If user is not found
+ * @throws {RateLimitError} If API rate limit is exceeded
  */
 export async function fetchContributions(
   username: string,
   token?: string
 ): Promise<ContributionData> {
   if (!token) {
-    // GraphQL 必須なので、token なしの場合はデフォルト値を返す
+    // GraphQL is required, return default values if no token
     throw new GitHubApiError("Contributions data requires authentication", 401);
   }
 
@@ -542,10 +542,10 @@ type StarredRepo = {
 };
 
 /**
- * Task⑫: starred リポジトリから興味分野を推定
- * REST /users/:username/starred (最大200件, topics/language 集計)
- * @throws {UserNotFoundError} ユーザーが見つからない場合
- * @throws {RateLimitError} APIレート制限に達した場合
+ * Task 12: Estimate interests from starred repositories
+ * REST /users/:username/starred (max 200, topics/language aggregate)
+ * @throws {UserNotFoundError} If user is not found
+ * @throws {RateLimitError} If API rate limit is exceeded
  */
 export async function fetchStarredRepos(
   username: string,
@@ -615,11 +615,11 @@ type GitHubEvent = {
 };
 
 /**
- * Task⑦: アクティビティヒートマップ・イベント内訳を取得
- * REST /users/:username/events/public (最大3ページ)
- * 曜日×時間帯の7×24ヒートマップ + イベント種別集計
- * @throws {UserNotFoundError} ユーザーが見つからない場合
- * @throws {RateLimitError} APIレート制限に達した場合
+ * Task 7: Fetch activity heatmap and event breakdown
+ * REST /users/:username/events/public (max 3 pages)
+ * 7x24 heatmap of day x hour + event type aggregate
+ * @throws {UserNotFoundError} If user is not found
+ * @throws {RateLimitError} If API rate limit is exceeded
  */
 export async function fetchActivity(
   username: string,
@@ -647,7 +647,7 @@ export async function fetchActivity(
     }
   }
 
-  // 曜日×時間帯ヒートマップ (7×24)
+  // Day x Hour Heatmap (7x24)
   const heatmap: number[][] = Array.from({ length: 7 }, () =>
     Array.from({ length: 24 }, () => 0)
   );
@@ -677,9 +677,9 @@ export async function fetchActivity(
 // ===== 6. fetchUserSummary =====
 
 /**
- * 全セクションを並行取得し、UserSummary として集約
- * Promise.allSettled で部分失敗に対応（profile 404 のみ再スロー）
- * @throws {UserNotFoundError} プロフィールが404の場合
+ * Fetch all sections in parallel and aggregate as UserSummary
+ * Use Promise.allSettled to handle partial failures (re-throw only profile 404)
+ * @throws {UserNotFoundError} If profile is 404
  */
 export async function fetchUserSummary(
   username: string,
@@ -704,7 +704,7 @@ export async function fetchUserSummary(
     return null;
   });
 
-  // profileが404の場合はUserNotFoundErrorを再スロー
+  // Re-throw UserNotFoundError if profile is 404
   if (results[0].status === "rejected" && results[0].reason instanceof UserNotFoundError) {
     throw results[0].reason;
   }
@@ -719,7 +719,7 @@ export async function fetchUserSummary(
   };
 }
 
-// ===== ユーティリティ =====
+// ===== Utilities =====
 
 function getLanguageColor(language: string): string {
   const colors: Record<string, string> = {

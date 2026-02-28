@@ -29,17 +29,17 @@ type Props = {
 const CONTAINERS: CardBlock["column"][] = ["left", "right", "full"];
 
 const BLOCK_LABELS: Record<CardBlockId, string> = {
-  avatar: "アバター",
+  avatar: "Avatar",
   bio: "Bio",
-  stats: "統計情報",
-  topLanguages: "トップ言語",
-  topRepos: "トップリポジトリ",
+  stats: "Stats",
+  topLanguages: "Top Languages",
+  topRepos: "Top Repositories",
 };
 
 const CONTAINER_LABELS: Record<CardBlock["column"], string> = {
-  left: "左カラム",
-  right: "右カラム",
-  full: "フルワイド",
+  left: "Left Column",
+  right: "Right Column",
+  full: "Full Width",
 };
 
 function toTransformStyle(
@@ -128,7 +128,7 @@ function SortableBlock({
           {BLOCK_LABELS[block.id]}
         </button>
         <label className="flex items-center gap-2 text-xs text-muted">
-          表示
+          Visible
           <input
             type="checkbox"
             checked={block.visible}
@@ -173,7 +173,7 @@ function ColumnDropZone({
           ))}
         </SortableContext>
         {blocks.length === 0 && (
-          <p className="text-xs text-muted">ここにドロップ</p>
+          <p className="text-xs text-muted">Drop here</p>
         )}
       </div>
     </div>
