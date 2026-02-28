@@ -6,7 +6,13 @@ import type { CardData } from "@/lib/cardDataFetcher";
 
 export type CardFormat = "png" | "svg";
 export type CardTheme = "light" | "dark";
-export type CardBlockType = "bio" | "stats" | "langs" | "repos" | "streak" | "heatmap";
+export type CardBlockType =
+  | "bio"
+  | "stats"
+  | "langs"
+  | "repos"
+  | "streak"
+  | "heatmap";
 export type CardLayoutSlot = "left" | "right" | "full";
 
 export type CardRenderOptions = {
@@ -30,7 +36,14 @@ type ThemePalette = {
 };
 
 const DEFAULT_BLOCKS: CardBlockType[] = ["bio", "stats", "langs"];
-const VALID_BLOCKS: CardBlockType[] = ["bio", "stats", "langs", "repos", "streak", "heatmap"];
+const VALID_BLOCKS: CardBlockType[] = [
+  "bio",
+  "stats",
+  "langs",
+  "repos",
+  "streak",
+  "heatmap",
+];
 const VALID_LAYOUT_SLOTS: CardLayoutSlot[] = ["left", "right", "full"];
 
 const themes: Record<CardTheme, ThemePalette> = {
@@ -54,16 +67,28 @@ const themes: Record<CardTheme, ThemePalette> = {
   },
 };
 
-const DEFAULT_FONT_URL = "https://raw.githubusercontent.com/googlefonts/noto-fonts/main/hinted/ttf/NotoSans/NotoSans-Regular.ttf";
-const fontDataPromise: Promise<ArrayBuffer> = fetch(DEFAULT_FONT_URL, {
-  cache: "force-cache",
-})
-  .then((response) => {
-    if (!response.ok) {
-      throw new Error("Failed to load default font");
-    }
-    return response.arrayBuffer();
-  });
+const DEFAULT_FONT_URL =
+  "https://cdn.jsdelivr.net/gh/googlefonts/noto-fonts@main/hinted/ttf/NotoSans/NotoSans-Regular.ttf";
+
+const fontCache = new Map<string, Promise<ArrayBuffer>>();
+
+function getFontData(fontUrl?: string): Promise<ArrayBuffer> {
+  const targetUrl = fontUrl ?? DEFAULT_FONT_URL;
+
+  if (!fontCache.has(targetUrl)) {
+    fontCache.set(
+      targetUrl,
+      fetch(targetUrl, { cache: "force-cache" }).then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to load default font");
+        }
+        return response.arrayBuffer();
+      }),
+    );
+  }
+
+  return fontCache.get(targetUrl)!;
+}
 
 function toList(csv: string | null): string[] {
   if (!csv) {
@@ -105,15 +130,22 @@ function parseBlocks(raw: string | null): CardBlockType[] {
   return unique.length > 0 ? unique : DEFAULT_BLOCKS;
 }
 
-function parseLayout(raw: string | null): Partial<Record<CardBlockType, CardLayoutSlot>> {
+function parseLayout(
+  raw: string | null,
+): Partial<Record<CardBlockType, CardLayoutSlot>> {
   const result: Partial<Record<CardBlockType, CardLayoutSlot>> = {};
   if (!raw) {
     return result;
   }
 
-  const pairs = raw.split(",").map((item) => item.trim()).filter(Boolean);
+  const pairs = raw
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
   for (const pair of pairs) {
-    const [slot, block] = pair.split(":").map((value) => value?.trim().toLowerCase());
+    const [slot, block] = pair
+      .split(":")
+      .map((value) => value?.trim().toLowerCase());
     if (!slot || !block) {
       continue;
     }
@@ -129,7 +161,9 @@ function parseLayout(raw: string | null): Partial<Record<CardBlockType, CardLayo
   return result;
 }
 
-export function parseCardQueryParams(searchParams: URLSearchParams): CardRenderOptions {
+export function parseCardQueryParams(
+  searchParams: URLSearchParams,
+): CardRenderOptions {
   const format = searchParams.get("format") === "svg" ? "svg" : "png";
   const theme = searchParams.get("theme") === "dark" ? "dark" : "light";
   const cols = searchParams.get("cols") === "2" ? 2 : 1;
@@ -194,17 +228,29 @@ export function resolveBlockLayout(options: CardRenderOptions): {
   return { full, left, right };
 }
 
-function estimateHeight(options: CardRenderOptions, layout: { full: CardBlockType[]; left: CardBlockType[]; right: CardBlockType[] }): number {
+function estimateHeight(
+  options: CardRenderOptions,
+  layout: {
+    full: CardBlockType[];
+    left: CardBlockType[];
+    right: CardBlockType[];
+  },
+): number {
   const base = 130;
   const rowHeight = 95;
   if (options.cols === 1) {
     return Math.min(900, Math.max(300, base + layout.full.length * rowHeight));
   }
-  const rows = layout.full.length + Math.max(layout.left.length, layout.right.length);
+  const rows =
+    layout.full.length + Math.max(layout.left.length, layout.right.length);
   return Math.min(900, Math.max(320, base + rows * rowHeight));
 }
 
-function levelColor(count: number, maxCount: number, theme: ThemePalette): string {
+function levelColor(
+  count: number,
+  maxCount: number,
+  theme: ThemePalette,
+): string {
   if (count <= 0 || maxCount <= 0) {
     return theme.border;
   }
@@ -223,7 +269,14 @@ function createBlock(
 ): ReactElement {
   if (block === "bio") {
     return (
-      <div style={{ display: "flex", flexDirection: "row", gap: 14, alignItems: "center" }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          gap: 14,
+          alignItems: "center",
+        }}
+      >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={data.profile.avatarUrl}
@@ -233,11 +286,17 @@ function createBlock(
           alt="avatar"
         />
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <div style={{ color: theme.text, fontSize: 22, fontWeight: 700 }}>{data.profile.name}</div>
-          <div style={{ color: theme.subtext, fontSize: 14 }}>@{data.profile.login}</div>
+          <div style={{ color: theme.text, fontSize: 22, fontWeight: 700 }}>
+            {data.profile.name}
+          </div>
+          <div style={{ color: theme.subtext, fontSize: 14 }}>
+            @{data.profile.login}
+          </div>
           {data.profile.bio ? (
             <div style={{ color: theme.subtext, fontSize: 13, maxWidth: 470 }}>
-              {data.profile.bio.length > 110 ? `${data.profile.bio.slice(0, 110)}...` : data.profile.bio}
+              {data.profile.bio.length > 110
+                ? `${data.profile.bio.slice(0, 110)}...`
+                : data.profile.bio}
             </div>
           ) : null}
         </div>
@@ -248,12 +307,24 @@ function createBlock(
   if (block === "stats") {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <div style={{ color: theme.text, fontSize: 16, fontWeight: 700 }}>Stats</div>
-        <div style={{ display: "flex", flexDirection: "row", gap: 14, color: theme.subtext, fontSize: 14 }}>
+        <div style={{ color: theme.text, fontSize: 16, fontWeight: 700 }}>
+          Stats
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            gap: 14,
+            color: theme.subtext,
+            fontSize: 14,
+          }}
+        >
           <div>Followers: {data.profile.followers.toLocaleString()}</div>
           <div>Following: {data.profile.following.toLocaleString()}</div>
           <div>Repos: {data.profile.publicRepos.toLocaleString()}</div>
-          {!hide.has("stars") ? <div>Stars: {data.totalStars.toLocaleString()}</div> : null}
+          {!hide.has("stars") ? (
+            <div>Stars: {data.totalStars.toLocaleString()}</div>
+          ) : null}
         </div>
       </div>
     );
@@ -262,9 +333,20 @@ function createBlock(
   if (block === "langs") {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-        <div style={{ color: theme.text, fontSize: 16, fontWeight: 700 }}>Top Languages</div>
+        <div style={{ color: theme.text, fontSize: 16, fontWeight: 700 }}>
+          Top Languages
+        </div>
         {data.languages.slice(0, 4).map((lang) => (
-          <div key={lang.name} style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", fontSize: 13, color: theme.subtext }}>
+          <div
+            key={lang.name}
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              justifyContent: "space-between",
+              fontSize: 13,
+              color: theme.subtext,
+            }}
+          >
             <span>{lang.name}</span>
             <span>{lang.percentage.toFixed(1)}%</span>
           </div>
@@ -276,9 +358,20 @@ function createBlock(
   if (block === "repos") {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-        <div style={{ color: theme.text, fontSize: 16, fontWeight: 700 }}>Top Repositories</div>
+        <div style={{ color: theme.text, fontSize: 16, fontWeight: 700 }}>
+          Top Repositories
+        </div>
         {data.repos.slice(0, 3).map((repo) => (
-          <div key={repo.name} style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", fontSize: 13, color: theme.subtext }}>
+          <div
+            key={repo.name}
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              justifyContent: "space-between",
+              fontSize: 13,
+              color: theme.subtext,
+            }}
+          >
             <span>{repo.name}</span>
             <span>
               {!hide.has("stars") ? `★${repo.stars}` : ""}
@@ -294,8 +387,18 @@ function createBlock(
   if (block === "streak") {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <div style={{ color: theme.text, fontSize: 16, fontWeight: 700 }}>Streak</div>
-        <div style={{ display: "flex", flexDirection: "row", gap: 16, color: theme.subtext, fontSize: 13 }}>
+        <div style={{ color: theme.text, fontSize: 16, fontWeight: 700 }}>
+          Streak
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            gap: 16,
+            color: theme.subtext,
+            fontSize: 13,
+          }}
+        >
           <span>Current: {data.streak.current} days</span>
           <span>Longest: {data.streak.longest} days</span>
         </div>
@@ -311,10 +414,15 @@ function createBlock(
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ color: theme.text, fontSize: 16, fontWeight: 700 }}>Heatmap</div>
+      <div style={{ color: theme.text, fontSize: 16, fontWeight: 700 }}>
+        Heatmap
+      </div>
       <div style={{ display: "flex", flexDirection: "row", gap: 4 }}>
         {columns.map((column, colIndex) => (
-          <div key={`col-${colIndex}`} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <div
+            key={`col-${colIndex}`}
+            style={{ display: "flex", flexDirection: "column", gap: 4 }}
+          >
             {column.map((day) => (
               <div
                 key={day.date}
@@ -322,7 +430,11 @@ function createBlock(
                   width: 10,
                   height: 10,
                   borderRadius: 2,
-                  backgroundColor: levelColor(day.count, data.heatmap.maxCount, theme),
+                  backgroundColor: levelColor(
+                    day.count,
+                    data.heatmap.maxCount,
+                    theme,
+                  ),
                 }}
               />
             ))}
@@ -333,7 +445,10 @@ function createBlock(
   );
 }
 
-function blockContainer(theme: ThemePalette, child: ReactElement): ReactElement {
+function blockContainer(
+  theme: ThemePalette,
+  child: ReactElement,
+): ReactElement {
   return (
     <div
       style={{
@@ -350,13 +465,23 @@ function blockContainer(theme: ThemePalette, child: ReactElement): ReactElement 
   );
 }
 
-function cardTree(data: CardData, options: CardRenderOptions, height: number): ReactElement {
+function cardTree(
+  data: CardData,
+  options: CardRenderOptions,
+  height: number,
+): ReactElement {
   const theme = themes[options.theme];
   const layout = resolveBlockLayout(options);
 
-  const fullBlocks = layout.full.map((block) => blockContainer(theme, createBlock(block, data, theme, options.hide)));
-  const leftBlocks = layout.left.map((block) => blockContainer(theme, createBlock(block, data, theme, options.hide)));
-  const rightBlocks = layout.right.map((block) => blockContainer(theme, createBlock(block, data, theme, options.hide)));
+  const fullBlocks = layout.full.map((block) =>
+    blockContainer(theme, createBlock(block, data, theme, options.hide)),
+  );
+  const leftBlocks = layout.left.map((block) =>
+    blockContainer(theme, createBlock(block, data, theme, options.hide)),
+  );
+  const rightBlocks = layout.right.map((block) =>
+    blockContainer(theme, createBlock(block, data, theme, options.hide)),
+  );
 
   return (
     <div
@@ -371,24 +496,68 @@ function cardTree(data: CardData, options: CardRenderOptions, height: number): R
         color: theme.text,
       }}
     >
-      <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ fontSize: 17, fontWeight: 700 }}>{data.profile.login}</div>
-        <div style={{ fontSize: 12, color: theme.subtext }}>github-user-summary</div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <div style={{ fontSize: 17, fontWeight: 700 }}>
+          {data.profile.login}
+        </div>
+        <div style={{ fontSize: 12, color: theme.subtext }}>
+          github-user-summary
+        </div>
       </div>
 
-      {fullBlocks.length > 0 ? <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{fullBlocks}</div> : null}
+      {fullBlocks.length > 0 ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {fullBlocks}
+        </div>
+      ) : null}
 
       {options.cols === 2 ? (
-        <div style={{ display: "flex", flexDirection: "row", gap: 10, alignItems: "stretch" }}>
-          <div style={{ display: "flex", flexDirection: "column", flex: 1, gap: 10 }}>{leftBlocks}</div>
-          <div style={{ display: "flex", flexDirection: "column", flex: 1, gap: 10 }}>{rightBlocks}</div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            gap: 10,
+            alignItems: "stretch",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              flex: 1,
+              gap: 10,
+            }}
+          >
+            {leftBlocks}
+          </div>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              flex: 1,
+              gap: 10,
+            }}
+          >
+            {rightBlocks}
+          </div>
         </div>
       ) : null}
     </div>
   );
 }
 
-function errorTree(message: string, options: CardRenderOptions, height: number): ReactElement {
+function errorTree(
+  message: string,
+  options: CardRenderOptions,
+  height: number,
+): ReactElement {
   const theme = themes[options.theme];
   return (
     <div
@@ -407,13 +576,20 @@ function errorTree(message: string, options: CardRenderOptions, height: number):
       }}
     >
       <div style={{ fontSize: 28, fontWeight: 700 }}>{message}</div>
-      <div style={{ fontSize: 13, color: theme.subtext }}>github-user-summary card endpoint</div>
+      <div style={{ fontSize: 13, color: theme.subtext }}>
+        github-user-summary card endpoint
+      </div>
     </div>
   );
 }
 
-async function renderSvg(element: ReactElement, width: number, height: number): Promise<string> {
-  const fontData = await fontDataPromise;
+async function renderSvg(
+  element: ReactElement,
+  width: number,
+  height: number,
+  fontUrl?: string,
+): Promise<string> {
+  const fontData = await getFontData(fontUrl);
   return satori(element, {
     width,
     height,
@@ -432,13 +608,14 @@ export async function renderCardResponse(args: {
   data: CardData;
   options: CardRenderOptions;
   cacheControl: string;
+  fontUrl?: string;
 }): Promise<Response> {
   const layout = resolveBlockLayout(args.options);
   const height = estimateHeight(args.options, layout);
   const element = cardTree(args.data, args.options, height);
 
   if (args.options.format === "svg") {
-    const svg = await renderSvg(element, args.options.width, height);
+    const svg = await renderSvg(element, args.options.width, height, args.fontUrl);
     return new Response(svg, {
       headers: {
         "Content-Type": "image/svg+xml; charset=utf-8",
@@ -461,12 +638,13 @@ export async function renderErrorCardResponse(args: {
   options: CardRenderOptions;
   status: number;
   cacheControl: string;
+  fontUrl?: string;
 }): Promise<Response> {
   const height = 260;
   const element = errorTree(args.message, args.options, height);
 
   if (args.options.format === "svg") {
-    const svg = await renderSvg(element, args.options.width, height);
+    const svg = await renderSvg(element, args.options.width, height, args.fontUrl);
     return new Response(svg, {
       status: args.status,
       headers: {

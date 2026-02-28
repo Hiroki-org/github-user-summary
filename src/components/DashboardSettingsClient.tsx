@@ -68,7 +68,10 @@ export default function DashboardSettingsClient() {
       return "";
     }
 
-    const blockMap: Record<CardBlockId, "bio" | "stats" | "langs" | "repos" | null> = {
+    const blockMap: Record<
+      CardBlockId,
+      "bio" | "stats" | "langs" | "repos" | null
+    > = {
       avatar: null,
       bio: "bio",
       stats: "stats",
@@ -79,9 +82,13 @@ export default function DashboardSettingsClient() {
     const selected = layout.blocks
       .filter((block) => block.visible)
       .map((block) => blockMap[block.id])
-      .filter((block): block is "bio" | "stats" | "langs" | "repos" => Boolean(block));
+      .filter((block): block is "bio" | "stats" | "langs" | "repos" =>
+        Boolean(block),
+      );
 
-    const selectedBlocks: Array<"bio" | "stats" | "langs" | "repos" | "streak" | "heatmap"> = [...selected];
+    const selectedBlocks: Array<
+      "bio" | "stats" | "langs" | "repos" | "streak" | "heatmap"
+    > = [...selected];
 
     if (includeStreak) {
       selectedBlocks.push("streak");
@@ -116,7 +123,10 @@ export default function DashboardSettingsClient() {
     params.set("format", "png");
     params.set("theme", readmeTheme);
     params.set("cols", String(readmeCols));
-    params.set("blocks", uniqueBlocks.length > 0 ? uniqueBlocks.join(",") : "bio,stats,langs");
+    params.set(
+      "blocks",
+      uniqueBlocks.length > 0 ? uniqueBlocks.join(",") : "bio,stats,langs",
+    );
     if (layoutParts.length > 0) {
       params.set("layout", layoutParts.join(","));
     }
@@ -127,7 +137,16 @@ export default function DashboardSettingsClient() {
 
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     return `${origin}/api/card/${encodeURIComponent(username)}?${params.toString()}`;
-  }, [session?.user?.login, layout.blocks, options.showContributionBreakdown, options.showActivityBreakdown, readmeTheme, readmeCols, includeStreak, includeHeatmap]);
+  }, [
+    session?.user?.login,
+    layout.blocks,
+    options.showContributionBreakdown,
+    options.showActivityBreakdown,
+    readmeTheme,
+    readmeCols,
+    includeStreak,
+    includeHeatmap,
+  ]);
 
   const onCopyReadmeUrl = async () => {
     if (!readmeUrl) {
@@ -197,7 +216,9 @@ export default function DashboardSettingsClient() {
             <span>Theme</span>
             <select
               value={readmeTheme}
-              onChange={(event) => setReadmeTheme(event.target.value === "dark" ? "dark" : "light")}
+              onChange={(event) =>
+                setReadmeTheme(event.target.value === "dark" ? "dark" : "light")
+              }
               className="rounded-md border border-card-border bg-background px-2 py-1 text-foreground"
             >
               <option value="light">light</option>
@@ -208,7 +229,9 @@ export default function DashboardSettingsClient() {
             <span>Columns</span>
             <select
               value={readmeCols}
-              onChange={(event) => setReadmeCols(event.target.value === "2" ? 2 : 1)}
+              onChange={(event) =>
+                setReadmeCols(event.target.value === "2" ? 2 : 1)
+              }
               className="rounded-md border border-card-border bg-background px-2 py-1 text-foreground"
             >
               <option value={1}>1</option>
@@ -217,11 +240,19 @@ export default function DashboardSettingsClient() {
           </label>
           <label className="flex items-center justify-between rounded-md border border-card-border px-3 py-2 text-sm text-muted">
             <span>Include streak</span>
-            <input type="checkbox" checked={includeStreak} onChange={(e) => setIncludeStreak(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={includeStreak}
+              onChange={(e) => setIncludeStreak(e.target.checked)}
+            />
           </label>
           <label className="flex items-center justify-between rounded-md border border-card-border px-3 py-2 text-sm text-muted">
             <span>Include heatmap</span>
-            <input type="checkbox" checked={includeHeatmap} onChange={(e) => setIncludeHeatmap(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={includeHeatmap}
+              onChange={(e) => setIncludeHeatmap(e.target.checked)}
+            />
           </label>
         </div>
 
@@ -235,9 +266,11 @@ export default function DashboardSettingsClient() {
             onClick={onCopyReadmeUrl}
             className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
           >
-            URL をコピー
+            Copy URL
           </button>
-          {copyState ? <span className="text-sm text-success">{copyState}</span> : null}
+          {copyState ? (
+            <span className="text-sm text-success">{copyState}</span>
+          ) : null}
         </div>
       </section>
 
