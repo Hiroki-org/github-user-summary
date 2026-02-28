@@ -16,7 +16,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "GitHub User Summary",
-  description: "Visualize any GitHub user's profile, skills, contributions, and activity at a glance.",
+  description:
+    "Visualize any GitHub user's profile, skills, contributions, and activity at a glance.",
 };
 
 export default function RootLayout({

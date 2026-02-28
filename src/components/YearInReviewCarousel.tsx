@@ -15,7 +15,8 @@ export default function YearInReviewCarousel({ data }: Props) {
       {
         key: "summary",
         title: "Your Year at a Glance",
-        caption: "A compact view of your coding momentum and contribution profile.",
+        caption:
+          "A compact view of your coding momentum and contribution profile.",
       },
       {
         key: "focus",
@@ -30,7 +31,7 @@ export default function YearInReviewCarousel({ data }: Props) {
         caption: `Most active on ${data.mostActiveDay} around ${data.mostActiveHour}:00 UTC.`,
       },
     ],
-    [data]
+    [data],
   );
 
   const [index, setIndex] = useState(0);
@@ -47,7 +48,11 @@ export default function YearInReviewCarousel({ data }: Props) {
 
   return (
     <section className="space-y-4">
-      <YearInReviewSlide title={current.title} caption={current.caption} data={data} />
+      <YearInReviewSlide
+        title={current.title}
+        caption={current.caption}
+        data={data}
+      />
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           {slides.map((slide, slideIndex) => (

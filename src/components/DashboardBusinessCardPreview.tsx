@@ -12,11 +12,16 @@ type Props = {
 
 export default function DashboardBusinessCardPreview({ summary }: Props) {
   const [layout] = useState<CardLayout>(() => loadCardSettings().layout);
-  const [options] = useState<CardDisplayOptions>(() => loadCardSettings().options);
+  const [options] = useState<CardDisplayOptions>(
+    () => loadCardSettings().options,
+  );
 
   return (
     <div className="overflow-hidden rounded-xl border border-card-border bg-card-bg p-4">
-      <div className="origin-top-left scale-[0.25]" style={{ width: "1200px", height: "630px" }}>
+      <div
+        className="origin-top-left scale-[0.25]"
+        style={{ width: "1200px", height: "630px" }}
+      >
         <BusinessCard summary={summary} layout={layout} options={options} />
       </div>
     </div>

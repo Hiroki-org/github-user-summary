@@ -3,8 +3,12 @@
 import { useState } from "react";
 
 import LayoutEditor from "@/components/LayoutEditor";
-import { getDefaultCardSettings, loadCardSettings, saveCardSettings } from "@/lib/cardSettings";
-import type { CardDisplayOptions, CardLayout } from "@/lib/types";
+import {
+  getDefaultCardSettings,
+  loadCardSettings,
+  saveCardSettings,
+} from "@/lib/cardSettings";
+import type { CardBlockId, CardDisplayOptions, CardLayout } from "@/lib/types";
 
 const toggles: Array<{ key: keyof CardDisplayOptions; label: string }> = [
   { key: "showCompany", label: "Company" },
@@ -20,8 +24,12 @@ const toggles: Array<{ key: keyof CardDisplayOptions; label: string }> = [
 ];
 
 export default function DashboardSettingsClient() {
-  const [layout, setLayout] = useState<CardLayout>(() => loadCardSettings().layout);
-  const [options, setOptions] = useState<CardDisplayOptions>(() => loadCardSettings().options);
+  const [layout, setLayout] = useState<CardLayout>(
+    () => loadCardSettings().layout,
+  );
+  const [options, setOptions] = useState<CardDisplayOptions>(
+    () => loadCardSettings().options,
+  );
   const [status, setStatus] = useState<string>("");
 
   const onSave = () => {
@@ -37,16 +45,33 @@ export default function DashboardSettingsClient() {
     setStatus("Reset to defaults.");
   };
 
+  const onToggleBlockVisibility = (blockId: CardBlockId) => {
+    setLayout((previous) => ({
+      ...previous,
+      blocks: previous.blocks.map((block) =>
+        block.id === blockId ? { ...block, visible: !block.visible } : block,
+      ),
+    }));
+  };
+
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold text-foreground">Card Settings</h1>
-        <p className="mt-2 text-sm text-muted">Customize which blocks appear and keep preferences in local storage.</p>
+        <h1 className="text-2xl font-semibold text-foreground">
+          Card Settings
+        </h1>
+        <p className="mt-2 text-sm text-muted">
+          Customize which blocks appear and keep preferences in local storage.
+        </p>
       </header>
 
       <section className="rounded-xl border border-card-border bg-card-bg p-5">
         <h2 className="mb-4 text-sm font-medium text-muted">Layout</h2>
-        <LayoutEditor value={layout} onChange={setLayout} />
+        <LayoutEditor
+          layout={layout}
+          onLayoutChange={setLayout}
+          onToggleBlockVisibility={onToggleBlockVisibility}
+        />
       </section>
 
       <section className="rounded-xl border border-card-border bg-card-bg p-5">
@@ -55,7 +80,10 @@ export default function DashboardSettingsClient() {
           {toggles.map((toggle) => {
             const checked = Boolean(options[toggle.key]);
             return (
-              <label key={toggle.key} className="flex items-center justify-between rounded-md border border-card-border px-3 py-2 text-sm text-muted">
+              <label
+                key={toggle.key}
+                className="flex items-center justify-between rounded-md border border-card-border px-3 py-2 text-sm text-muted"
+              >
                 <span>{toggle.label}</span>
                 <input
                   type="checkbox"

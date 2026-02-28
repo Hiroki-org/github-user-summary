@@ -21,13 +21,20 @@ export default function ActivityHeatmapGrid({ heatmap }: Props) {
         <div className="mb-3 grid grid-cols-[80px_repeat(24,minmax(0,1fr))] gap-1 text-[10px] text-muted">
           <span />
           {Array.from({ length: 24 }).map((_, hour) => (
-            <span key={hour} className="text-center">{hour}</span>
+            <span key={hour} className="text-center">
+              {hour}
+            </span>
           ))}
         </div>
         <div className="space-y-1">
           {heatmap.map((row, day) => (
-            <div key={weekdayLabels[day]} className="grid grid-cols-[80px_repeat(24,minmax(0,1fr))] gap-1">
-              <span className="pr-2 text-xs text-muted">{weekdayLabels[day]}</span>
+            <div
+              key={weekdayLabels[day]}
+              className="grid grid-cols-[80px_repeat(24,minmax(0,1fr))] gap-1"
+            >
+              <span className="pr-2 text-xs text-muted">
+                {weekdayLabels[day]}
+              </span>
               {row.map((value, hour) => (
                 <div
                   key={`${day}-${hour}`}

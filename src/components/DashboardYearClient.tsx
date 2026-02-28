@@ -24,7 +24,11 @@ export default function DashboardYearClient() {
   const { data, isLoading, error } = useYearInReview(resolvedYear);
 
   if (isLoading) {
-    return <div className="rounded-xl border border-card-border bg-card-bg p-8 text-muted">Loading year in review...</div>;
+    return (
+      <div className="rounded-xl border border-card-border bg-card-bg p-8 text-muted">
+        Loading year in review...
+      </div>
+    );
   }
 
   if (error || !data) {
@@ -38,9 +42,12 @@ export default function DashboardYearClient() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold text-foreground">Year in Review {data.year}</h1>
+        <h1 className="text-2xl font-semibold text-foreground">
+          Year in Review {data.year}
+        </h1>
         <p className="mt-2 text-sm text-muted">
-          Generated from GitHub GraphQL contributions and commit timing sampled via REST commits.
+          Generated from GitHub GraphQL contributions and commit timing sampled
+          via REST commits.
         </p>
       </header>
       <YearInReviewCarousel data={data} />

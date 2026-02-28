@@ -22,7 +22,10 @@ export default function MyPageBanner({ username }: Props) {
   return (
     <div className="mb-6 rounded-xl border border-accent/30 bg-accent/10 p-4 text-sm text-foreground">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-muted">This is your profile. Open your private dashboard for deeper insights and customization.</p>
+        <p className="text-sm text-muted">
+          This is your profile. Open your private dashboard for deeper insights
+          and customization.
+        </p>
         <Link
           href="/dashboard"
           className="inline-flex items-center justify-center rounded-md bg-accent px-4 py-2 font-medium text-white transition-colors hover:bg-accent-hover"

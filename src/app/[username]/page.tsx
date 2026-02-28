@@ -65,7 +65,10 @@ export default async function UserPage({ params }: Props) {
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none fixed">
         <div className="absolute -top-[10%] -right-[10%] w-[60%] h-[60%] rounded-full bg-accent opacity-5 blur-[120px] animate-pulse-slow" />
-        <div className="absolute top-[40%] -left-[10%] w-[50%] h-[50%] rounded-full bg-success opacity-5 blur-[120px] animate-pulse-slow" style={{ animationDelay: '2s' }} />
+        <div
+          className="absolute top-[40%] -left-[10%] w-[50%] h-[50%] rounded-full bg-success opacity-5 blur-[120px] animate-pulse-slow"
+          style={{ animationDelay: "2s" }}
+        />
       </div>
 
       {/* Main */}
@@ -87,7 +90,10 @@ export default async function UserPage({ params }: Props) {
         <MyPageBanner username={username} />
 
         {/* Share */}
-        <div className="mb-6 flex justify-end items-center gap-3 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+        <div
+          className="mb-6 flex justify-end items-center gap-3 animate-fade-in"
+          style={{ animationDelay: "0.2s" }}
+        >
           <CardGenerator summary={summary} />
           <ShareButtons username={username} />
         </div>
