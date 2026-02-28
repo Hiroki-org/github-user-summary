@@ -62,6 +62,7 @@ export type CardData = {
 };
 
 const GITHUB_API = "https://api.github.com";
+const GITHUB_TIMEOUT_MS = 8000;
 
 function getHeaders(): HeadersInit {
     const token = process.env.GITHUB_TOKEN?.trim();
@@ -76,10 +77,24 @@ function getHeaders(): HeadersInit {
 }
 
 async function getJson<T>(url: string): Promise<{ status: number; data: T | null }> {
-    const response = await fetch(url, {
-        headers: getHeaders(),
-        cache: "no-store",
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), GITHUB_TIMEOUT_MS);
+
+    let response: Response;
+    try {
+        response = await fetch(url, {
+            headers: getHeaders(),
+            cache: "no-store",
+            signal: controller.signal,
+        });
+    } catch (error) {
+        if ((error as Error).name === "AbortError") {
+            throw new GitHubApiError("GitHub API request timed out", 504);
+        }
+        throw error;
+    } finally {
+        clearTimeout(timeoutId);
+    }
 
     if (response.status === 404) {
         return { status: 404, data: null };
@@ -188,7 +203,7 @@ function buildStreak(days: { date: string; count: number }[]): { current: number
     for (let i = days.length - 1; i >= 0; i -= 1) {
         if (days[i].count > 0) {
             current += 1;
-        } else if (current > 0) {
+        } else {
             break;
         }
     }

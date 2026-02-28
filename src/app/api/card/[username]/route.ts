@@ -23,6 +23,7 @@ export async function GET(
                 options,
                 status: 404,
                 cacheControl: ERROR_CACHE,
+                fontUrl,
             });
         }
 

@@ -69,6 +69,7 @@ const themes: Record<CardTheme, ThemePalette> = {
 
 const DEFAULT_FONT_URL =
   "https://cdn.jsdelivr.net/gh/googlefonts/noto-fonts@main/hinted/ttf/NotoSans/NotoSans-Regular.ttf";
+const FONT_FETCH_TIMEOUT_MS = 5000;
 
 const fontCache = new Map<string, Promise<ArrayBuffer>>();
 
@@ -76,15 +77,28 @@ function getFontData(fontUrl?: string): Promise<ArrayBuffer> {
   const targetUrl = fontUrl ?? DEFAULT_FONT_URL;
 
   if (!fontCache.has(targetUrl)) {
-    fontCache.set(
-      targetUrl,
-      fetch(targetUrl, { cache: "force-cache" }).then((response) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), FONT_FETCH_TIMEOUT_MS);
+
+    const pending = fetch(targetUrl, {
+      cache: "force-cache",
+      signal: controller.signal,
+    })
+      .then((response) => {
         if (!response.ok) {
           throw new Error("Failed to load default font");
         }
         return response.arrayBuffer();
-      }),
-    );
+      })
+      .catch((error) => {
+        fontCache.delete(targetUrl);
+        throw error;
+      })
+      .finally(() => {
+        clearTimeout(timeoutId);
+      });
+
+    fontCache.set(targetUrl, pending);
   }
 
   return fontCache.get(targetUrl)!;
@@ -615,7 +629,12 @@ export async function renderCardResponse(args: {
   const element = cardTree(args.data, args.options, height);
 
   if (args.options.format === "svg") {
-    const svg = await renderSvg(element, args.options.width, height, args.fontUrl);
+    const svg = await renderSvg(
+      element,
+      args.options.width,
+      height,
+      args.fontUrl,
+    );
     return new Response(svg, {
       headers: {
         "Content-Type": "image/svg+xml; charset=utf-8",
@@ -644,7 +663,12 @@ export async function renderErrorCardResponse(args: {
   const element = errorTree(args.message, args.options, height);
 
   if (args.options.format === "svg") {
-    const svg = await renderSvg(element, args.options.width, height, args.fontUrl);
+    const svg = await renderSvg(
+      element,
+      args.options.width,
+      height,
+      args.fontUrl,
+    );
     return new Response(svg, {
       status: args.status,
       headers: {
