@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { FastAverageColor } from "fast-average-color";
 import { adjustAccentColor } from "@/lib/color";
+import { logger } from "@/lib/logger";
 
 type Props = {
   avatarUrl?: string;
@@ -36,7 +37,7 @@ export default function ThemeController({ avatarUrl, topLanguageColor }: Props) 
         }
       })
       .catch((e) => {
-        console.warn("Failed to extract color from avatar, keeping fallback color.", e);
+        logger.warn("Failed to extract color from avatar, keeping fallback color.", e);
       });
     }
 

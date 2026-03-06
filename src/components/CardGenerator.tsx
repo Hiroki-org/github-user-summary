@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { toPng, toBlob } from "html-to-image";
 
+import { logger } from "@/lib/logger";
 import type {
   CardBlockId,
   CardDisplayOptions,
@@ -130,7 +131,7 @@ export default function CardGenerator({ summary }: Props) {
       });
       return dataUrl;
     } catch (err) {
-      console.error("Failed to generate image", err);
+      logger.error("Failed to generate image", err);
       return null;
     }
   }, []);
@@ -173,7 +174,7 @@ export default function CardGenerator({ summary }: Props) {
             setPreviewUrl(url);
           }
         } catch (err) {
-          console.error("Failed to generate image", err);
+          logger.error("Failed to generate image", err);
           if (!isCancelled) {
             setPreviewUrl(null);
           }
@@ -229,7 +230,7 @@ export default function CardGenerator({ summary }: Props) {
       setCopyStatus("copied");
       setTimeout(() => setCopyStatus("idle"), 2000);
     } catch (err) {
-      console.error("Failed to copy", err);
+      logger.error("Failed to copy", err);
       setCopyStatus("error");
     }
   }, []);
