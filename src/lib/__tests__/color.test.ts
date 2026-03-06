@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { adjustAccentColor, type ColorResult } from "../color";
+import { adjustAccentColor } from "../color";
 
 /**
  * adjustAccentColor のユニットテスト

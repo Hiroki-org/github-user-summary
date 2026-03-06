@@ -25,7 +25,6 @@ type ColorInput = string | [number, number, number] | { r: number; g: number; b:
 
 function parseColor(color: ColorInput): Colord {
   let c: Colord;
-
   if (Array.isArray(color)) {
     c = colord({ r: color[0], g: color[1], b: color[2] });
   } else {
@@ -36,7 +35,6 @@ function parseColor(color: ColorInput): Colord {
   if (!c.isValid()) {
     return colord(DEFAULT_ACCENT_COLOR);
   }
-
   return c;
 }
 
@@ -62,16 +60,7 @@ function adjustLightness(c: Colord): Colord {
   return c;
 }
 
-/**
- * Adjusts the given color to be suitable for use as an accent color in a dark theme.
- * Ensures sufficient saturation and appropriate lightness.
- * @param color Hex string or RGB object/array
- */
-export function adjustAccentColor(color: string | [number, number, number] | { r: number; g: number; b: number }): ColorResult {
-  let c = parseColor(color);
-  c = ensureSaturation(c);
-  c = adjustLightness(c);
-
+function generateColorResult(c: Colord): ColorResult {
   const hex = c.toHex();
   const rgb = c.toRgb();
   const rgbString = `${rgb.r}, ${rgb.g}, ${rgb.b}`;
@@ -84,4 +73,16 @@ export function adjustAccentColor(color: string | [number, number, number] | { r
     accentRgb: rgbString,
     accentHover: hover,
   };
+}
+
+/**
+ * Adjusts the given color to be suitable for use as an accent color in a dark theme.
+ * Ensures sufficient saturation and appropriate lightness.
+ * @param color Hex string or RGB object/array
+ */
+export function adjustAccentColor(color: ColorInput): ColorResult {
+  const parsed = parseColor(color);
+  const saturated = ensureSaturation(parsed);
+  const lightened = adjustLightness(saturated);
+  return generateColorResult(lightened);
 }
