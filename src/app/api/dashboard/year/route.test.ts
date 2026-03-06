@@ -44,7 +44,6 @@ describe("GET /api/dashboard/year validation", () => {
 
     it("returns 400 when year is invalid (not a number)", async () => {
         const { getServerSession } = await import("next-auth");
-        // @ts-expect-error Mocking partial session
         vi.mocked(getServerSession).mockResolvedValueOnce({
             user: { name: "Alice", email: "alice@example.com", image: "", login: "alice" },
             accessToken: "token",
@@ -61,7 +60,6 @@ describe("GET /api/dashboard/year validation", () => {
 
     it("returns 400 when year is before 2008", async () => {
         const { getServerSession } = await import("next-auth");
-        // @ts-expect-error Mocking partial session
         vi.mocked(getServerSession).mockResolvedValueOnce({
             user: { name: "Alice", email: "alice@example.com", image: "", login: "alice" },
             accessToken: "token",
@@ -78,7 +76,6 @@ describe("GET /api/dashboard/year validation", () => {
 
     it("returns 400 when year is in the future", async () => {
         const { getServerSession } = await import("next-auth");
-        // @ts-expect-error Mocking partial session
         vi.mocked(getServerSession).mockResolvedValueOnce({
             user: { name: "Alice", email: "alice@example.com", image: "", login: "alice" },
             accessToken: "token",
@@ -96,7 +93,6 @@ describe("GET /api/dashboard/year validation", () => {
 
     it("returns 200 and fetches data when year is valid", async () => {
         const { getServerSession } = await import("next-auth");
-        // @ts-expect-error Mocking partial session
         vi.mocked(getServerSession).mockResolvedValueOnce({
             user: { name: "Alice", email: "alice@example.com", image: "", login: "alice" },
             accessToken: "token",
@@ -119,7 +115,6 @@ describe("GET /api/dashboard/year validation", () => {
 
     it("returns 200 and falls back to current year when year is not provided", async () => {
         const { getServerSession } = await import("next-auth");
-        // @ts-expect-error Mocking partial session
         vi.mocked(getServerSession).mockResolvedValueOnce({
             user: { name: "Alice", email: "alice@example.com", image: "", login: "alice" },
             accessToken: "token",
