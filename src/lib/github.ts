@@ -553,8 +553,8 @@ export async function fetchStarredRepos(
 ): Promise<InterestsData> {
   const allStarred: StarredRepo[] = [];
 
-  for (let page = 1; page <= 2; page += 1) {
-    const res = await fetch(
+  const fetchPage = (page: number) =>
+    fetch(
       `${GITHUB_API}/users/${encodeURIComponent(username)}/starred?per_page=100&page=${page}`,
       {
         headers: {
@@ -565,12 +565,14 @@ export async function fetchStarredRepos(
       }
     );
 
-    const starred = await handleResponse<StarredRepo[]>(res);
-    allStarred.push(...starred);
+  const [res1, res2] = await Promise.all([fetchPage(1), fetchPage(2)]);
 
-    if (starred.length < 100) {
-      break;
-    }
+  const starred1 = await handleResponse<StarredRepo[]>(res1);
+  allStarred.push(...starred1);
+
+  if (starred1.length === 100) {
+    const starred2 = await handleResponse<StarredRepo[]>(res2);
+    allStarred.push(...starred2);
   }
 
   const topicCounts = new Map<string, number>();
