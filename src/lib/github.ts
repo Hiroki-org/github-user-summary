@@ -689,7 +689,7 @@ function processResult<T>(
   if (result.status === "fulfilled") {
     return result.value;
   }
-  errors.push({ section, message: result.reason?.message ?? "Unknown error" });
+  errors.push({ section, message: result.reason?.message ?? String(result.reason ?? "Unknown error") });
   return null;
 }
 
