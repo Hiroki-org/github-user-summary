@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 import Link from "next/link";
 
+import { logger } from "@/lib/logger";
+
 export default function ErrorPage({
   error,
   reset,
@@ -11,7 +13,7 @@ export default function ErrorPage({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("User page error:", error);
+    logger.error("User page error:", error);
   }, [error]);
 
   const isRateLimit = error.message.includes("rate limit");
