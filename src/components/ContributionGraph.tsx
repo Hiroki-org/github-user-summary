@@ -20,14 +20,16 @@ const MONTHS = [
   "Dec",
 ];
 
+const CELL_SIZE = 12;
+const CELL_GAP = 3;
+const STEP = CELL_SIZE + CELL_GAP;
+const DAY_LABEL_WIDTH = 28;
+
 function processCalendarData(calendar: ContributionData["calendar"]) {
   if (calendar.length === 0) {
     return { weeks: [], monthLabels: [], maxCount: 1 };
   }
 
-  const cellSize = 12;
-  const cellGap = 3;
-  const step = cellSize + cellGap;
   const maxCount = Math.max(...calendar.map((d) => d.count), 1);
 
   // Group entries by week columns
@@ -51,7 +53,6 @@ function processCalendarData(calendar: ContributionData["calendar"]) {
   }
   if (currentWeek.length > 0) weeks.push(currentWeek);
 
-  const dayLabelWidth = 28;
   const monthLabels: { label: string; x: number }[] = [];
   let lastMonth = -1;
   weeks.forEach((week, wIdx) => {
@@ -60,7 +61,7 @@ function processCalendarData(calendar: ContributionData["calendar"]) {
     if (month !== lastMonth) {
       monthLabels.push({
         label: MONTHS[month],
-        x: dayLabelWidth + wIdx * step,
+        x: DAY_LABEL_WIDTH + wIdx * STEP,
       });
       lastMonth = month;
     }
@@ -75,13 +76,8 @@ export default function ContributionGraph({ contributions }: Props) {
 
   const { weeks, monthLabels, maxCount } = processCalendarData(calendar);
 
-  const cellSize = 12;
-  const cellGap = 3;
-  const step = cellSize + cellGap;
-
-  const dayLabelWidth = 28;
-  const svgWidth = dayLabelWidth + weeks.length * step + cellGap;
-  const svgHeight = 7 * step + 20;
+  const svgWidth = DAY_LABEL_WIDTH + weeks.length * STEP + CELL_GAP;
+  const svgHeight = 7 * STEP + 20;
 
   const dayLabels = ["", "Mon", "", "Wed", "", "Fri", ""];
 
@@ -123,7 +119,7 @@ export default function ContributionGraph({ contributions }: Props) {
             <text
               key={idx}
               x={0}
-              y={18 + idx * step + cellSize / 2 + 3}
+              y={18 + idx * STEP + CELL_SIZE / 2 + 3}
               className="fill-muted text-[10px]"
             >
               {label}
@@ -135,10 +131,10 @@ export default function ContributionGraph({ contributions }: Props) {
           week.map((entry) => (
             <rect
               key={entry.date}
-              x={dayLabelWidth + wIdx * step}
-              y={18 + entry.dayOfWeek * step}
-              width={cellSize}
-              height={cellSize}
+              x={DAY_LABEL_WIDTH + wIdx * STEP}
+              y={18 + entry.dayOfWeek * STEP}
+              width={CELL_SIZE}
+              height={CELL_SIZE}
               rx={2}
               fill={getIntensityColor(entry.count)}
               className="transition-all duration-200 hover:opacity-70 hover:stroke-foreground/20"

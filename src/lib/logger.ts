@@ -4,7 +4,7 @@
  * external logging services (e.g., Sentry, Axiom, Datadog) in the future.
  */
 
-type LogFn = (message: string, ...args: unknown[]) => void;
+type LogFn = (message: unknown, ...args: unknown[]) => void;
 
 interface Logger {
   info: LogFn;
