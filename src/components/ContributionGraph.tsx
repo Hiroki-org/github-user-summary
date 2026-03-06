@@ -5,13 +5,24 @@ type Props = {
 };
 
 const MONTHS = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
 ];
 
-export default function ContributionGraph({ contributions }: Props) {
-  const { calendar } = contributions;
-  if (calendar.length === 0) return null;
+function processCalendarData(calendar: ContributionData["calendar"]) {
+  if (calendar.length === 0) {
+    return { weeks: [], monthLabels: [], maxCount: 1 };
+  }
 
   const cellSize = 12;
   const cellGap = 3;
@@ -40,9 +51,6 @@ export default function ContributionGraph({ contributions }: Props) {
   if (currentWeek.length > 0) weeks.push(currentWeek);
 
   const dayLabelWidth = 28;
-  const svgWidth = dayLabelWidth + weeks.length * step + cellGap;
-  const svgHeight = 7 * step + 20;
-
   const monthLabels: { label: string; x: number }[] = [];
   let lastMonth = -1;
   weeks.forEach((week, wIdx) => {
@@ -56,6 +64,23 @@ export default function ContributionGraph({ contributions }: Props) {
       lastMonth = month;
     }
   });
+
+  return { weeks, monthLabels, maxCount };
+}
+
+export default function ContributionGraph({ contributions }: Props) {
+  const { calendar } = contributions;
+  if (calendar.length === 0) return null;
+
+  const { weeks, monthLabels, maxCount } = processCalendarData(calendar);
+
+  const cellSize = 12;
+  const cellGap = 3;
+  const step = cellSize + cellGap;
+
+  const dayLabelWidth = 28;
+  const svgWidth = dayLabelWidth + weeks.length * step + cellGap;
+  const svgHeight = 7 * step + 20;
 
   const dayLabels = ["", "Mon", "", "Wed", "", "Fri", ""];
 
@@ -119,7 +144,8 @@ export default function ContributionGraph({ contributions }: Props) {
               style={{ strokeWidth: 1 }}
             >
               <title>
-                {entry.date}: {entry.count} contribution{entry.count !== 1 ? "s" : ""}
+                {entry.date}: {entry.count} contribution
+                {entry.count !== 1 ? "s" : ""}
               </title>
             </rect>
           )),
