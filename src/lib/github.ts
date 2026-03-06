@@ -679,6 +679,21 @@ export async function fetchActivity(
 // ===== 6. fetchUserSummary =====
 
 /**
+ * 結果を処理し、エラーがあれば記録するヘルパー関数
+ */
+function processResult<T>(
+  result: PromiseSettledResult<T>,
+  section: string,
+  errors: { section: string; message: string }[]
+): T | null {
+  if (result.status === "fulfilled") {
+    return result.value;
+  }
+  errors.push({ section, message: result.reason?.message ?? "Unknown error" });
+  return null;
+}
+
+/**
  * 全セクションを並行取得し、UserSummary として集約
  * Promise.allSettled で部分失敗に対応（profile 404 のみ再スロー）
  * @throws {UserNotFoundError} プロフィールが404の場合
@@ -687,7 +702,13 @@ export async function fetchUserSummary(
   username: string,
   token?: string
 ): Promise<UserSummary> {
-  const results = await Promise.allSettled([
+  const [
+    profileResult,
+    repositoriesResult,
+    contributionsResult,
+    activityResult,
+    interestsResult,
+  ] = await Promise.allSettled([
     fetchUserProfile(username, token),
     fetchRepositories(username, token),
     fetchContributions(username, token),
@@ -695,28 +716,19 @@ export async function fetchUserSummary(
     fetchStarredRepos(username, token),
   ]);
 
-  const errors: { section: string; message: string }[] = [];
-  const sections = ["profile", "repositories", "contributions", "activity", "interests"] as const;
-
-  const values = results.map((r, i) => {
-    if (r.status === "fulfilled") {
-      return r.value;
-    }
-    errors.push({ section: sections[i], message: r.reason?.message ?? "Unknown error" });
-    return null;
-  });
-
   // profileが404の場合はUserNotFoundErrorを再スロー
-  if (results[0].status === "rejected" && results[0].reason instanceof UserNotFoundError) {
-    throw results[0].reason;
+  if (profileResult.status === "rejected" && profileResult.reason instanceof UserNotFoundError) {
+    throw profileResult.reason;
   }
 
+  const errors: { section: string; message: string }[] = [];
+
   return {
-    profile: values[0] as UserProfile | null,
-    repositories: values[1] as RepositoryData | null,
-    contributions: values[2] as ContributionData | null,
-    activity: values[3] as ActivityData | null,
-    interests: values[4] as InterestsData | null,
+    profile: processResult(profileResult, "profile", errors),
+    repositories: processResult(repositoriesResult, "repositories", errors),
+    contributions: processResult(contributionsResult, "contributions", errors),
+    activity: processResult(activityResult, "activity", errors),
+    interests: processResult(interestsResult, "interests", errors),
     errors,
   };
 }
