@@ -1,4 +1,4 @@
-import { colord, extend } from "colord";
+import { colord, extend, type Colord } from "colord";
 import mixPlugin from "colord/plugins/mix";
 import namesPlugin from "colord/plugins/names";
 import a11yPlugin from "colord/plugins/a11y";
@@ -21,13 +21,10 @@ const TARGET_MIN_LIGHTNESS = 45;
 const TARGET_MAX_LIGHTNESS = 85;
 const HOVER_LIGHTEN_AMOUNT = 0.1;
 
-/**
- * Adjusts the given color to be suitable for use as an accent color in a dark theme.
- * Ensures sufficient saturation and appropriate lightness.
- * @param color Hex string or RGB object/array
- */
-export function adjustAccentColor(color: string | [number, number, number] | { r: number; g: number; b: number }): ColorResult {
-  let c;
+type ColorInput = string | [number, number, number] | { r: number; g: number; b: number };
+
+function parseColor(color: ColorInput): Colord {
+  let c: Colord;
 
   if (Array.isArray(color)) {
     c = colord({ r: color[0], g: color[1], b: color[2] });
@@ -37,27 +34,43 @@ export function adjustAccentColor(color: string | [number, number, number] | { r
 
   // Ensure valid color, fallback to default blue if invalid
   if (!c.isValid()) {
-    c = colord(DEFAULT_ACCENT_COLOR);
+    return colord(DEFAULT_ACCENT_COLOR);
   }
 
-  // Adjust saturation: if too low, saturate
+  return c;
+}
+
+function ensureSaturation(c: Colord): Colord {
   const s = c.toHsl().s;
   if (s < MIN_SATURATION_FOR_HIGH_BOOST) {
-    c = c.saturate(HIGH_SATURATION_BOOST);
+    return c.saturate(HIGH_SATURATION_BOOST);
   } else if (s < MIN_SATURATION_FOR_LOW_BOOST) {
-    c = c.saturate(LOW_SATURATION_BOOST);
+    return c.saturate(LOW_SATURATION_BOOST);
   }
+  return c;
+}
 
-  // Adjust lightness for dark mode context
-  // Should be bright enough to glow, but not white
+function adjustLightness(c: Colord): Colord {
   const l = c.toHsl().l;
   if (l < TARGET_MIN_LIGHTNESS) {
     // Lift to at least TARGET_MIN_LIGHTNESS
-    c = c.lighten((TARGET_MIN_LIGHTNESS - l) / 100);
+    return c.lighten((TARGET_MIN_LIGHTNESS - l) / 100);
   } else if (l > TARGET_MAX_LIGHTNESS) {
     // Dim to at most TARGET_MAX_LIGHTNESS
-    c = c.darken((l - TARGET_MAX_LIGHTNESS) / 100);
+    return c.darken((l - TARGET_MAX_LIGHTNESS) / 100);
   }
+  return c;
+}
+
+/**
+ * Adjusts the given color to be suitable for use as an accent color in a dark theme.
+ * Ensures sufficient saturation and appropriate lightness.
+ * @param color Hex string or RGB object/array
+ */
+export function adjustAccentColor(color: string | [number, number, number] | { r: number; g: number; b: number }): ColorResult {
+  let c = parseColor(color);
+  c = ensureSaturation(c);
+  c = adjustLightness(c);
 
   const hex = c.toHex();
   const rgb = c.toRgb();
