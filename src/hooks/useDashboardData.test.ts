@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useDashboardData, useYearInReview, useDashboardStats } from './useDashboardData';
 import * as nextAuthReact from 'next-auth/react';
 import * as swr from 'swr';
@@ -262,7 +262,7 @@ describe('fetcher', () => {
       status: 'authenticated',
     } as unknown as ReturnType<typeof nextAuthReact.useSession>);
 
-    let capturedFetcher: Parameters<typeof swr.default>[1];
+    let capturedFetcher: Parameters<typeof swr.default>[1] | undefined;
     vi.mocked(swr.default).mockImplementation((url, fetcher) => {
       capturedFetcher = fetcher;
       return {
@@ -271,7 +271,7 @@ describe('fetcher', () => {
         isLoading: false,
         isValidating: false,
         mutate: vi.fn(),
-      } as unknown as ReturnType<typeof nextAuthReact.useSession>
+      } as unknown as ReturnType<typeof swr.default>
     });
 
     renderHook(() => useDashboardData());
@@ -280,11 +280,12 @@ describe('fetcher', () => {
 
     const mockResponse = { data: 'test data' };
     vi.mocked(global.fetch).mockResolvedValueOnce({
+
       ok: true,
       json: async () => mockResponse,
-    });
+    } as unknown as Response);
 
-    const result = await capturedFetcher('/test-url');
+    const result = await (capturedFetcher as NonNullable<typeof capturedFetcher>)('/test-url');
     expect(result).toEqual(mockResponse);
     expect(global.fetch).toHaveBeenCalledWith('/test-url');
   });
@@ -295,7 +296,7 @@ describe('fetcher', () => {
       status: 'authenticated',
     } as unknown as ReturnType<typeof nextAuthReact.useSession>);
 
-    let capturedFetcher: Parameters<typeof swr.default>[1];
+    let capturedFetcher: Parameters<typeof swr.default>[1] | undefined;
     vi.mocked(swr.default).mockImplementation((url, fetcher) => {
       capturedFetcher = fetcher;
       return {
@@ -304,18 +305,19 @@ describe('fetcher', () => {
         isLoading: false,
         isValidating: false,
         mutate: vi.fn(),
-      } as unknown as ReturnType<typeof nextAuthReact.useSession>
+      } as unknown as ReturnType<typeof swr.default>
     });
 
     renderHook(() => useDashboardData());
 
     vi.mocked(global.fetch).mockResolvedValueOnce({
+
       ok: false,
       status: 404,
       text: async () => 'Not Found',
-    });
+    } as unknown as Response);
 
-    await expect(capturedFetcher('/test-url')).rejects.toThrow('Not Found');
+    await expect((capturedFetcher as NonNullable<typeof capturedFetcher>)('/test-url')).rejects.toThrow('Not Found');
   });
 
   it('should handle fetch error without text body', async () => {
@@ -324,7 +326,7 @@ describe('fetcher', () => {
       status: 'authenticated',
     } as unknown as ReturnType<typeof nextAuthReact.useSession>);
 
-    let capturedFetcher: Parameters<typeof swr.default>[1];
+    let capturedFetcher: Parameters<typeof swr.default>[1] | undefined;
     vi.mocked(swr.default).mockImplementation((url, fetcher) => {
       capturedFetcher = fetcher;
       return {
@@ -333,18 +335,19 @@ describe('fetcher', () => {
         isLoading: false,
         isValidating: false,
         mutate: vi.fn(),
-      } as unknown as ReturnType<typeof nextAuthReact.useSession>
+      } as unknown as ReturnType<typeof swr.default>
     });
 
     renderHook(() => useDashboardData());
 
     vi.mocked(global.fetch).mockResolvedValueOnce({
+
       ok: false,
       status: 500,
       text: async () => { throw new Error('Cannot read body') },
-    });
+    } as unknown as Response);
 
-    await expect(capturedFetcher('/test-url')).rejects.toThrow('Unknown error');
+    await expect((capturedFetcher as NonNullable<typeof capturedFetcher>)('/test-url')).rejects.toThrow('Unknown error');
   });
 });
 
@@ -365,7 +368,7 @@ describe('fetcher', () => {
       status: 'authenticated',
     } as unknown as ReturnType<typeof nextAuthReact.useSession>);
 
-    let capturedFetcher: Parameters<typeof swr.default>[1];
+    let capturedFetcher: Parameters<typeof swr.default>[1] | undefined;
     vi.mocked(swr.default).mockImplementation((url, fetcher) => {
       capturedFetcher = fetcher;
       return {
@@ -374,17 +377,18 @@ describe('fetcher', () => {
         isLoading: false,
         isValidating: false,
         mutate: vi.fn(),
-      } as unknown as ReturnType<typeof nextAuthReact.useSession>
+      } as unknown as ReturnType<typeof swr.default>
     });
 
     renderHook(() => useDashboardData());
 
     vi.mocked(global.fetch).mockResolvedValueOnce({
+
       ok: false,
       status: 500,
       text: async () => '',
-    });
+    } as unknown as Response);
 
-    await expect(capturedFetcher('/test-url')).rejects.toThrow('Request failed (500)');
+    await expect((capturedFetcher as NonNullable<typeof capturedFetcher>)('/test-url')).rejects.toThrow('Request failed (500)');
   });
 });
