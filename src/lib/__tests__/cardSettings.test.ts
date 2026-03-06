@@ -50,7 +50,7 @@ describe("cardSettings", () => {
         });
 
         it("returns parsed settings when JSON is valid", () => {
-            const customLayout = { blocks: [{ id: "bio", visible: true, column: "full" as const }] };
+            const customLayout = { blocks: [{ id: "bio" as const, visible: true, column: "full" as const }] };
             const customOptions = { showCompany: false };
 
             getItemMock.mockImplementation((key) => {
@@ -74,7 +74,7 @@ describe("cardSettings", () => {
         });
 
         it("saves settings to localStorage", () => {
-            const customLayout = { blocks: [{ id: "bio", visible: true, column: "full" as const }] };
+            const customLayout = { blocks: [{ id: "bio" as const, visible: true, column: "full" as const }] };
             const customOptions = { showCompany: false };
 
             saveCardSettings(customLayout, customOptions as Parameters<typeof saveCardSettings>[1]);
