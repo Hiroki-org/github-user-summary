@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
+import Image from "next/image";
 import { toPng, toBlob } from "html-to-image";
 
 import type {
@@ -394,8 +395,7 @@ export default function CardGenerator({ summary }: Props) {
                         <p className="text-muted">Generating preview...</p>
                       </div>
                     ) : previewUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <Image
                         src={previewUrl}
                         alt="Card Preview"
                         className="max-h-full max-w-full rounded-lg object-contain shadow-lg"
