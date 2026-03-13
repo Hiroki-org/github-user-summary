@@ -81,7 +81,7 @@ describe("GET /api/dashboard/year", () => {
 
         const { fetchYearInReviewData } = await import("@/lib/githubYearInReview");
         const mockData = { totalContributions: 1000 };
-        vi.mocked(fetchYearInReviewData).mockResolvedValueOnce(mockData as any);
+        vi.mocked(fetchYearInReviewData).mockResolvedValueOnce(mockData as unknown as Awaited<ReturnType<typeof fetchYearInReviewData>>);
 
         const { GET } = await import("./route");
         const req = new NextRequest("http://localhost/api/dashboard/year?year=2023");
