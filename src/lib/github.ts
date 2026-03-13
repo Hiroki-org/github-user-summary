@@ -22,6 +22,12 @@ import {
 const GITHUB_API = "https://api.github.com";
 const GITHUB_GRAPHQL = "https://api.github.com/graphql";
 
+
+function getRateLimitReset(res: Response): number {
+  const resetHeader = res.headers.get("X-RateLimit-Reset");
+  return resetHeader ? parseInt(resetHeader, 10) : Math.floor(Date.now() / 1000) + 3600;
+}
+
 function headers(token?: string): HeadersInit {
   const h: HeadersInit = {
     Accept: "application/vnd.github+json",
@@ -38,9 +44,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
     throw new UserNotFoundError("unknown");
   }
   if (res.status === 403) {
-    const resetHeader = res.headers.get("X-RateLimit-Reset");
-    const resetTimestamp = resetHeader ? parseInt(resetHeader, 10) : Math.floor(Date.now() / 1000) + 3600;
-    throw new RateLimitError(resetTimestamp);
+    throw new RateLimitError(getRateLimitReset(res));
   }
   if (!res.ok) {
     const body = await res.text().catch(() => "Unknown error");
@@ -65,9 +69,7 @@ async function graphql<T>(query: string, token?: string, variables?: Record<stri
     next: { revalidate: 300 },
   });
   if (res.status === 403) {
-    const resetHeader = res.headers.get("X-RateLimit-Reset");
-    const resetTimestamp = resetHeader ? parseInt(resetHeader, 10) : Math.floor(Date.now() / 1000) + 3600;
-    throw new RateLimitError(resetTimestamp);
+    throw new RateLimitError(getRateLimitReset(res));
   }
   if (!res.ok) {
     const body = await res.text().catch(() => "Unknown error");
