@@ -42,7 +42,7 @@ describe("GET /api/dashboard/summary", () => {
 
         vi.mocked(fetchUserSummary).mockResolvedValueOnce({
             text: "This is a summary",
-        } as unknown as string);
+        } as unknown as import('@/lib/types').UserSummary);
 
         const response = await GET();
         const data = await response.json();
@@ -68,7 +68,7 @@ describe("GET /api/dashboard/summary", () => {
 
         vi.mocked(fetchUserSummary).mockResolvedValueOnce({
             text: "Viewer summary",
-        } as unknown as string);
+        } as unknown as import('@/lib/types').UserSummary);
 
         const response = await GET();
         const data = await response.json();
