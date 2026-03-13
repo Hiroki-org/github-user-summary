@@ -117,7 +117,7 @@ describe("GET /api/dashboard/stats", () => {
             expires: "1",
         });
 
-        const mockHeatmap = { days: [], maxCount: 0 };
+        const mockHeatmap: number[][] = [];
         vi.mocked(fetchCommitActivityHeatmap).mockResolvedValueOnce(mockHeatmap);
 
         const currentYear = new Date().getUTCFullYear();
@@ -136,7 +136,7 @@ describe("GET /api/dashboard/stats", () => {
         });
 
         vi.mocked(fetchViewerLogin).mockResolvedValueOnce("fetcheduser");
-        const mockHeatmap = { days: [], maxCount: 0 };
+        const mockHeatmap: number[][] = [];
         vi.mocked(fetchCommitActivityHeatmap).mockResolvedValueOnce(mockHeatmap);
 
         const req = createRequest("http://localhost/api/dashboard/stats");
