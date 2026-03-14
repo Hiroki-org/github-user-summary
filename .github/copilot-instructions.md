@@ -254,6 +254,14 @@ After opening the PR, you must keep checking GitHub checks. The default pattern 
 
 Any new push resets this process. After **every** push, treat prior CI state as stale, then restart the check loop from the latest commit.
 
+For follow-up pushes to an existing PR, the default mental model is:
+
+```bash
+git push && sleep 300 && gh pr checks "$PR_URL"
+```
+
+That shorthand means "push, wait, then verify the latest PR state." Do not treat `git push` alone as completion.
+
 Use this pattern repeatedly:
 
 ```bash
@@ -300,6 +308,7 @@ For each review thread, do one of the following:
 - Or explain clearly why the suggestion is being deferred or declined
 
 Do not leave review threads unacknowledged.
+Do not push a review fix without also doing the post-push wait-and-check cycle.
 
 ### Suggested Review Workflow
 
@@ -311,6 +320,13 @@ gh pr checks "$PR_URL"
 After pushing a review fix:
 
 ```bash
+git push && sleep 300 && gh pr checks "$PR_URL"
+```
+
+Equivalent expanded form:
+
+```bash
+git push
 sleep 300 && gh pr checks "$PR_URL"
 ```
 
