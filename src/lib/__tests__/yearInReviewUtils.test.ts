@@ -8,11 +8,8 @@ import {
 describe("buildHourlyHeatmapFromCommitDates", () => {
     it("returns a 7x24 heatmap initialized with zeros for an empty array", () => {
         const heatmap = buildHourlyHeatmapFromCommitDates([]);
-        expect(heatmap).toHaveLength(7);
-        heatmap.forEach(day => {
-            expect(day).toHaveLength(24);
-            expect(day.every(count => count === 0)).toBe(true);
-        });
+        const expected = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
+        expect(heatmap).toEqual(expected);
     });
 
     it("correctly counts commit dates based on UTC day and hour", () => {
@@ -23,14 +20,12 @@ describe("buildHourlyHeatmapFromCommitDates", () => {
             "2023-01-07T23:59:59Z", // Saturday (6), Hour 23
         ];
         const heatmap = buildHourlyHeatmapFromCommitDates(commitDates);
+        const expected = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
+        expected[0][10] = 2;
+        expected[1][15] = 1;
+        expected[6][23] = 1;
 
-        expect(heatmap[0][10]).toBe(2);
-        expect(heatmap[1][15]).toBe(1);
-        expect(heatmap[6][23]).toBe(1);
-
-        // Verify other slots are 0
-        expect(heatmap[0][11]).toBe(0);
-        expect(heatmap[2][15]).toBe(0);
+        expect(heatmap).toEqual(expected);
     });
 
     it("ignores invalid date strings", () => {
@@ -40,11 +35,10 @@ describe("buildHourlyHeatmapFromCommitDates", () => {
             "not-a-date"
         ];
         const heatmap = buildHourlyHeatmapFromCommitDates(commitDates);
+        const expected = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
+        expected[0][10] = 1;
 
-        expect(heatmap[0][10]).toBe(1);
-        // All other entries should be 0
-        const totalCommits = heatmap.flat().reduce((sum, count) => sum + count, 0);
-        expect(totalCommits).toBe(1);
+        expect(heatmap).toEqual(expected);
     });
 });
 
