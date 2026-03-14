@@ -5,7 +5,7 @@ applyTo: "**"
 
 # GitHub User Summary – Copilot Instructions
 
-**GitHub User Summary** is a single-app Next.js 16 codebase that visualizes GitHub profiles, contribution history, language usage, and repository activity. It supports public profile pages, authenticated personal dashboards, and shareable business-card style images generated from GitHub data.
+**GitHub User Summary** is a single-app Next.js 16 codebase that visualizes GitHub profiles, contribution history, language usage, and repository activity. It supports public profile pages, authenticated personal dashboards, and shareable business-card-style images generated from GitHub data.
 
 This repository is **not** a monorepo. There is no separate backend service. Server-side logic lives inside Next.js App Router routes under `src/app/api`.
 
@@ -101,7 +101,7 @@ Main logic lives in `src/lib/github.ts`.
 - Prefer GraphQL when a token is available and it materially improves data quality.
 - Preserve REST fallbacks for unauthenticated or degraded paths.
 - Keep rate-limit handling intact. The code already maps 403 responses to `RateLimitError`.
-- Do not remove partial-failure tolerance from `fetchUserSummary()` style flows without a strong reason.
+- Do not remove partial-failure tolerance from `fetchUserSummary()`-style flows without a strong reason.
 
 ### Dashboard
 
@@ -206,9 +206,11 @@ This exact validation sequence matters. Do not stop after only one or two comman
 ### Starting New Work
 
 1. Create a branch from `main`
+
    ```bash
    git switch -c <type>/<short-description>
    ```
+
 2. Implement the change
 3. Add or update tests
 4. Run full validation
@@ -241,8 +243,9 @@ npm run build
 
 git add .
 git commit -m "<clear message>"
-git push --set-upstream origin <branch>
-gh pr create --fill
+git push --set-upstream origin <type>/<short-description>
+PR_URL=$(gh pr create --fill)
+gh pr checks "$PR_URL"
 ```
 
 ### CI Check Loop: Use It Aggressively
@@ -252,14 +255,14 @@ After opening the PR, you must keep checking GitHub checks. The default pattern 
 Use this pattern repeatedly:
 
 ```bash
-gh pr checks <PR#>
-sleep 300 && gh pr checks <PR#>
-sleep 300 && gh pr checks <PR#>
+gh pr checks "$PR_URL"
+sleep 300 && gh pr checks "$PR_URL"
+sleep 300 && gh pr checks "$PR_URL"
 ```
 
 If checks are still running, keep going. If checks fail, investigate immediately and push a fix. Do not assume someone else will watch CI later.
 
-`gh pr checks <PR#> --watch` is useful, but the baseline expectation is still the explicit `sleep 300 && gh pr checks <PR#>` re-check pattern because it works well for long-running CI and makes the agent verify completion instead of guessing.
+`gh pr checks "$PR_URL" --watch` is useful, but the baseline expectation is still the explicit `sleep 300 && gh pr checks "$PR_URL"` re-check pattern because it works well for long-running CI and makes the agent verify completion instead of guessing.
 
 ### Merge Readiness
 
@@ -274,7 +277,7 @@ Do not merge until all of the following are true:
 This final re-check matters:
 
 ```bash
-sleep 300 && gh pr checks <PR#>
+sleep 300 && gh pr checks "$PR_URL"
 ```
 
 Use it before treating the PR as merge-ready.
@@ -296,13 +299,13 @@ Do not leave review threads unacknowledged.
 
 ```bash
 gh pr view <PR#> --json reviews
-gh pr checks <PR#>
+gh pr checks "$PR_URL"
 ```
 
 After pushing a review fix:
 
 ```bash
-sleep 300 && gh pr checks <PR#>
+sleep 300 && gh pr checks "$PR_URL"
 ```
 
 If checks are still pending, keep repeating the sleep-and-check cycle until they finish or fail.
@@ -366,4 +369,4 @@ If checks are still pending, keep repeating the sleep-and-check cycle until they
 - Always ground your work in the actual project structure above, not generic Next.js assumptions
 - This is a Next.js app with internal route handlers, not a split frontend/backend system
 - Tests, type checks, build verification, and PR follow-through are part of the job
-- The `sleep 300 && gh pr checks <PR#>` loop is not optional busywork; it is the default way to verify CI completion before declaring the PR done
+- The `sleep 300 && gh pr checks "$PR_URL"` loop is not optional busywork; it is the default way to verify CI completion before declaring the PR done
