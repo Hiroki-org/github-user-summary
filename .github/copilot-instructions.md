@@ -9,7 +9,11 @@ applyTo: "**"
 
 This repository is **not** a monorepo. There is no separate backend service. Server-side logic lives inside Next.js App Router routes under `src/app/api`.
 
-## Quick Reference
+---
+
+## Part 1: Project-Specific Context
+
+### Quick Reference
 
 | Component | Tech | Location |
 | --- | --- | --- |
@@ -21,11 +25,9 @@ This repository is **not** a monorepo. There is no separate backend service. Ser
 | Tests | Vitest | `src/lib/__tests__`, `src/app/api/**/*.test.ts` |
 | CI | GitHub Actions | `.github/workflows/ci.yml` |
 
----
+### Getting Started
 
-## Getting Started
-
-### Environment Setup
+#### Environment Setup
 
 Create `.env.local` in the repo root:
 
@@ -38,7 +40,7 @@ NEXTAUTH_SECRET=<long-random-secret>
 GITHUB_TOKEN=<github-personal-access-token>
 ```
 
-### Core Commands
+#### Core Commands
 
 ```bash
 # Local development
@@ -47,30 +49,13 @@ npm run dev
 # Validation
 npm run lint
 npm test
-npm run test:watch
-npm run test:coverage
 npx tsc --noEmit
 npm run build
 ```
 
-### CI Expectations
+### Architecture & Key Concepts
 
-GitHub Actions runs four checks on PRs:
-
-```bash
-npm run lint
-npm test
-npx tsc --noEmit
-npm run build
-```
-
-Do not claim a change is ready until you have considered all four.
-
----
-
-## Architecture & Key Concepts
-
-### App Structure
+#### App Structure
 
 ```text
 src/
@@ -80,21 +65,21 @@ src/
 └── lib/          Auth, GitHub API clients, rendering, validation, types
 ```
 
-### Public Profile Pages
+#### Public Profile Pages
 
 - Dynamic route: `src/app/[username]/page.tsx`
 - Fetches GitHub summary data on the server via `fetchUserSummary()`
 - Uses `getServerSession(authOptions)` so authenticated viewers can unlock GitHub GraphQL-backed data where a token is available
 - Renders profile, skills, contributions, repos, interests, activity, sharing controls, and theme customization
 
-### Authentication Flow
+#### Authentication Flow
 
 1. User signs in with GitHub through NextAuth.
 2. `src/lib/auth.ts` stores the GitHub access token and login in JWT/session callbacks.
 3. Client components consume session state via `SessionProvider` in `src/app/providers.tsx`.
 4. Authenticated dashboard routes use `getServerSession(authOptions)` and require a valid access token.
 
-### GitHub API Integration
+#### GitHub API Integration
 
 Main logic lives in `src/lib/github.ts`.
 
@@ -103,14 +88,14 @@ Main logic lives in `src/lib/github.ts`.
 - Keep rate-limit handling intact. The code already maps 403 responses to `RateLimitError`.
 - Do not remove partial-failure tolerance from `fetchUserSummary()`-style flows without a strong reason.
 
-### Dashboard
+#### Dashboard
 
 - UI routes live under `src/app/dashboard/*`
 - Data routes live under `src/app/api/dashboard/*`
 - Client fetching lives in `src/hooks/useDashboardData.ts` using SWR
 - Dashboard behavior depends on authenticated session state and the GitHub login derived from the session token
 
-### Shareable Card/Image Generation
+#### Shareable Card/Image Generation
 
 - Card endpoint: `src/app/api/card/[username]/route.ts`
 - Renderer: `src/lib/cardRenderer.tsx`
@@ -120,11 +105,9 @@ Main logic lives in `src/lib/github.ts`.
 
 If you change card parameters or rendering behavior, update tests accordingly.
 
----
+### Code Conventions
 
-## Code Conventions
-
-### Naming & Organization
+#### Naming & Organization
 
 - Use the `@/` path alias for imports from `src`
 - `src/components/*` uses component-oriented files, typically PascalCase file names
@@ -132,30 +115,28 @@ If you change card parameters or rendering behavior, update tests accordingly.
 - Route handlers live in `route.ts` or `route.tsx`
 - Keep shared types in `src/lib/types.ts` when they span multiple modules
 
-### Next.js Patterns
+#### Next.js Patterns
 
 - Default to server components
 - Add `"use client"` only when the component needs browser APIs, local state, `useSession`, SWR, drag-and-drop, or DOM access
 - Keep server-only logic in `src/lib/*` or route handlers, not in client components
 
-### API Route Behavior
+#### API Route Behavior
 
 - JSON routes should return `NextResponse.json({ error: "..." }, { status })` on failure
 - Image routes should preserve cache headers and predictable fallback behavior
 - Dashboard API routes should return `401` for unauthenticated access
 
-### GitHub Fetching Rules
+#### GitHub Fetching Rules
 
 - Preserve timeout handling in `src/lib/cardDataFetcher.ts`
 - Keep `User-Agent: github-user-summary`
 - Use `encodeURIComponent(username)` when constructing GitHub API paths
 - Be careful with GitHub API quotas; avoid unnecessary extra requests
 
----
+### Testing Requirements
 
-## Testing Requirements
-
-### Testing Is Mandatory
+#### Testing Is Mandatory
 
 Do not treat tests as optional in this repository.
 
@@ -163,7 +144,7 @@ Do not treat tests as optional in this repository.
 - If you touch parsing, validation, aggregation, auth-dependent routes, or cache behavior, there should usually be a corresponding test change
 - If you choose not to add a test, explain why in the PR description
 
-### Actual Test Stack
+#### Actual Test Stack
 
 This repo currently uses **Vitest**.
 
@@ -172,7 +153,7 @@ This repo currently uses **Vitest**.
 - There is currently **no Playwright E2E suite** in this repository
 - Do not invent or reference nonexistent E2E coverage
 
-### Important Test Patterns
+#### Important Test Patterns
 
 When testing server-only modules such as `src/lib/github.ts`:
 
@@ -186,6 +167,81 @@ When testing route handlers:
 - Verify JSON error payloads for JSON endpoints
 - Verify cache headers for image/card endpoints
 
+### Useful Paths & Entry Points
+
+| Purpose | Path |
+| --- | --- |
+| Root layout | `src/app/layout.tsx` |
+| Public profile page | `src/app/[username]/page.tsx` |
+| Dashboard overview page | `src/app/dashboard/page.tsx` |
+| NextAuth config | `src/lib/auth.ts` |
+| NextAuth route | `src/app/api/auth/[...nextauth]/route.ts` |
+| Dashboard summary route | `src/app/api/dashboard/summary/route.ts` |
+| Card image route | `src/app/api/card/[username]/route.ts` |
+| Card renderer | `src/lib/cardRenderer.tsx` |
+| GitHub summary fetchers | `src/lib/github.ts` |
+| Dashboard SWR hooks | `src/hooks/useDashboardData.ts` |
+| Core unit tests | `src/lib/__tests__/*.test.ts` |
+| Route tests | `src/app/api/**/*.test.ts` |
+| CI workflow | `.github/workflows/ci.yml` |
+
+### Common Tasks
+
+#### Add a New Dashboard API Route
+
+1. Add a route handler under `src/app/api/dashboard/.../route.ts`
+2. Check `getServerSession(authOptions)` if auth is required
+3. Return `401` for unauthenticated requests
+4. Keep response shape explicit and typed
+5. Add a test if behavior is non-trivial
+
+#### Change GitHub Summary Logic
+
+1. Update `src/lib/github.ts` or the relevant helper
+2. Preserve rate-limit and not-found behavior
+3. Keep authenticated GraphQL paths and unauthenticated fallbacks aligned
+4. Update unit tests in `src/lib/__tests__/`
+
+#### Change Card Rendering
+
+1. Update `src/lib/cardRenderer.tsx` and/or `src/lib/cardDataFetcher.ts`
+2. Preserve cache behavior in `src/app/api/card/[username]/route.ts`
+3. Update route tests and renderer/query parsing tests
+
+---
+
+## Part 2: General Agent Workflow Playbooks
+
+> REFERENCE-ONLY: Do not adopt this section into `main` unless it is explicitly approved as repository policy.
+
+This half is intentionally more general than the project-specific section above.
+
+- Keep the repo-specific facts in Part 1 grounded in this repository.
+- Keep reusable PR/CI/review playbooks in Part 2.
+- If you are iterating on generic workflow wording in a reference-only PR, mark that PR clearly and **do not merge it into `main`** until you intentionally decide to adopt the wording as repo policy.
+
+### Starting New Work
+
+1. Create a branch from `main`
+
+   ```bash
+   git switch -c <type>/<short-description>
+   ```
+
+2. Implement the change
+3. Add or update tests when behavior changed
+4. Run validation
+5. Commit and push
+6. Open a PR
+7. Stay with the PR until checks finish or failures are fixed
+
+### Branch and PR Discipline
+
+- Never commit directly to `main`
+- Never stop at `git push`
+- Opening the PR is not the end of the task
+- The task includes watching CI, fixing failures, and responding to review comments
+
 ### Validation Before Push
 
 Before pushing any non-trivial change, run:
@@ -198,36 +254,6 @@ npm run build
 ```
 
 This exact validation sequence matters. Do not stop after only one or two commands.
-
----
-
-## Agent Workflow Guidelines
-
-### Starting New Work
-
-1. Create a branch from `main`
-
-   ```bash
-   git switch -c <type>/<short-description>
-   ```
-
-2. Implement the change
-3. Add or update tests
-4. Run full validation
-5. Commit and push
-6. Open a PR
-7. Stay with the PR until checks finish or failures are fixed
-
-### Branch and PR Discipline
-
-- Never commit directly to `main`
-- Never stop at `git push`
-- Opening the PR is not the end of the task
-- The task includes watching CI, fixing failures, and responding to review comments
-
----
-
-## PR Workflow
 
 ### Default PR Sequence
 
@@ -248,7 +274,7 @@ PR_URL=$(gh pr create --fill)
 gh pr checks "$PR_URL"
 ```
 
-### CI Check Loop: Use It Aggressively
+### CI Check Loop
 
 After opening the PR, you must keep checking GitHub checks. The default pattern in this repo should be explicit re-checks with `sleep` and `gh`.
 
@@ -296,11 +322,7 @@ sleep 300 && gh pr checks "$PR_URL"
 
 Use it before treating the PR as merge-ready.
 
----
-
-## Responding to PR Reviews
-
-### Review Handling Rules
+### Responding to PR Reviews
 
 For each review thread, do one of the following:
 
@@ -310,7 +332,7 @@ For each review thread, do one of the following:
 Do not leave review threads unacknowledged.
 Do not push a review fix without also doing the post-push wait-and-check cycle.
 
-### Suggested Review Workflow
+Suggested review workflow:
 
 ```bash
 gh pr view <PR#> --json reviews
@@ -329,66 +351,71 @@ Then fetch review state again. A review-fix push can trigger fresh CI, fresh bot
 
 If checks are still pending, keep repeating the sleep-and-check cycle until they finish or fail. If new review comments arrive after the push, handle them before treating the PR as done.
 
-### Conversation Checklist
+### PR Consolidation Playbook
 
-- Every substantive review comment has a reply
-- Accepted feedback is reflected in code and tests
-- Deferred feedback is explicitly justified
-- CI has been re-checked after the latest push
+Use this when several open PRs are materially overlapping and should be reviewed as one destination PR instead of being merged independently.
+
+#### Choose the Destination PR First
+
+- Pick one surviving destination PR and branch for each cluster of similar work
+- Prefer the branch that already has the clearest scope or the strongest base implementation
+- Treat every other similar PR in that cluster as a source PR that will be superseded
+
+#### Consolidation Sequence
+
+1. Switch to the destination branch
+2. Merge `origin/main` into the destination branch first
+3. Merge each source PR branch into the destination branch
+4. Resolve conflicts explicitly; do not silently discard behavior, tests, or review fixes
+5. Remove junk files that do not belong in the final PR, such as ad hoc logs, temp files, or PR drafting artifacts
+6. Re-run validation as needed and push the destination branch
+
+#### Review Handling During Consolidation
+
+- Inspect review threads on both the destination PR and the source PRs being absorbed
+- Carry forward valid feedback into the destination branch, even if it was originally posted on a source PR
+- After applying those changes, reply on the destination PR and resolve the relevant threads
+- If the destination branch receives a new push during this work, restart the wait-check-review cycle from that latest push
+
+#### Destination PR Hygiene
+
+Rewrite the surviving destination PR so it clearly reads as a consolidated PR.
+
+- Update the title to make the consolidation explicit
+- Update the PR body to list the absorbed PRs
+- Call out conflict resolution and review-feedback incorporation in the body
+- Make the surviving PR the single place where reviewers should look going forward
+
+#### Superseded PR Hygiene
+
+For every absorbed source PR:
+
+- Leave a comment that it is superseded by the destination PR
+- Link the destination PR in that comment
+- Close the superseded PR after commenting
+
+Do not leave overlapping PRs open without explanation once the destination PR is ready.
+
+#### Post-Push Rule Still Applies
+
+Consolidation does **not** weaken the CI/review loop. Once a destination-branch push has completed, immediately do the same post-push verification:
+
+```bash
+sleep 300 && gh pr checks "$PR_URL"
+```
+
+Then:
+
+- Fetch review state again
+- Verify unresolved threads again
+- Verify the latest checks again
+
+A consolidated PR is not done until the **latest** destination-branch push has gone through that full loop.
+
+### Final Checklist
+
+- Project-specific reasoning stayed in Part 1
+- Reusable workflow guidance stayed in Part 2
+- The latest pushed commit has been re-checked after CI completed
 - Review state has been fetched again after the latest push
-
----
-
-## Useful Paths & Entry Points
-
-| Purpose | Path |
-| --- | --- |
-| Root layout | `src/app/layout.tsx` |
-| Public profile page | `src/app/[username]/page.tsx` |
-| Dashboard overview page | `src/app/dashboard/page.tsx` |
-| NextAuth config | `src/lib/auth.ts` |
-| NextAuth route | `src/app/api/auth/[...nextauth]/route.ts` |
-| Dashboard summary route | `src/app/api/dashboard/summary/route.ts` |
-| Card image route | `src/app/api/card/[username]/route.ts` |
-| Card renderer | `src/lib/cardRenderer.tsx` |
-| GitHub summary fetchers | `src/lib/github.ts` |
-| Dashboard SWR hooks | `src/hooks/useDashboardData.ts` |
-| Core unit tests | `src/lib/__tests__/*.test.ts` |
-| Route tests | `src/app/api/**/*.test.ts` |
-| CI workflow | `.github/workflows/ci.yml` |
-
----
-
-## Common Tasks
-
-### Add a New Dashboard API Route
-
-1. Add a route handler under `src/app/api/dashboard/.../route.ts`
-2. Check `getServerSession(authOptions)` if auth is required
-3. Return `401` for unauthenticated requests
-4. Keep response shape explicit and typed
-5. Add a test if behavior is non-trivial
-
-### Change GitHub Summary Logic
-
-1. Update `src/lib/github.ts` or the relevant helper
-2. Preserve rate-limit and not-found behavior
-3. Keep authenticated GraphQL paths and unauthenticated fallbacks aligned
-4. Update unit tests in `src/lib/__tests__/`
-
-### Change Card Rendering
-
-1. Update `src/lib/cardRenderer.tsx` and/or `src/lib/cardDataFetcher.ts`
-2. Preserve cache behavior in `src/app/api/card/[username]/route.ts`
-3. Update route tests and renderer/query parsing tests
-
----
-
-## Notes for Agents
-
-- Always ground your work in the actual project structure above, not generic Next.js assumptions
-- This is a Next.js app with internal route handlers, not a split frontend/backend system
-- Tests, type checks, build verification, and PR follow-through are part of the job
-- The `sleep 300 && gh pr checks "$PR_URL"` loop is not optional busywork; it is the default way to verify CI completion before declaring the PR done
-- After any push, rerun the wait-check-review cycle from scratch; previous green checks and previous review state are no longer sufficient
-- In async terminal environments, waiting means keeping the spawned exec session alive and polling it to completion, not merely starting the command
+- For consolidation work, source PRs were commented and closed, and the destination PR became the single active review target
