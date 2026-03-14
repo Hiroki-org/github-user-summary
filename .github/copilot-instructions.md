@@ -396,10 +396,10 @@ Do not leave overlapping PRs open without explanation once the destination PR is
 
 #### Post-Push Rule Still Applies
 
-Consolidation does **not** weaken the CI/review loop. After every destination-branch push, do the same thing:
+Consolidation does **not** weaken the CI/review loop. Once a destination-branch push has completed, immediately do the same post-push verification:
 
 ```bash
-git push && sleep 300 && gh pr checks "$PR_URL"
+sleep 300 && gh pr checks "$PR_URL"
 ```
 
 Then:
@@ -417,4 +417,3 @@ A consolidated PR is not done until the **latest** destination-branch push has g
 - The latest pushed commit has been re-checked after CI completed
 - Review state has been fetched again after the latest push
 - For consolidation work, source PRs were commented and closed, and the destination PR became the single active review target
-
