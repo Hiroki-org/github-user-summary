@@ -630,12 +630,19 @@ export async function fetchActivity(
   const pages = [1, 2, 3];
   const allEvents: GitHubEvent[] = [];
 
-  for (const page of pages) {
+  const promises = pages.map((page) =>
+    restGet<GitHubEvent[]>(
+      `/users/${encodeURIComponent(username)}/events/public?per_page=100&page=${page}`,
+      token
+    )
+  );
+
+  // Suppress unhandled promise rejections for subsequent pages if we break early or throw
+  promises.forEach((p) => p.catch((e) => console.error("Suppressed event fetch error:", e)));
+
+  for (const p of promises) {
     try {
-      const events = await restGet<GitHubEvent[]>(
-        `/users/${encodeURIComponent(username)}/events/public?per_page=100&page=${page}`,
-        token
-      );
+      const events = await p;
       allEvents.push(...events);
       if (events.length < 100) break;
     } catch (error) {
