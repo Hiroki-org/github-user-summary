@@ -252,6 +252,8 @@ gh pr checks "$PR_URL"
 
 After opening the PR, you must keep checking GitHub checks. The default pattern in this repo should be explicit re-checks with `sleep` and `gh`.
 
+Any new push resets this process. After **every** push, treat prior CI state as stale, then restart the check loop from the latest commit.
+
 Use this pattern repeatedly:
 
 ```bash
@@ -262,7 +264,11 @@ sleep 300 && gh pr checks "$PR_URL"
 
 If checks are still running, keep going. If checks fail, investigate immediately and push a fix. Do not assume someone else will watch CI later.
 
+Do not stop after the first green snapshot if you just pushed. A fresh push can still produce a later failure, and it can also attract new bot or human review comments after CI restarts.
+
 `gh pr checks "$PR_URL" --watch` is useful, but the baseline expectation is still the explicit `sleep 300 && gh pr checks "$PR_URL"` re-check pattern because it works well for long-running CI and makes the agent verify completion instead of guessing.
+
+If your terminal tooling launches long-running commands through an async exec session, do not fire-and-forget the `sleep 300 && gh pr checks "$PR_URL"` command. Keep the same session alive and poll it until it exits so the agent actually waits for the delayed check to finish.
 
 ### Merge Readiness
 
@@ -308,7 +314,9 @@ After pushing a review fix:
 sleep 300 && gh pr checks "$PR_URL"
 ```
 
-If checks are still pending, keep repeating the sleep-and-check cycle until they finish or fail.
+Then fetch review state again. A review-fix push can trigger fresh CI, fresh bot comments, or follow-up human review.
+
+If checks are still pending, keep repeating the sleep-and-check cycle until they finish or fail. If new review comments arrive after the push, handle them before treating the PR as done.
 
 ### Conversation Checklist
 
@@ -316,6 +324,7 @@ If checks are still pending, keep repeating the sleep-and-check cycle until they
 - Accepted feedback is reflected in code and tests
 - Deferred feedback is explicitly justified
 - CI has been re-checked after the latest push
+- Review state has been fetched again after the latest push
 
 ---
 
@@ -370,3 +379,5 @@ If checks are still pending, keep repeating the sleep-and-check cycle until they
 - This is a Next.js app with internal route handlers, not a split frontend/backend system
 - Tests, type checks, build verification, and PR follow-through are part of the job
 - The `sleep 300 && gh pr checks "$PR_URL"` loop is not optional busywork; it is the default way to verify CI completion before declaring the PR done
+- After any push, rerun the wait-check-review cycle from scratch; previous green checks and previous review state are no longer sufficient
+- In async terminal environments, waiting means keeping the spawned exec session alive and polling it to completion, not merely starting the command
