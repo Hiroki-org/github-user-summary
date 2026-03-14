@@ -3,7 +3,7 @@ import {
     buildHourlyHeatmapFromCommitDates,
     getMostActiveHour,
     getMostActiveDayFromCalendar
-} from "../yearInReviewUtils";
+} from "@/lib/yearInReviewUtils";
 
 describe("buildHourlyHeatmapFromCommitDates", () => {
     it("returns a 7x24 heatmap initialized with zeros for an empty array", () => {
@@ -51,6 +51,14 @@ describe("getMostActiveHour", () => {
     it("returns 0 for malformed heatmaps instead of throwing", () => {
         expect(getMostActiveHour([])).toBe(0);
         expect(getMostActiveHour([[1, 2, 3]])).toBe(0);
+
+        const withNaN = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
+        withNaN[0][0] = Number.NaN;
+        expect(getMostActiveHour(withNaN)).toBe(0);
+
+        const withInfinity = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
+        withInfinity[1][1] = Number.POSITIVE_INFINITY;
+        expect(getMostActiveHour(withInfinity)).toBe(0);
     });
 
     it("returns the hour with the most commits across all days", () => {

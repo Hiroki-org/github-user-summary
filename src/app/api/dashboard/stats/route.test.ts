@@ -150,4 +150,21 @@ describe("GET /api/dashboard/stats", () => {
         expect(fetchCommitActivityHeatmap).toHaveBeenCalledWith("fetcheduser", expect.any(Number), "mock-token");
         expect(res.status).toBe(200);
     });
+
+    it("should return 500 when fetchViewerLogin fails in fallback path", async () => {
+        vi.mocked(getServerSession).mockResolvedValueOnce({
+            user: { name: "Test User" },
+            accessToken: "mock-token",
+            expires: "1",
+        });
+
+        vi.mocked(fetchViewerLogin).mockRejectedValueOnce(new Error("Viewer lookup failed"));
+
+        const req = createRequest("http://localhost/api/dashboard/stats");
+        const res = await GET(req);
+
+        expect(fetchCommitActivityHeatmap).not.toHaveBeenCalled();
+        expect(res.status).toBe(500);
+        expect(await res.json()).toEqual({ error: "Viewer lookup failed" });
+    });
 });

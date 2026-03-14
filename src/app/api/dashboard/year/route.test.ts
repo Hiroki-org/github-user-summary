@@ -185,4 +185,29 @@ describe("GET /api/dashboard/year", () => {
         const data = await response.json();
         expect(data).toEqual(mockData);
     });
+
+    it("uses fetchViewerLogin when session user login is missing", async () => {
+        const { getServerSession } = await import("next-auth");
+        const { fetchViewerLogin } = await import("@/lib/githubViewer");
+        const { fetchYearInReviewData } = await import("@/lib/githubYearInReview");
+
+        vi.mocked(getServerSession).mockResolvedValueOnce({
+            user: { name: "Test User" },
+            accessToken: "testtoken",
+            expires: "9999-12-31T23:59:59.999Z",
+        });
+
+        vi.mocked(fetchViewerLogin).mockResolvedValueOnce("viewerlogin");
+        const mockData = { totalContributions: 7 };
+        vi.mocked(fetchYearInReviewData).mockResolvedValueOnce(mockData as unknown as Awaited<ReturnType<typeof fetchYearInReviewData>>);
+
+        const { GET } = await import("./route");
+        const req = new NextRequest("http://localhost/api/dashboard/year?year=2023");
+        const response = await GET(req);
+
+        expect(fetchViewerLogin).toHaveBeenCalledWith("testtoken");
+        expect(fetchYearInReviewData).toHaveBeenCalledWith("viewerlogin", 2023, "testtoken");
+        expect(response.status).toBe(200);
+        expect(await response.json()).toEqual(mockData);
+    });
 });

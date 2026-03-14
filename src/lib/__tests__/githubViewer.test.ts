@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { fetchViewerLogin } from "../githubViewer";
-import { GitHubApiError } from "../types";
+import { fetchViewerLogin } from "@/lib/githubViewer";
+import { GitHubApiError } from "@/lib/types";
 
 const mockFetch = vi.fn();
 

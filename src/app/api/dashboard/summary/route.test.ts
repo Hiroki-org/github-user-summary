@@ -86,6 +86,25 @@ describe("GET /api/dashboard/summary", () => {
         expect(fetchUserSummary).toHaveBeenCalledWith("viewerlogin", "token123");
     });
 
+    it("returns 500 if fetchViewerLogin throws in fallback path", async () => {
+        const { getServerSession } = await import("next-auth");
+        const { fetchUserSummary } = await import("@/lib/github");
+        const { fetchViewerLogin } = await import("@/lib/githubViewer");
+
+        vi.mocked(getServerSession).mockResolvedValueOnce({
+            accessToken: "token123",
+        } as unknown as Session);
+
+        vi.mocked(fetchViewerLogin).mockRejectedValueOnce(new Error("Viewer API Error"));
+
+        const response = await GET();
+        const data = await response.json();
+
+        expect(fetchUserSummary).not.toHaveBeenCalled();
+        expect(response.status).toBe(500);
+        expect(data).toEqual({ error: "Viewer API Error" });
+    });
+
     it("returns 500 if fetchUserSummary throws an Error", async () => {
         const { getServerSession } = await import("next-auth");
         const { fetchUserSummary } = await import("@/lib/github");
