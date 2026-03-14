@@ -64,16 +64,8 @@ async function graphql<T>(query: string, token?: string, variables?: Record<stri
     body: JSON.stringify(body),
     next: { revalidate: 300 },
   });
-  if (res.status === 403) {
-    const resetHeader = res.headers.get("X-RateLimit-Reset");
-    const resetTimestamp = resetHeader ? parseInt(resetHeader, 10) : Math.floor(Date.now() / 1000) + 3600;
-    throw new RateLimitError(resetTimestamp);
-  }
-  if (!res.ok) {
-    const body = await res.text().catch(() => "Unknown error");
-    throw new GitHubApiError(body, res.status);
-  }
-  const json = (await res.json()) as { data?: T; errors?: { message: string }[] };
+
+  const json = await handleResponse<{ data?: T; errors?: { message: string }[] }>(res);
   if (json.errors && json.errors.length > 0) {
     throw new GitHubApiError(json.errors[0].message, 422);
   }
