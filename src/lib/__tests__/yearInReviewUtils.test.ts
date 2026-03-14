@@ -48,6 +48,11 @@ describe("getMostActiveHour", () => {
         expect(getMostActiveHour(heatmap)).toBe(0);
     });
 
+    it("returns 0 for malformed heatmaps instead of throwing", () => {
+        expect(getMostActiveHour([])).toBe(0);
+        expect(getMostActiveHour([[1, 2, 3]])).toBe(0);
+    });
+
     it("returns the hour with the most commits across all days", () => {
         const heatmap = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
         heatmap[0][10] = 5; // Sunday hour 10: 5 commits
@@ -89,6 +94,14 @@ describe("getMostActiveDayFromCalendar", () => {
         const calendar = [
             { date: "2023-01-01", count: 0 }, // Sunday
             { date: "2023-01-02", count: -5 }, // Monday
+            { date: "2023-01-03", count: 2 }, // Tuesday
+        ];
+        expect(getMostActiveDayFromCalendar(calendar)).toBe("Tuesday");
+    });
+
+    it("ignores entries with invalid date strings", () => {
+        const calendar = [
+            { date: "not-a-date", count: 10 },
             { date: "2023-01-03", count: 2 }, // Tuesday
         ];
         expect(getMostActiveDayFromCalendar(calendar)).toBe("Tuesday");
