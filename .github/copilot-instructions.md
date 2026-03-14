@@ -323,12 +323,7 @@ After pushing a review fix:
 git push && sleep 300 && gh pr checks "$PR_URL"
 ```
 
-Equivalent expanded form:
-
-```bash
-git push
-sleep 300 && gh pr checks "$PR_URL"
-```
+Keep the `&&` guard, or use an equivalent conditional form. Do not rewrite this as two unconditional lines.
 
 Then fetch review state again. A review-fix push can trigger fresh CI, fresh bot comments, or follow-up human review.
 
