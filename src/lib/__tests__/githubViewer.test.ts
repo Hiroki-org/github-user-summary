@@ -41,17 +41,12 @@ describe("fetchViewerLogin", () => {
       json: async () => ({ message: "Bad credentials" }),
     });
 
-    await expect(fetchViewerLogin("invalid-token")).rejects.toThrow(GitHubApiError);
+    const request = fetchViewerLogin("invalid-token");
 
-    // We can also check specific properties on the error
-    try {
-      await fetchViewerLogin("invalid-token");
-    } catch (e) {
-      expect(e).toBeInstanceOf(GitHubApiError);
-      expect((e as GitHubApiError).status).toBe(401);
-      expect((e as GitHubApiError).message).toBe("Failed to resolve current GitHub user");
-    }
+    await expect(request).rejects.toBeInstanceOf(GitHubApiError);
+    await expect(request).rejects.toHaveProperty("status", 401);
+    await expect(request).rejects.toHaveProperty("message", "Failed to resolve current GitHub user");
 
-    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 });

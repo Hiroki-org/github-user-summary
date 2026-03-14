@@ -7,6 +7,10 @@ vi.mock("next-auth", () => ({
     getServerSession: vi.fn(),
 }));
 
+vi.mock("@/lib/auth", () => ({
+    authOptions: {},
+}));
+
 vi.mock("@/lib/github", () => ({
     fetchUserSummary: vi.fn(),
 }));

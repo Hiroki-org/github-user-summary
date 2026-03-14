@@ -50,6 +50,80 @@ describe("GET /api/dashboard/year", () => {
         expect(data).toEqual({ error: "Invalid year" });
     });
 
+    it("returns 400 if year is before the supported range", async () => {
+        const { getServerSession } = await import("next-auth");
+        vi.mocked(getServerSession).mockResolvedValueOnce({
+            user: { login: "testuser" },
+            accessToken: "testtoken",
+            expires: "9999-12-31T23:59:59.999Z",
+        });
+
+        const { GET } = await import("./route");
+        const req = new NextRequest("http://localhost/api/dashboard/year?year=2007");
+
+        const response = await GET(req);
+        expect(response.status).toBe(400);
+        expect(await response.json()).toEqual({ error: "Invalid year" });
+    });
+
+    it("returns 200 for the earliest supported year", async () => {
+        const { getServerSession } = await import("next-auth");
+        vi.mocked(getServerSession).mockResolvedValueOnce({
+            user: { login: "testuser" },
+            accessToken: "testtoken",
+            expires: "9999-12-31T23:59:59.999Z",
+        });
+
+        const { fetchYearInReviewData } = await import("@/lib/githubYearInReview");
+        const mockData = { totalContributions: 10 };
+        vi.mocked(fetchYearInReviewData).mockResolvedValueOnce(mockData as unknown as Awaited<ReturnType<typeof fetchYearInReviewData>>);
+
+        const { GET } = await import("./route");
+        const req = new NextRequest("http://localhost/api/dashboard/year?year=2008");
+
+        const response = await GET(req);
+        expect(response.status).toBe(200);
+        expect(await response.json()).toEqual(mockData);
+    });
+
+    it("returns 200 for the current year", async () => {
+        const { getServerSession } = await import("next-auth");
+        vi.mocked(getServerSession).mockResolvedValueOnce({
+            user: { login: "testuser" },
+            accessToken: "testtoken",
+            expires: "9999-12-31T23:59:59.999Z",
+        });
+
+        const { fetchYearInReviewData } = await import("@/lib/githubYearInReview");
+        const mockData = { totalContributions: 42 };
+        vi.mocked(fetchYearInReviewData).mockResolvedValueOnce(mockData as unknown as Awaited<ReturnType<typeof fetchYearInReviewData>>);
+
+        const currentYear = new Date().getUTCFullYear();
+        const { GET } = await import("./route");
+        const req = new NextRequest(`http://localhost/api/dashboard/year?year=${currentYear}`);
+
+        const response = await GET(req);
+        expect(response.status).toBe(200);
+        expect(await response.json()).toEqual(mockData);
+    });
+
+    it("returns 400 if year is in the future", async () => {
+        const { getServerSession } = await import("next-auth");
+        vi.mocked(getServerSession).mockResolvedValueOnce({
+            user: { login: "testuser" },
+            accessToken: "testtoken",
+            expires: "9999-12-31T23:59:59.999Z",
+        });
+
+        const futureYear = new Date().getUTCFullYear() + 1;
+        const { GET } = await import("./route");
+        const req = new NextRequest(`http://localhost/api/dashboard/year?year=${futureYear}`);
+
+        const response = await GET(req);
+        expect(response.status).toBe(400);
+        expect(await response.json()).toEqual({ error: "Invalid year" });
+    });
+
     it("handles error path when fetching data fails", async () => {
         const { getServerSession } = await import("next-auth");
         vi.mocked(getServerSession).mockResolvedValueOnce({
@@ -69,6 +143,25 @@ describe("GET /api/dashboard/year", () => {
 
         const data = await response.json();
         expect(data).toEqual({ error: "API Error" });
+    });
+
+    it("handles non-Error failures when fetching data fails", async () => {
+        const { getServerSession } = await import("next-auth");
+        vi.mocked(getServerSession).mockResolvedValueOnce({
+            user: { login: "testuser" },
+            accessToken: "testtoken",
+            expires: "9999-12-31T23:59:59.999Z",
+        });
+
+        const { fetchYearInReviewData } = await import("@/lib/githubYearInReview");
+        vi.mocked(fetchYearInReviewData).mockRejectedValueOnce("String error");
+
+        const { GET } = await import("./route");
+        const req = new NextRequest("http://localhost/api/dashboard/year?year=2023");
+
+        const response = await GET(req);
+        expect(response.status).toBe(500);
+        expect(await response.json()).toEqual({ error: "Unknown error" });
     });
 
     it("returns 200 and data on success", async () => {
