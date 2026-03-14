@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { fetchUserSummary } from "@/lib/github";
 import { fetchViewerLogin } from "@/lib/githubViewer";
 
+import type { UserSummary } from "@/lib/types";
+
 vi.mock("next-auth", () => ({
   getServerSession: vi.fn(),
 }));
@@ -50,7 +52,7 @@ describe("GET /api/dashboard/summary", () => {
     const mockSummary = { profile: { login: "testuser" } };
 
     vi.mocked(getServerSession).mockResolvedValueOnce(mockSession);
-    vi.mocked(fetchUserSummary).mockResolvedValueOnce(mockSummary as any);
+    vi.mocked(fetchUserSummary).mockResolvedValueOnce(mockSummary as unknown as UserSummary);
 
     const { GET } = await import("./route");
     const response = await GET();
@@ -72,7 +74,7 @@ describe("GET /api/dashboard/summary", () => {
 
     vi.mocked(getServerSession).mockResolvedValueOnce(mockSession);
     vi.mocked(fetchViewerLogin).mockResolvedValueOnce("testuser");
-    vi.mocked(fetchUserSummary).mockResolvedValueOnce(mockSummary as any);
+    vi.mocked(fetchUserSummary).mockResolvedValueOnce(mockSummary as unknown as UserSummary);
 
     const { GET } = await import("./route");
     const response = await GET();
