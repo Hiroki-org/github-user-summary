@@ -13,14 +13,9 @@ export function buildHourlyHeatmapFromCommitDates(commitDates: string[]): number
 }
 
 export function getMostActiveHour(heatmap: number[][]): number {
-    const isValidHeatmap =
-        heatmap.length === 7 &&
-        heatmap.every((row) => row.length === 24 && row.every((count) => Number.isFinite(count)));
-
-    if (!isValidHeatmap) {
+    if (!heatmap || heatmap.length !== 7 || !heatmap[0] || heatmap[0].length !== 24) {
         return 0;
     }
-
     let maxCount = -1;
     let mostActiveHour = 0;
     for (let hour = 0; hour < 24; hour += 1) {
