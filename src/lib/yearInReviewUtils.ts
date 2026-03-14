@@ -13,6 +13,14 @@ export function buildHourlyHeatmapFromCommitDates(commitDates: string[]): number
 }
 
 export function getMostActiveHour(heatmap: number[][]): number {
+    const isValidHeatmap =
+        Array.isArray(heatmap) &&
+        heatmap.length === 7 &&
+        heatmap.every((row) => Array.isArray(row) && row.length === 24 && row.every((count) => Number.isFinite(count)));
+
+    if (!isValidHeatmap) {
+        return 0;
+    }
     let maxCount = -1;
     let mostActiveHour = 0;
     for (let hour = 0; hour < 24; hour += 1) {
@@ -36,7 +44,11 @@ export function getMostActiveDayFromCalendar(calendar: { date: string; count: nu
         if (day.count <= 0) {
             continue;
         }
-        const weekday = new Date(`${day.date}T00:00:00Z`).getUTCDay();
+        const parsedDate = new Date(`${day.date}T00:00:00Z`);
+        if (Number.isNaN(parsedDate.getTime())) {
+            continue;
+        }
+        const weekday = parsedDate.getUTCDay();
         totals[weekday] += day.count;
     }
 
