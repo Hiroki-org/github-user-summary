@@ -1,6 +1,8 @@
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
 
+import { logger } from "@/lib/logger";
+
 export const runtime = "edge";
 
 export async function GET(
@@ -30,7 +32,7 @@ export async function GET(
       publicRepos = data.public_repos ?? 0;
     }
   } catch (error) {
-    console.error(`Failed to fetch GitHub profile for OG image: ${username}`, error);
+    logger.error(`Failed to fetch GitHub profile for OG image: ${username}`, error);
     // fallback to defaults
   }
 

@@ -1,3 +1,4 @@
+import HeatmapLegend from "./HeatmapLegend";
 import type { ContributionData } from "@/lib/types";
 
 type Props = {
@@ -5,17 +6,30 @@ type Props = {
 };
 
 const MONTHS = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
 ];
 
-export default function ContributionGraph({ contributions }: Props) {
-  const { calendar } = contributions;
-  if (calendar.length === 0) return null;
+const CELL_SIZE = 12;
+const CELL_GAP = 3;
+const STEP = CELL_SIZE + CELL_GAP;
+const DAY_LABEL_WIDTH = 28;
 
-  const cellSize = 12;
-  const cellGap = 3;
-  const step = cellSize + cellGap;
+function processCalendarData(calendar: ContributionData["calendar"]) {
+  if (calendar.length === 0) {
+    return { weeks: [], monthLabels: [], maxCount: 1 };
+  }
+
   const maxCount = Math.max(...calendar.map((d) => d.count), 1);
 
   // Group entries by week columns
@@ -39,10 +53,6 @@ export default function ContributionGraph({ contributions }: Props) {
   }
   if (currentWeek.length > 0) weeks.push(currentWeek);
 
-  const dayLabelWidth = 28;
-  const svgWidth = dayLabelWidth + weeks.length * step + cellGap;
-  const svgHeight = 7 * step + 20;
-
   const monthLabels: { label: string; x: number }[] = [];
   let lastMonth = -1;
   weeks.forEach((week, wIdx) => {
@@ -51,11 +61,23 @@ export default function ContributionGraph({ contributions }: Props) {
     if (month !== lastMonth) {
       monthLabels.push({
         label: MONTHS[month],
-        x: dayLabelWidth + wIdx * step,
+        x: DAY_LABEL_WIDTH + wIdx * STEP,
       });
       lastMonth = month;
     }
   });
+
+  return { weeks, monthLabels, maxCount };
+}
+
+export default function ContributionGraph({ contributions }: Props) {
+  const { calendar } = contributions;
+  if (calendar.length === 0) return null;
+
+  const { weeks, monthLabels, maxCount } = processCalendarData(calendar);
+
+  const svgWidth = DAY_LABEL_WIDTH + weeks.length * STEP + CELL_GAP;
+  const svgHeight = 7 * STEP + 20;
 
   const dayLabels = ["", "Mon", "", "Wed", "", "Fri", ""];
 
@@ -97,7 +119,7 @@ export default function ContributionGraph({ contributions }: Props) {
             <text
               key={idx}
               x={0}
-              y={18 + idx * step + cellSize / 2 + 3}
+              y={18 + idx * STEP + CELL_SIZE / 2 + 3}
               className="fill-muted text-[10px]"
             >
               {label}
@@ -109,39 +131,25 @@ export default function ContributionGraph({ contributions }: Props) {
           week.map((entry) => (
             <rect
               key={entry.date}
-              x={dayLabelWidth + wIdx * step}
-              y={18 + entry.dayOfWeek * step}
-              width={cellSize}
-              height={cellSize}
+              x={DAY_LABEL_WIDTH + wIdx * STEP}
+              y={18 + entry.dayOfWeek * STEP}
+              width={CELL_SIZE}
+              height={CELL_SIZE}
               rx={2}
               fill={getIntensityColor(entry.count)}
               className="transition-all duration-200 hover:opacity-70 hover:stroke-foreground/20"
               style={{ strokeWidth: 1 }}
             >
               <title>
-                {entry.date}: {entry.count} contribution{entry.count !== 1 ? "s" : ""}
+                {entry.date}: {entry.count} contribution
+                {entry.count !== 1 ? "s" : ""}
               </title>
             </rect>
           )),
         )}
       </svg>
 
-      <div className="mt-2 flex items-center justify-end gap-1 text-xs text-muted">
-        <span>Less</span>
-        {[0, 1, 2, 3, 4].map((level) => (
-          <div
-            key={level}
-            className="h-3 w-3 rounded-sm"
-            style={{
-              backgroundColor:
-                level === 0
-                  ? "rgba(var(--card-border-rgb), 0.4)"
-                  : `rgba(var(--accent-rgb), ${0.2 + level * 0.2})`,
-            }}
-          />
-        ))}
-        <span>More</span>
-      </div>
+      <HeatmapLegend />
     </div>
   );
 }
