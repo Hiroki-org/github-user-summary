@@ -22,12 +22,6 @@ import {
 const GITHUB_API = "https://api.github.com";
 const GITHUB_GRAPHQL = "https://api.github.com/graphql";
 
-
-function getRateLimitReset(res: Response): number {
-  const resetHeader = res.headers.get("X-RateLimit-Reset");
-  return resetHeader ? parseInt(resetHeader, 10) : Math.floor(Date.now() / 1000) + 3600;
-}
-
 function headers(token?: string): HeadersInit {
   const h: HeadersInit = {
     Accept: "application/vnd.github+json",
@@ -44,7 +38,9 @@ async function handleResponse<T>(res: Response): Promise<T> {
     throw new UserNotFoundError("unknown");
   }
   if (res.status === 403) {
-    throw new RateLimitError(getRateLimitReset(res));
+    const resetHeader = res.headers.get("X-RateLimit-Reset");
+    const resetTimestamp = resetHeader ? parseInt(resetHeader, 10) : Math.floor(Date.now() / 1000) + 3600;
+    throw new RateLimitError(resetTimestamp);
   }
   if (!res.ok) {
     const body = await res.text().catch(() => "Unknown error");
@@ -68,8 +64,16 @@ async function graphql<T>(query: string, token?: string, variables?: Record<stri
     body: JSON.stringify(body),
     next: { revalidate: 300 },
   });
-
-  const json = await handleResponse<{ data?: T; errors?: { message: string }[] }>(res);
+  if (res.status === 403) {
+    const resetHeader = res.headers.get("X-RateLimit-Reset");
+    const resetTimestamp = resetHeader ? parseInt(resetHeader, 10) : Math.floor(Date.now() / 1000) + 3600;
+    throw new RateLimitError(resetTimestamp);
+  }
+  if (!res.ok) {
+    const body = await res.text().catch(() => "Unknown error");
+    throw new GitHubApiError(body, res.status);
+  }
+  const json = (await res.json()) as { data?: T; errors?: { message: string }[] };
   if (json.errors && json.errors.length > 0) {
     throw new GitHubApiError(json.errors[0].message, 422);
   }
@@ -631,10 +635,8 @@ export async function fetchActivity(
     )
   );
 
-  // Prevent unhandled rejections from later pages while keeping the failures observable.
-  promises.forEach((p) =>
-    p.catch((err) => console.error("Suppressed event fetch error:", err))
-  );
+  // Suppress unhandled promise rejections for subsequent pages if we break early or throw
+  promises.forEach((p) => p.catch((e) => console.error("Suppressed event fetch error:", e)));
 
   for (const p of promises) {
     try {
