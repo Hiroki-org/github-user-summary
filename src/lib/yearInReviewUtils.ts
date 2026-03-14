@@ -16,17 +16,11 @@ export function getMostActiveHour(heatmap: number[][]): number {
     const isValidHeatmap =
         Array.isArray(heatmap) &&
         heatmap.length === 7 &&
-        heatmap.every(
-            (row) =>
-                Array.isArray(row) &&
-                row.length === 24 &&
-                row.every((count) => Number.isFinite(count)),
-        );
+        heatmap.every((row) => Array.isArray(row) && row.length === 24 && row.every((count) => Number.isFinite(count)));
 
     if (!isValidHeatmap) {
         return 0;
     }
-
     let maxCount = -1;
     let mostActiveHour = 0;
     for (let hour = 0; hour < 24; hour += 1) {
