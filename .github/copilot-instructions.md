@@ -212,6 +212,8 @@ When testing route handlers:
 
 ## Part 2: General Agent Workflow Playbooks
 
+> REFERENCE-ONLY: Do not adopt this section into `main` unless it is explicitly approved as repository policy.
+
 This half is intentionally more general than the project-specific section above.
 
 - Keep the repo-specific facts in Part 1 grounded in this repository.
