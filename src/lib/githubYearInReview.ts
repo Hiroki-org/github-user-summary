@@ -128,9 +128,7 @@ async function fetchCommitDatesForTopRepos(
         .sort((a, b) => b.contributions.totalCount - a.contributions.totalCount)
         .slice(0, 4);
 
-    const allDates: string[] = [];
-
-    for (const repo of candidates) {
+    const promises = candidates.map(async (repo) => {
         const path = `/repos/${repo.repository.owner.login}/${repo.repository.name}/commits`;
         const url = new URL(`${GITHUB_API}${path}`);
         url.searchParams.set("author", username);
@@ -143,19 +141,22 @@ async function fetchCommitDatesForTopRepos(
             handleRateLimit(res);
         }
         if (!res.ok) {
-            continue;
+            return [];
         }
 
         const commits = (await res.json()) as GitHubCommit[];
+        const dates: string[] = [];
         for (const commit of commits) {
             const date = commit.commit.author?.date;
             if (date) {
-                allDates.push(date);
+                dates.push(date);
             }
         }
-    }
+        return dates;
+    });
 
-    return allDates;
+    const results = await Promise.all(promises);
+    return results.flat();
 }
 
 export async function fetchYearInReviewData(username: string, year: number, token?: string): Promise<YearInReviewData> {

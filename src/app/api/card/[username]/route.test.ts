@@ -40,4 +40,16 @@ describe("GET /api/card/[username] cache headers", () => {
         expect(response.status).toBe(404);
         expect(response.headers.get("Cache-Control")).toBe("public, s-maxage=60, stale-while-revalidate=120");
     });
+
+    it("uses short cache header on error", async () => {
+        const { fetchCardData } = await import("@/lib/cardDataFetcher");
+        vi.mocked(fetchCardData).mockRejectedValueOnce(new Error("API Error"));
+
+        const { GET } = await import("./route");
+        const req = new Request("http://localhost/api/card/erroruser");
+        const response = await GET(req, { params: Promise.resolve({ username: "erroruser" }) });
+
+        expect(response.status).toBe(503);
+        expect(response.headers.get("Cache-Control")).toBe("public, s-maxage=60, stale-while-revalidate=120");
+    });
 });
