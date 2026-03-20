@@ -76,4 +76,128 @@ describe("getTopicSizeClass", () => {
     expect(getTopicSizeClass(topics[2].count, maxCount)).toBe("text-sm font-medium");
     expect(getTopicSizeClass(topics[3].count, maxCount)).toBe("text-xs");
   });
+
+  // ---------- 異常値・エッジケース (count < 0, count > maxCount, NaN, Infinity) ----------
+  it("count が負の値の場合 'text-xs' を返す", () => {
+    expect(getTopicSizeClass(-5, 10)).toBe("text-xs");
+  });
+
+  it("count が maxCount を超える場合 'text-base font-semibold' を返す", () => {
+    expect(getTopicSizeClass(15, 10)).toBe("text-base font-semibold");
+  });
+
+  it("count が NaN の場合 'text-xs' を返す", () => {
+    expect(getTopicSizeClass(NaN, 10)).toBe("text-xs");
+  });
+
+  it("maxCount が NaN の場合 'text-xs' を返す", () => {
+    expect(getTopicSizeClass(5, NaN)).toBe("text-xs");
+  });
+
+  it("count が Infinity の場合 'text-base font-semibold' を返す", () => {
+    expect(getTopicSizeClass(Infinity, 10)).toBe("text-base font-semibold");
+  });
+
+  it("maxCount が Infinity の場合 'text-xs' を返す", () => {
+    expect(getTopicSizeClass(5, Infinity)).toBe("text-xs");
+  });
+
+  // ---------- Additional Edge Cases (Requested) ----------
+  it("returns 'text-xs' when count is 0", () => {
+    expect(getTopicSizeClass(0, 10)).toBe("text-xs");
+  });
+
+  it("returns 'text-base font-semibold' when count equals maxCount", () => {
+    expect(getTopicSizeClass(10, 10)).toBe("text-base font-semibold");
+  });
+
+  // ---------- Additional explicit Edge Cases (count=0, count=maxCount) ----------
+  it("count=0 の場合 (明示的エッジケース) 'text-xs' を返す", () => {
+    expect(getTopicSizeClass(0, 50)).toBe("text-xs");
+  });
+
+  it("count=maxCount の場合 (明示的エッジケース) 'text-base font-semibold' を返す", () => {
+    expect(getTopicSizeClass(50, 50)).toBe("text-base font-semibold");
+  });
+
+  // ---------- 異常値・エッジケース (count < 0, count > maxCount, NaN, Infinity) ----------
+  it("count が負の値の場合 'text-xs' を返す", () => {
+    expect(getTopicSizeClass(-5, 10)).toBe("text-xs");
+  });
+
+  it("count が maxCount を超える場合 'text-base font-semibold' を返す", () => {
+    expect(getTopicSizeClass(15, 10)).toBe("text-base font-semibold");
+  });
+
+  it("count が NaN の場合 'text-xs' を返す", () => {
+    expect(getTopicSizeClass(NaN, 10)).toBe("text-xs");
+  });
+
+  it("maxCount が NaN の場合 'text-xs' を返す", () => {
+    expect(getTopicSizeClass(5, NaN)).toBe("text-xs");
+  });
+
+  it("count が Infinity の場合 'text-base font-semibold' を返す", () => {
+    expect(getTopicSizeClass(Infinity, 10)).toBe("text-base font-semibold");
+  });
+
+  it("maxCount が Infinity の場合 'text-xs' を返す", () => {
+    expect(getTopicSizeClass(5, Infinity)).toBe("text-xs");
+  });
+
+
+
+  // ---------- 明示的エッジケース (count=0, count=maxCount) ----------
+  it("count=0 の場合 'text-xs' を返す", () => {
+    expect(getTopicSizeClass(0, 50)).toBe("text-xs");
+  });
+
+  it("count=maxCount の場合 'text-base font-semibold' を返す", () => {
+    expect(getTopicSizeClass(50, 50)).toBe("text-base font-semibold");
+  });
+
+  // ---------- 異常値・エッジケース (count < 0, count > maxCount, NaN, Infinity) ----------
+  it("count が負の値の場合 'text-xs' を返す", () => {
+    expect(getTopicSizeClass(-5, 10)).toBe("text-xs");
+  });
+
+  it("count が maxCount を超える場合 'text-base font-semibold' を返す", () => {
+    expect(getTopicSizeClass(15, 10)).toBe("text-base font-semibold");
+  });
+
+  it("count が NaN の場合 'text-xs' を返す", () => {
+    expect(getTopicSizeClass(NaN, 10)).toBe("text-xs");
+  });
+
+  it("maxCount が NaN の場合 'text-xs' を返す", () => {
+    expect(getTopicSizeClass(5, NaN)).toBe("text-xs");
+  });
+
+  it("count が Infinity の場合 'text-base font-semibold' を返す", () => {
+    expect(getTopicSizeClass(Infinity, 10)).toBe("text-base font-semibold");
+  });
+
+  it("maxCount が Infinity の場合 'text-xs' を返す", () => {
+    expect(getTopicSizeClass(5, Infinity)).toBe("text-xs");
+  });
+
+
+  // ---------- Additional Edge Cases (Requested) ----------
+  it("returns 'text-xs' when count is 0", () => {
+    expect(getTopicSizeClass(0, 10)).toBe("text-xs");
+  });
+
+  it("returns 'text-base font-semibold' when count equals maxCount", () => {
+    expect(getTopicSizeClass(10, 10)).toBe("text-base font-semibold");
+  });
+
+
+  // ---------- Additional Edge Cases (Requested) ----------
+  it("returns 'text-xs' when count is 0", () => {
+    expect(getTopicSizeClass(0, 10)).toBe("text-xs");
+  });
+
+  it("returns 'text-base font-semibold' when count equals maxCount", () => {
+    expect(getTopicSizeClass(10, 10)).toBe("text-base font-semibold");
+  });
 });
