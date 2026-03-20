@@ -234,8 +234,6 @@ export async function fetchYearInReviewData(username: string, year: number, toke
     const from = new Date(Date.UTC(year, 0, 1, 0, 0, 0));
     const to = new Date(Date.UTC(year, 11, 31, 23, 59, 59));
 
-
-
     const response = await graphql<YearInReviewResponse>(YEAR_IN_REVIEW_QUERY, token, {
         login: username,
         from: from.toISOString(),
