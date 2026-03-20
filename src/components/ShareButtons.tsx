@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { logger } from "@/lib/logger";
 
 type Props = {
   username: string;
@@ -29,17 +30,35 @@ export default function ShareButtons({ username }: Props) {
 
   const handleCopy = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(getShareUrl());
-    } catch {
-      // Fallback for older browsers
-      const textArea = document.createElement("textarea");
-      textArea.value = getShareUrl();
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textArea);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(getShareUrl());
+        showCopiedFeedback();
+        return;
+      }
+      throw new Error("Clipboard API not available");
+    } catch (err) {
+      try {
+        // Fallback for older browsers
+        const textArea = document.createElement("textarea");
+        textArea.value = getShareUrl();
+        document.body.appendChild(textArea);
+        let successful = false;
+        try {
+          textArea.select();
+          successful = document.execCommand("copy");
+        } finally {
+          document.body.removeChild(textArea);
+        }
+
+        if (successful) {
+          showCopiedFeedback();
+        } else {
+          throw new Error("document.execCommand('copy') failed");
+        }
+      } catch (fallbackErr) {
+        logger.error("Failed to copy", err, fallbackErr);
+      }
     }
-    showCopiedFeedback();
   }, [getShareUrl, showCopiedFeedback]);
 
   const handleTwitterShare = useCallback(() => {

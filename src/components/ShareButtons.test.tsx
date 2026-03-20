@@ -4,6 +4,7 @@
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import ShareButtons from "./ShareButtons";
+import { logger } from "@/lib/logger";
 
 describe("ShareButtons", () => {
   let originalClipboard: Navigator["clipboard"] | undefined;
@@ -11,6 +12,7 @@ describe("ShareButtons", () => {
   let originalLocation: Location;
 
   beforeEach(() => {
+    vi.spyOn(logger, 'error').mockImplementation(() => {});
     originalClipboard = navigator.clipboard;
     originalExecCommand = document.execCommand;
     originalLocation = window.location;
@@ -151,5 +153,44 @@ describe("ShareButtons", () => {
     await waitFor(() => {
       expect(screen.getByText("Copy URL")).toBeDefined();
     });
+  });
+
+  it("logs an error and does not show 'Copied!' feedback when both copy methods fail", async () => {
+    // 1. Mock clipboard.writeText to reject
+    const writeTextMock = vi.fn().mockRejectedValue(new Error("Clipboard API failed"));
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock,
+      },
+    });
+
+    // 2. Mock execCommand to return false (failure)
+    const execCommandMock = vi.fn().mockReturnValue(false);
+    document.execCommand = execCommandMock;
+
+    render(<ShareButtons username="johndoe" />);
+
+    const copyButton = screen.getByRole("button", { name: "Copy profile URL" });
+
+    fireEvent.click(copyButton);
+
+    await waitFor(() => {
+      expect(writeTextMock).toHaveBeenCalledWith("http://localhost/johndoe");
+    });
+
+    await waitFor(() => {
+      expect(execCommandMock).toHaveBeenCalledWith("copy");
+    });
+
+    // Verify logger.error was called
+    expect(logger.error).toHaveBeenCalledWith(
+      "Failed to copy",
+      expect.any(Error), // error from clipboard.writeText
+      expect.any(Error)  // error from execCommand fallback failing
+    );
+
+    // Verify button text remains unchanged
+    expect(screen.getByText("Copy URL")).toBeDefined();
+    expect(screen.queryByText("Copied!")).toBeNull();
   });
 });
