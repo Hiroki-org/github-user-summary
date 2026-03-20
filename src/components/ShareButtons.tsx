@@ -29,35 +29,45 @@ export default function ShareButtons({ username }: Props) {
   }, [username]);
 
   const handleCopy = useCallback(async () => {
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
+    let clipboardError: unknown = null;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
         await navigator.clipboard.writeText(getShareUrl());
         showCopiedFeedback();
         return;
+      } catch (err) {
+        clipboardError = err;
       }
-      throw new Error("Clipboard API not available");
-    } catch (err) {
-      try {
-        // Fallback for older browsers
-        const textArea = document.createElement("textarea");
-        textArea.value = getShareUrl();
-        document.body.appendChild(textArea);
-        let successful = false;
-        try {
-          textArea.select();
-          successful = document.execCommand("copy");
-        } finally {
-          document.body.removeChild(textArea);
-        }
+    } else {
+      clipboardError = new Error("Clipboard API not available");
+    }
 
-        if (successful) {
-          showCopiedFeedback();
-        } else {
-          throw new Error("document.execCommand('copy') failed");
-        }
-      } catch (fallbackErr) {
-        logger.error("Failed to copy", err, fallbackErr);
+    // Fallback for older browsers
+    const textArea = document.createElement("textarea");
+    textArea.value = getShareUrl();
+    document.body.appendChild(textArea);
+
+    let successful = false;
+    let fallbackError: unknown = null;
+
+    try {
+      textArea.select();
+      successful = document.execCommand("copy");
+      if (!successful) {
+        fallbackError = new Error("document.execCommand('copy') failed");
       }
+    } catch (err) {
+      successful = false;
+      fallbackError = err;
+    } finally {
+      document.body.removeChild(textArea);
+    }
+
+    if (successful) {
+      showCopiedFeedback();
+    } else {
+      logger.error("Failed to copy", clipboardError, fallbackError);
     }
   }, [getShareUrl, showCopiedFeedback]);
 
