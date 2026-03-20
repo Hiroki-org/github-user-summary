@@ -10,8 +10,7 @@ describe("fetchViewerLogin", () => {
   it("should throw a GitHubApiError if the token format is invalid", async () => {
     const invalidToken = "invalid\ntoken";
 
-    await expect(fetchViewerLogin(invalidToken)).rejects.toThrow(GitHubApiError);
-    await expect(fetchViewerLogin(invalidToken)).rejects.toThrow("Invalid token format");
+    await expect(fetchViewerLogin(invalidToken)).rejects.toThrowError(new GitHubApiError("Invalid token format", 400));
   });
 
   it("should correctly fetch the viewer login with a valid token", async () => {
@@ -48,7 +47,6 @@ describe("fetchViewerLogin", () => {
 
     vi.stubGlobal("fetch", fetchMock);
 
-    await expect(fetchViewerLogin(validToken)).rejects.toThrow(GitHubApiError);
-    await expect(fetchViewerLogin(validToken)).rejects.toThrow("Failed to resolve current GitHub user");
+    await expect(fetchViewerLogin(validToken)).rejects.toThrowError(new GitHubApiError("Failed to resolve current GitHub user", 401));
   });
 });
