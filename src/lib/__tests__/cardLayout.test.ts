@@ -71,10 +71,12 @@ describe("cardLayout utilities", () => {
 
   it("moveBlock clamps targetIndex when negative", () => {
     const layout = cloneDefaultCardLayout();
-    const moved = moveBlock(layout, "stats", "left", -5);
+    // Default left column is ["avatar", "bio", "stats", "topLanguages"]
+    // Move "topLanguages" to -5 should put it at index 0
+    const moved = moveBlock(layout, "topLanguages", "left", -5);
 
     const left = moved.blocks.filter((b) => b.column === "left").map((b) => b.id);
-    expect(left).toEqual(["stats", "avatar", "bio"]);
+    expect(left).toEqual(["topLanguages", "avatar", "bio", "stats"]);
   });
 
   it("moveBlock clamps targetIndex when exceeding column length", () => {
