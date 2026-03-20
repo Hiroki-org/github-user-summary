@@ -37,12 +37,40 @@ describe("cardLayout utilities", () => {
     expect(normalized.blocks).toHaveLength(5);
   });
 
-  it("toggleBlockVisibility flips only the target block", () => {
-    const layout = cloneDefaultCardLayout();
-    const next = toggleBlockVisibility(layout, "bio");
+describe("toggleBlockVisibility", () => {
+    it("toggles block visibility to false", () => {
+      const layout = cloneDefaultCardLayout(); // 'bio' is visible by default
+      const next = toggleBlockVisibility(layout, "bio");
 
-    expect(next.blocks.find((b) => b.id === "bio")?.visible).toBe(false);
-    expect(next.blocks.find((b) => b.id === "avatar")?.visible).toBe(true);
+      expect(next.blocks.find((b) => b.id === "bio")?.visible).toBe(false);
+    });
+
+    it("toggles block visibility to true", () => {
+      const layout = cloneDefaultCardLayout();
+      const firstToggle = toggleBlockVisibility(layout, "bio");
+      const next = toggleBlockVisibility(firstToggle, "bio");
+
+      expect(next.blocks.find((b) => b.id === "bio")?.visible).toBe(true);
+    });
+
+    it("does not affect other blocks", () => {
+      const layout = cloneDefaultCardLayout();
+      const next = toggleBlockVisibility(layout, "bio");
+
+      expect(next.blocks.find((b) => b.id === "avatar")?.visible).toBe(true);
+      expect(next.blocks.find((b) => b.id === "stats")?.visible).toBe(true);
+      expect(next.blocks.find((b) => b.id === "topLanguages")?.visible).toBe(true);
+      expect(next.blocks.find((b) => b.id === "topRepos")?.visible).toBe(true);
+    });
+
+    it("returns unmodified layout blocks if blockId is not found", () => {
+      const layout = cloneDefaultCardLayout();
+      // Use unknown block ID
+      // We have to cast to unknown -> CardBlockId here because TS would complain
+      const next = toggleBlockVisibility(layout, "nonExistent" as unknown as import("../types").CardBlockId);
+
+      expect(next.blocks).toEqual(layout.blocks);
+    });
   });
 
   it("moveBlock reorders within same column", () => {
