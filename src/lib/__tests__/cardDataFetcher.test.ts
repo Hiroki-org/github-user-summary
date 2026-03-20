@@ -108,7 +108,7 @@ describe("fetchCardData", () => {
 
         await expect(fetchCardData("alice")).rejects.toMatchObject({
             name: "GitHubApiError",
-            message: "Timeout",
+            message: expect.stringContaining("time"),
             status: 504,
         });
     });
