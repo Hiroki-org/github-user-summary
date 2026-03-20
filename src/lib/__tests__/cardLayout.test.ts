@@ -6,19 +6,26 @@ import {
   normalizeCardLayout,
   toggleBlockVisibility,
 } from "../cardLayout";
+import { DEFAULT_CARD_LAYOUT } from "../types";
 
 describe("cardLayout utilities", () => {
-  it("cloneDefaultCardLayout returns all default blocks", () => {
-    const layout = cloneDefaultCardLayout();
+  describe("cloneDefaultCardLayout", () => {
+    it("returns a new object structurally equal to DEFAULT_CARD_LAYOUT", () => {
+      const layout = cloneDefaultCardLayout();
+      expect(layout).toEqual(DEFAULT_CARD_LAYOUT);
+    });
 
-    expect(layout.blocks.map((b) => b.id)).toEqual([
-      "avatar",
-      "bio",
-      "stats",
-      "topLanguages",
-      "topRepos",
-    ]);
-    expect(layout.blocks.every((b) => b.visible)).toBe(true);
+    it("returns a deep copy, modifying the clone does not affect the default", () => {
+      const layout = cloneDefaultCardLayout();
+
+      // Ensure different array reference
+      expect(layout.blocks).not.toBe(DEFAULT_CARD_LAYOUT.blocks);
+
+      // Ensure different block references
+      layout.blocks.forEach((block, index) => {
+        expect(block).not.toBe(DEFAULT_CARD_LAYOUT.blocks[index]);
+      });
+    });
   });
 
   it("normalizeCardLayout fills missing blocks and removes invalid ones", () => {
