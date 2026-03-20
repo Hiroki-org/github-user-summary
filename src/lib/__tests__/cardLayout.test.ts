@@ -64,7 +64,7 @@ describe("cardLayout utilities", () => {
   it("moveBlock returns original layout if blockId is not found", () => {
     const layout = cloneDefaultCardLayout();
     // Use an invalid blockId, casted to avoid type error
-    const moved = moveBlock(layout, "invalid-block-id" as any, "left", 0);
+    const moved = moveBlock(layout, "invalid-block-id" as unknown as import("../types").CardBlockId, "left", 0);
 
     expect(moved).toBe(layout); // Should return the exact same reference
   });
