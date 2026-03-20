@@ -5,6 +5,11 @@ type GitHubViewerResponse = {
 };
 
 export async function fetchViewerLogin(token: string): Promise<string> {
+  // Basic validation to prevent header injection / SSRF
+  if (!/^[A-Za-z0-9_.-]+$/.test(token)) {
+    throw new GitHubApiError("Invalid token format", 400);
+  }
+
   const res = await fetch("https://api.github.com/user", {
     headers: {
       Accept: "application/vnd.github+json",
