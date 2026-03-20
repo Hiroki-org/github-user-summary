@@ -1,0 +1,16 @@
+--- src/lib/__tests__/yearInReviewUtils.test.ts
++++ src/lib/__tests__/yearInReviewUtils.test.ts
+@@ -128,4 +128,13 @@
+         // "Monday" should be returned since it appears earlier in the [Sunday, Monday, ...] array
+         expect(getMostActiveDayFromCalendar(calendar)).toBe("Monday");
+     });
++
++    it("ignores items with invalid date strings", () => {
++        const calendar = [
++            { date: "invalid-date", count: 100 }, // Should be ignored
++            { date: "2023-01-05", count: 2 }, // Thursday
++        ];
++        // The valid Thursday should win despite the large count on the invalid date
++        expect(getMostActiveDayFromCalendar(calendar)).toBe("Thursday");
++    });
+ });
