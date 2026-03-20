@@ -60,4 +60,28 @@ describe("cardLayout utilities", () => {
     const full = moved.blocks.filter((b) => b.column === "full").map((b) => b.id);
     expect(full).toEqual(["topRepos"]);
   });
+
+  it("moveBlock returns original layout when moving non-existent block", () => {
+    const layout = cloneDefaultCardLayout();
+    // @ts-expect-error Testing invalid block ID
+    const moved = moveBlock(layout, "nonExistentBlock", "left", 0);
+
+    expect(moved).toBe(layout);
+  });
+
+  it("moveBlock clamps targetIndex when negative", () => {
+    const layout = cloneDefaultCardLayout();
+    const moved = moveBlock(layout, "stats", "left", -5);
+
+    const left = moved.blocks.filter((b) => b.column === "left").map((b) => b.id);
+    expect(left).toEqual(["stats", "avatar", "bio"]);
+  });
+
+  it("moveBlock clamps targetIndex when exceeding column length", () => {
+    const layout = cloneDefaultCardLayout();
+    const moved = moveBlock(layout, "avatar", "left", 100);
+
+    const left = moved.blocks.filter((b) => b.column === "left").map((b) => b.id);
+    expect(left).toEqual(["bio", "stats", "avatar"]);
+  });
 });
