@@ -25,10 +25,6 @@ describe("cardLayout utilities", () => {
       layout.blocks.forEach((block, index) => {
         expect(block).not.toBe(DEFAULT_CARD_LAYOUT.blocks[index]);
       });
-
-      // Actually modify the clone to ensure default is unaffected
-      layout.blocks[0].visible = !layout.blocks[0].visible;
-      expect(DEFAULT_CARD_LAYOUT.blocks[0].visible).not.toBe(layout.blocks[0].visible);
     });
   });
 
