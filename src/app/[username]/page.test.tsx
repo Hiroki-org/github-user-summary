@@ -48,7 +48,7 @@ vi.mock('@/components/InterestsCard', () => ({
   default: () => <div data-testid="mock-interests-card" />
 }));
 vi.mock('@/components/AnimatedWrapper', () => ({
-  default: ({ children }: any) => <div data-testid="mock-animated-wrapper">{children}</div>
+  default: ({ children }: { children: React.ReactNode }) => <div data-testid="mock-animated-wrapper">{children}</div>
 }));
 vi.mock('@/components/MyPageBanner', () => ({
   default: () => <div data-testid="mock-mypage-banner" />
