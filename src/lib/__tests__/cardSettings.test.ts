@@ -54,6 +54,27 @@ describe("cardSettings", () => {
             expect(getItemMock).toHaveBeenCalledTimes(2); // One for layout, one for options
         });
 
+        it("safely handles partially invalid JSON across multiple localStorage keys (safeParse fallback)", () => {
+            const mockLayout: CardLayout = { blocks: [{ id: "bio", visible: true, column: "full" }] };
+
+            // Return valid JSON for layout, but completely invalid JSON for options
+            getItemMock.mockImplementation((key: string) => {
+                if (key === "card-layout") return JSON.stringify(mockLayout);
+                if (key === "card-display-options") return "completely { invalid [] JSON !!";
+                return null;
+            });
+
+            const settings = loadCardSettings();
+
+            // Valid layout should be loaded
+            expect(settings.layout).toEqual(mockLayout);
+            // Invalid options should fallback to defaults smoothly
+            expect(settings.options.showCompany).toBe(true);
+            expect(settings.options.showTwitter).toBe(true);
+            expect(getItemMock).toHaveBeenCalledWith("card-layout");
+            expect(getItemMock).toHaveBeenCalledWith("card-display-options");
+        });
+
         it("returns parsed settings from localStorage when window is defined", () => {
             const mockLayout: CardLayout = { blocks: [{ id: "bio", visible: true, column: "left" }] };
             const mockOptions: Partial<CardDisplayOptions> = { showTwitter: false, showLocation: false };
