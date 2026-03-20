@@ -89,7 +89,7 @@ async function getJson<T>(url: string): Promise<{ status: number; data: T | null
         });
     } catch (error) {
         if ((error as Error).name === "AbortError") {
-            throw new GitHubApiError("GitHub API request timed out", 504);
+            throw new GitHubApiError("Timeout", 504);
         }
         throw error;
     } finally {
