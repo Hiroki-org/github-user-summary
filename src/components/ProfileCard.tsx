@@ -1,4 +1,5 @@
 import type { UserProfile } from "@/lib/types";
+import { sanitizeUrl } from "@/lib/validators";
 
 type Props = {
   profile: UserProfile;
@@ -32,7 +33,7 @@ const ProfileMeta = ({ profile, joinDate }: { profile: UserProfile; joinDate: st
     )}
     {profile.blog && (
       <a
-        href={profile.blog.startsWith("http") ? profile.blog : `https://${profile.blog}`}
+        href={sanitizeUrl(profile.blog)}
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center gap-2 hover:text-accent transition-colors"
@@ -109,7 +110,7 @@ const PinnedRepos = ({ repos }: { repos: UserProfile["pinnedRepos"] }) => {
         {repos.map((repo) => (
           <a
             key={repo.name}
-            href={repo.url}
+            href={sanitizeUrl(repo.url)}
             target="_blank"
             rel="noopener noreferrer"
             className="group flex flex-col justify-between rounded-lg border border-card-border bg-card-bg/30 p-4 hover:border-accent hover:bg-accent/5 hover:shadow-lg transition-all duration-300"

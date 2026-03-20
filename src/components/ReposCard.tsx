@@ -1,4 +1,5 @@
 import type { RepositoryData } from "@/lib/types";
+import { sanitizeUrl } from "@/lib/validators";
 
 type Props = {
   repositories: RepositoryData;
@@ -29,7 +30,7 @@ export default function ReposCard({ repositories }: Props) {
         {topRepos.map((repo, i) => (
           <a
             key={repo.name}
-            href={repo.url}
+            href={sanitizeUrl(repo.url)}
             target="_blank"
             rel="noopener noreferrer"
             className="group block rounded-lg border border-card-border/50 bg-card-bg/30 p-3 hover:border-accent hover:bg-accent/5 hover:shadow-md transition-all duration-300"
