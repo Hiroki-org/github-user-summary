@@ -177,7 +177,7 @@ export default function CardGeneratorModal({ summary, isOpen, onClose }: Props) 
             setPreviewUrl(url);
           }
         } catch (err) {
-          logger.error("Failed to generate image", err);
+          // Error is already logged in generateImage
           if (!isCancelled) {
             setPreviewUrl(null);
           }
