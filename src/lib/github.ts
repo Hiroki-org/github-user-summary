@@ -675,7 +675,8 @@ export async function fetchActivity(
     }
 
     // Fast hour extraction from YYYY-MM-DDTHH:MM:SSZ
-    const hour = (createdAt.charCodeAt(11) - 48) * 10 + (createdAt.charCodeAt(12) - 48);
+    const charCodeZero = '0'.charCodeAt(0);
+    const hour = (createdAt.charCodeAt(11) - charCodeZero) * 10 + (createdAt.charCodeAt(12) - charCodeZero);
     heatmap[day][hour]++;
 
     eventCountMap.set(event.type, (eventCountMap.get(event.type) ?? 0) + 1);
