@@ -88,11 +88,14 @@ describe("cardLayout utilities", () => {
 
   it("moveBlock does not mutate original layout", () => {
     const layout = cloneDefaultCardLayout();
-    const layoutCopy = cloneDefaultCardLayout();
 
-    moveBlock(layout, "avatar", "right", 0);
+    const moved = moveBlock(layout, "avatar", "right", 0);
 
-    // Verify original layout structure wasn't changed
-    expect(layout.blocks).toEqual(layoutCopy.blocks);
+    // Verify original layout structure wasn't changed (deep equality)
+    expect(layout.blocks).toEqual(cloneDefaultCardLayout().blocks);
+
+    // Verify a new reference is returned
+    expect(moved).not.toBe(layout);
+    expect(moved.blocks).not.toBe(layout.blocks);
   });
 });
