@@ -10,7 +10,7 @@ vi.mock("fast-average-color", () => {
   const mockGetColorAsync = vi.fn();
   const mockDestroy = vi.fn();
   return {
-    FastAverageColor: vi.fn().mockImplementation(function() {
+    FastAverageColor: vi.fn().mockImplementation(function(this: any) {
       this.getColorAsync = mockGetColorAsync;
       this.destroy = mockDestroy;
       return this;
