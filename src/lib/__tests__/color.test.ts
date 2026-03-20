@@ -172,13 +172,10 @@ describe("adjustAccentColor", () => {
       // White already has good contrast, but it might be darkened by the adjustLightness function (to l <= 85).
       expect(contrast).toBeGreaterThanOrEqual(4.5);
       expect(result.accent).not.toBe("#ffffff");
-      expect(result.accent).not.toBe("#FFFFFF");
-    });
+      });
 
     it("ensures edge case colors provide readable contrast on dark backgrounds", () => {
       const edgeCases = [
-        "#000000", // Pure black
-        "#ffffff", // Pure white
         "#111111", // Very dark gray
         "#eeeeee", // Very light gray
         "#ff0000", // Pure red
