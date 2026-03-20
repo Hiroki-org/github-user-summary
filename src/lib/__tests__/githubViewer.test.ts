@@ -31,14 +31,11 @@ describe("fetchViewerLogin", () => {
     }));
   });
 
-  it("should throw a GitHubApiError and not call fetch when the token contains invalid characters (e.g. newline)", async () => {
-    await expect(fetchViewerLogin("invalid\ntoken")).rejects.toThrow(GitHubApiError);
-    await expect(fetchViewerLogin("invalid\ntoken")).rejects.toThrow("Invalid token format");
-    expect(mockFetch).not.toHaveBeenCalled();
-  });
-
-  it("should throw a GitHubApiError and not call fetch when the token contains spaces", async () => {
-    await expect(fetchViewerLogin("invalid token")).rejects.toThrow(GitHubApiError);
+  it.each([
+    { description: "a newline character", token: "invalid\ntoken" },
+    { description: "a space", token: "invalid token" },
+  ])("should throw a GitHubApiError when the token contains $description", async ({ token }) => {
+    await expect(fetchViewerLogin(token)).rejects.toMatchObject({ message: "Invalid token format", status: 400 });
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
@@ -49,13 +46,6 @@ describe("fetchViewerLogin", () => {
       statusText: "Unauthorized",
     } as Response);
 
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      status: 401,
-      statusText: "Unauthorized",
-    } as Response);
-
-    await expect(fetchViewerLogin("valid_token")).rejects.toThrow(GitHubApiError);
-    await expect(fetchViewerLogin("valid_token")).rejects.toThrow("Failed to resolve current GitHub user");
+    await expect(fetchViewerLogin("valid_token")).rejects.toMatchObject({ message: "Failed to resolve current GitHub user", status: 401 });
   });
 });
