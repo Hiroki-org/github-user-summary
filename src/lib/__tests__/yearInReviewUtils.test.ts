@@ -59,6 +59,8 @@ describe("buildHourlyHeatmapFromCommitDates", () => {
         expect(heatmap[0][0]).toBe(1);
         expect(heatmap[0][23]).toBe(1);
         expect(heatmap[6][0]).toBe(1);
+        const totalCommits = heatmap.flat().reduce((sum, count) => sum + count, 0);
+        expect(totalCommits).toBe(3);
     });
 
     it("correctly handles different timezone offsets in ISO strings", () => {
@@ -69,6 +71,8 @@ describe("buildHourlyHeatmapFromCommitDates", () => {
         const heatmap = buildHourlyHeatmapFromCommitDates(commitDates);
         expect(heatmap[0][1]).toBe(1);
         expect(heatmap[0][15]).toBe(1);
+        const totalCommits = heatmap.flat().reduce((sum, count) => sum + count, 0);
+        expect(totalCommits).toBe(2);
     });
 });
 
