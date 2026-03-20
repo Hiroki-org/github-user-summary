@@ -20,6 +20,8 @@ import {
 
 import BusinessCard from "./BusinessCard";
 import LayoutEditor from "./LayoutEditor";
+import { logger } from "@/lib/logger";
+
 
 const DEFAULT_DISPLAY_OPTIONS: CardDisplayOptions = {
   showCompany: false,
@@ -132,7 +134,7 @@ export default function CardGeneratorModal({ summary, isOpen, onClose }: Props) 
       });
       return dataUrl;
     } catch (err) {
-      console.error("Failed to generate image", err);
+      logger.error("Failed to generate image", err);
       return null;
     }
   }, []);
@@ -175,7 +177,7 @@ export default function CardGeneratorModal({ summary, isOpen, onClose }: Props) 
             setPreviewUrl(url);
           }
         } catch (err) {
-          console.error("Failed to generate image", err);
+          logger.error("Failed to generate image", err);
           if (!isCancelled) {
             setPreviewUrl(null);
           }
@@ -231,7 +233,7 @@ export default function CardGeneratorModal({ summary, isOpen, onClose }: Props) 
       setCopyStatus("copied");
       setTimeout(() => setCopyStatus("idle"), 2000);
     } catch (err) {
-      console.error("Failed to copy", err);
+      logger.error("Failed to copy", err);
       setCopyStatus("error");
     }
   }, []);
