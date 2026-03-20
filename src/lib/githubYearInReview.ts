@@ -52,6 +52,47 @@ type GitHubCommit = {
     };
 };
 
+const YEAR_IN_REVIEW_QUERY = `query($login: String!, $from: DateTime!, $to: DateTime!) {
+    user(login: $login) {
+      contributionsCollection(from: $from, to: $to) {
+        totalCommitContributions
+        totalPullRequestContributions
+        totalIssueContributions
+        totalPullRequestReviewContributions
+        contributionCalendar {
+          totalContributions
+          weeks {
+            contributionDays {
+              date
+              contributionCount
+            }
+          }
+        }
+        commitContributionsByRepository(maxRepositories: 10) {
+          repository {
+            name
+            owner { login }
+          }
+          contributions { totalCount }
+        }
+        pullRequestContributionsByRepository(maxRepositories: 10) {
+          repository {
+            name
+            owner { login }
+          }
+          contributions { totalCount }
+        }
+        issueContributionsByRepository(maxRepositories: 10) {
+          repository {
+            name
+            owner { login }
+          }
+          contributions { totalCount }
+        }
+      }
+    }
+  }`;
+
 function headers(token: string): HeadersInit {
     return {
         Accept: "application/vnd.github+json",
@@ -159,76 +200,14 @@ async function fetchCommitDatesForTopRepos(
     return results.flat();
 }
 
-export async function fetchYearInReviewData(username: string, year: number, token?: string): Promise<YearInReviewData> {
-    if (!token) {
-        throw new GitHubApiError("Year in Review requires authentication token", 401);
-    }
 
-    const from = new Date(Date.UTC(year, 0, 1, 0, 0, 0));
-    const to = new Date(Date.UTC(year, 11, 31, 23, 59, 59));
-
-    const query = `query($login: String!, $from: DateTime!, $to: DateTime!) {
-    user(login: $login) {
-      contributionsCollection(from: $from, to: $to) {
-        totalCommitContributions
-        totalPullRequestContributions
-        totalIssueContributions
-        totalPullRequestReviewContributions
-        contributionCalendar {
-          totalContributions
-          weeks {
-            contributionDays {
-              date
-              contributionCount
-            }
-          }
-        }
-        commitContributionsByRepository(maxRepositories: 10) {
-          repository {
-            name
-            owner { login }
-          }
-          contributions { totalCount }
-        }
-        pullRequestContributionsByRepository(maxRepositories: 10) {
-          repository {
-            name
-            owner { login }
-          }
-          contributions { totalCount }
-        }
-        issueContributionsByRepository(maxRepositories: 10) {
-          repository {
-            name
-            owner { login }
-          }
-          contributions { totalCount }
-        }
-      }
-    }
-  }`;
-
-    const response = await graphql<YearInReviewResponse>(query, token, {
-        login: username,
-        from: from.toISOString(),
-        to: to.toISOString(),
-    });
-
-    if (!response.user) {
-        throw new UserNotFoundError(username);
-    }
-
-    const collection = response.user.contributionsCollection;
+function formatYearInReviewData(
+    year: number,
+    collection: NonNullable<YearInReviewResponse["user"]>["contributionsCollection"],
+    commitDates: string[]
+): YearInReviewData {
     const contributionCalendar = collection.contributionCalendar.weeks.flatMap((week) =>
         week.contributionDays.map((day) => ({ date: day.date, count: day.contributionCount }))
-    );
-
-    const commitDates = await fetchCommitDatesForTopRepos(
-        username,
-        token,
-        from.toISOString(),
-        to.toISOString(),
-        collection.commitContributionsByRepository
     );
 
     const hourlyHeatmap = buildHourlyHeatmapFromCommitDates(commitDates);
@@ -245,6 +224,39 @@ export async function fetchYearInReviewData(username: string, year: number, toke
         topRepository: mergeTopRepository(collection),
         contributionCalendar,
     };
+}
+
+export async function fetchYearInReviewData(username: string, year: number, token?: string): Promise<YearInReviewData> {
+    if (!token) {
+        throw new GitHubApiError("Year in Review requires authentication token", 401);
+    }
+
+    const from = new Date(Date.UTC(year, 0, 1, 0, 0, 0));
+    const to = new Date(Date.UTC(year, 11, 31, 23, 59, 59));
+
+    const query = YEAR_IN_REVIEW_QUERY;
+
+    const response = await graphql<YearInReviewResponse>(query, token, {
+        login: username,
+        from: from.toISOString(),
+        to: to.toISOString(),
+    });
+
+    if (!response.user) {
+        throw new UserNotFoundError(username);
+    }
+
+    const collection = response.user.contributionsCollection;
+
+    const commitDates = await fetchCommitDatesForTopRepos(
+        username,
+        token,
+        from.toISOString(),
+        to.toISOString(),
+        collection.commitContributionsByRepository
+    );
+
+    return formatYearInReviewData(year, collection, commitDates);
 }
 
 export async function fetchCommitActivityHeatmap(username: string, year: number, token?: string): Promise<number[][]> {
