@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { fetchViewerLogin } from "../githubViewer";
-import { GitHubApiError } from "@/lib/types";
+import { fetchViewerLogin } from "@/lib/githubViewer";
 
 describe("fetchViewerLogin", () => {
   const originalFetch = global.fetch;
