@@ -662,11 +662,20 @@ export async function fetchActivity(
   );
 
   const eventCountMap = new Map<string, number>();
+  const dayCache = new Map<string, number>();
 
   for (const event of allEvents) {
-    const date = new Date(event.created_at);
-    const day = date.getUTCDay(); // 0=Sun, 6=Sat
-    const hour = date.getUTCHours();
+    const createdAt = event.created_at;
+    const datePart = createdAt.slice(0, 10);
+
+    let day = dayCache.get(datePart);
+    if (day === undefined) {
+      day = new Date(datePart).getUTCDay(); // 0=Sun, 6=Sat
+      dayCache.set(datePart, day);
+    }
+
+    // Fast hour extraction from YYYY-MM-DDTHH:MM:SSZ
+    const hour = (createdAt.charCodeAt(11) - 48) * 10 + (createdAt.charCodeAt(12) - 48);
     heatmap[day][hour]++;
 
     eventCountMap.set(event.type, (eventCountMap.get(event.type) ?? 0) + 1);
