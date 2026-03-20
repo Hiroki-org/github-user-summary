@@ -138,3 +138,27 @@ describe("GET /api/dashboard/summary", () => {
     expect(data.error).toBe("Unknown error");
   });
 });
+
+describe("Additional exception handling tests", () => {
+  it("returns 500 when fetchUserSummary throws a specific error", async () => {
+    const { getServerSession } = await import("next-auth");
+    const { fetchUserSummary } = await import("@/lib/github");
+    const { GET } = await import("./route");
+
+    const mockSession = {
+      accessToken: "fake-token",
+      user: { login: "testuser" },
+    };
+
+    vi.mocked(getServerSession).mockResolvedValueOnce(mockSession);
+
+    const specificErrorMessage = "Custom API Failure";
+    vi.mocked(fetchUserSummary).mockRejectedValueOnce(new Error(specificErrorMessage));
+
+    const response = await GET();
+    const data = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(data.error).toBe(specificErrorMessage);
+  });
+});
