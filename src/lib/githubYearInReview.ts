@@ -3,7 +3,7 @@ import "server-only";
 import { GitHubApiError, RateLimitError, UserNotFoundError, type YearInReviewData } from "@/lib/types";
 import { buildHourlyHeatmapFromCommitDates, getMostActiveDayFromCalendar, getMostActiveHour } from "@/lib/yearInReviewUtils";
 
-const YEAR_IN_REVIEW_QUERY = `query($login: String!, $from: DateTime!, $to: DateTime!) {
+const YEAR_IN_REVIEW_QUERY = `query($login: String!, $from: DateTime!, $to: DateTime!, $maxRepositories: Int!) {
     user(login: $login) {
       contributionsCollection(from: $from, to: $to) {
         totalCommitContributions
@@ -19,21 +19,21 @@ const YEAR_IN_REVIEW_QUERY = `query($login: String!, $from: DateTime!, $to: Date
             }
           }
         }
-        commitContributionsByRepository(maxRepositories: 10) {
+        commitContributionsByRepository(maxRepositories: $maxRepositories) {
           repository {
             name
             owner { login }
           }
           contributions { totalCount }
         }
-        pullRequestContributionsByRepository(maxRepositories: 10) {
+        pullRequestContributionsByRepository(maxRepositories: $maxRepositories) {
           repository {
             name
             owner { login }
           }
           contributions { totalCount }
         }
-        issueContributionsByRepository(maxRepositories: 10) {
+        issueContributionsByRepository(maxRepositories: $maxRepositories) {
           repository {
             name
             owner { login }
@@ -239,6 +239,7 @@ export async function fetchYearInReviewData(username: string, year: number, toke
         login: username,
         from: from.toISOString(),
         to: to.toISOString(),
+        maxRepositories: 10,
     });
 
     if (!response.user) {
