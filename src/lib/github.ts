@@ -28,6 +28,9 @@ function headers(token?: string): HeadersInit {
     "User-Agent": "github-user-summary",
   };
   if (token) {
+    if (!/^[A-Za-z0-9_=-]+$/.test(token)) {
+      throw new GitHubApiError("Invalid token format", 400);
+    }
     h.Authorization = `Bearer ${token}`;
   }
   return h;
