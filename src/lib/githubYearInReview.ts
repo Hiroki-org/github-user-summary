@@ -200,7 +200,6 @@ async function fetchCommitDatesForTopRepos(
     return results.flat();
 }
 
-
 function buildYearInReviewData(
     year: number,
     collection: NonNullable<YearInReviewResponse["user"]>["contributionsCollection"],
@@ -234,28 +233,35 @@ export async function fetchYearInReviewData(username: string, year: number, toke
     const from = new Date(Date.UTC(year, 0, 1, 0, 0, 0));
     const to = new Date(Date.UTC(year, 11, 31, 23, 59, 59));
 
+    try {
+        const response = await graphql<YearInReviewResponse>(YEAR_IN_REVIEW_QUERY, token, {
+            login: username,
+            from: from.toISOString(),
+            to: to.toISOString(),
+            maxRepositories: 10,
+        });
 
-    const response = await graphql<YearInReviewResponse>(YEAR_IN_REVIEW_QUERY, token, {
-        login: username,
-        from: from.toISOString(),
-        to: to.toISOString(),
-        maxRepositories: 10,
-    });
+        if (!response.user) {
+            throw new UserNotFoundError(username);
+        }
 
-    if (!response.user) {
-        throw new UserNotFoundError(username);
+        const collection = response.user.contributionsCollection;
+
+        const commitDates = await fetchCommitDatesForTopRepos(
+            username,
+            token,
+            from.toISOString(),
+            to.toISOString(),
+            collection.commitContributionsByRepository
+        );
+
+        return buildYearInReviewData(year, collection, commitDates);
+    } catch (error) {
+        if (error instanceof UserNotFoundError || error instanceof RateLimitError || error instanceof GitHubApiError) {
+            throw error;
+        }
+        throw new GitHubApiError(error instanceof Error ? error.message : "Failed to fetch year in review data", 500);
     }
-
-    const collection = response.user.contributionsCollection;
-    const commitDates = await fetchCommitDatesForTopRepos(
-        username,
-        token,
-        from.toISOString(),
-        to.toISOString(),
-        collection.commitContributionsByRepository
-    );
-
-    return buildYearInReviewData(year, collection, commitDates);
 }
 
 export async function fetchCommitActivityHeatmap(username: string, year: number, token?: string): Promise<number[][]> {
