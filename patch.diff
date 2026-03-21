@@ -1,0 +1,24 @@
+--- src/lib/__tests__/yearInReviewUtils.test.ts
++++ src/lib/__tests__/yearInReviewUtils.test.ts
+@@ -83,6 +83,21 @@
+         // Hour 5 is encountered first in the 0..23 loop
+         expect(getMostActiveHour(heatmap)).toBe(5);
+     });
++
++    it("returns 0 when all hours have the same number of commits", () => {
++        const heatmap = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 1));
++        // All totals are 7 (1 per day for 7 days), the first hour (0) should be returned
++        expect(getMostActiveHour(heatmap)).toBe(0);
++    });
++
++    it("correctly identifies the most active hour even when commits are sparsely distributed", () => {
++        const heatmap = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
++        heatmap[6][23] = 1;
++        heatmap[5][23] = 1; // Hour 23 has 2 commits
++        heatmap[0][1] = 1;  // Hour 1 has 1 commit
++
++        expect(getMostActiveHour(heatmap)).toBe(23);
++    });
+ });
+
+ describe("getMostActiveDayFromCalendar", () => {
