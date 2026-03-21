@@ -77,6 +77,25 @@ describe("isValidGitHubUsername", () => {
   it("SQLインジェクション的な文字列は無効", () => {
     expect(isValidGitHubUsername("'; DROP TABLE users; --")).toBe(false);
   });
+
+  it("マルチバイト文字（日本語や絵文字）を含むユーザー名は無効", () => {
+    expect(isValidGitHubUsername("テスト")).toBe(false);
+    expect(isValidGitHubUsername("user😀")).toBe(false);
+    expect(isValidGitHubUsername("déjà-vu")).toBe(false);
+  });
+
+  it("空白文字や制御文字を含むユーザー名は無効", () => {
+    expect(isValidGitHubUsername(" testuser")).toBe(false);
+    expect(isValidGitHubUsername("testuser ")).toBe(false);
+    expect(isValidGitHubUsername("test\nuser")).toBe(false);
+    expect(isValidGitHubUsername("test\tuser")).toBe(false);
+    expect(isValidGitHubUsername("test\0user")).toBe(false);
+  });
+
+  it("極端に長い文字列は無効 (長さ上限の確認)", () => {
+    expect(isValidGitHubUsername("a".repeat(1000))).toBe(false);
+  });
+
 });
 
 describe("sanitizeUrl", () => {
