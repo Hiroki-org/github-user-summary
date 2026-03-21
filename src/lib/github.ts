@@ -321,15 +321,12 @@ async function fetchRepositoriesREST(username: string): Promise<RepositoryData> 
   }
 
   const totalRepoCount = Array.from(languageRepoCount.values()).reduce((a, b) => a + b, 0);
-  const languages: LanguageStats[] = Array.from(languageRepoCount.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10)
-    .map(([name, repoCount]) => ({
-      name,
-      bytes: repoCount,
-      percentage: totalRepoCount > 0 ? Math.round((repoCount / totalRepoCount) * 1000) / 10 : 0,
-      color: getLanguageColor(name),
-    }));
+  const languages: LanguageStats[] = getTopK(languageRepoCount, 10).map(({ name, count }) => ({
+    name,
+    bytes: count,
+    percentage: totalRepoCount > 0 ? Math.round((count / totalRepoCount) * 1000) / 10 : 0,
+    color: getLanguageColor(name),
+  }));
 
   const topRepos: TopRepo[] = nonFork.slice(0, 5).map((r) => ({
     name: r.name,
@@ -342,10 +339,7 @@ async function fetchRepositoriesREST(username: string): Promise<RepositoryData> 
       : null,
   }));
 
-  const topics = Array.from(topicCountMap.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10)
-    .map(([name, count]) => ({ name, count }));
+  const topics = getTopK(topicCountMap, 10);
 
   return { languages, topics, topRepos, totalCount: nonFork.length };
 }
@@ -374,15 +368,27 @@ function processRepoData(repos: RepoNode[]): RepositoryData {
   }
 
   const totalBytes = Array.from(languageMap.values()).reduce((a, b) => a + b.bytes, 0);
-  const languages: LanguageStats[] = Array.from(languageMap.entries())
-    .sort((a, b) => b[1].bytes - a[1].bytes)
-    .slice(0, 10)
-    .map(([name, { bytes, color }]) => ({
-      name,
-      bytes,
-      percentage: totalBytes > 0 ? Math.round((bytes / totalBytes) * 1000) / 10 : 0,
-      color,
-    }));
+  const topLanguages: { name: string; bytes: number; color: string }[] = [];
+  for (const [name, data] of languageMap.entries()) {
+    if (topLanguages.length < 10) {
+      topLanguages.push({ name, ...data });
+      topLanguages.sort((a, b) => b.bytes - a.bytes);
+    } else if (data.bytes > topLanguages[9].bytes) {
+      let i = 8;
+      while (i >= 0 && topLanguages[i].bytes < data.bytes) {
+        topLanguages[i + 1] = topLanguages[i];
+        i--;
+      }
+      topLanguages[i + 1] = { name, ...data };
+    }
+  }
+
+  const languages: LanguageStats[] = topLanguages.map(({ name, bytes, color }) => ({
+    name,
+    bytes,
+    percentage: totalBytes > 0 ? Math.round((bytes / totalBytes) * 1000) / 10 : 0,
+    color,
+  }));
 
   const topRepos: TopRepo[] = repos.slice(0, 5).map((r) => ({
     name: r.name,
@@ -393,10 +399,7 @@ function processRepoData(repos: RepoNode[]): RepositoryData {
     primaryLanguage: r.primaryLanguage,
   }));
 
-  const topics = Array.from(topicCountMap.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10)
-    .map(([name, count]) => ({ name, count }));
+  const topics = getTopK(topicCountMap, 10);
 
   return { languages, topics, topRepos, totalCount: repos.length };
 }
@@ -595,15 +598,9 @@ export async function fetchStarredRepos(
     }
   }
 
-  const topTopics = Array.from(topicCounts.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10)
-    .map(([name, count]) => ({ name, count }));
+  const topTopics = getTopK(topicCounts, 10);
 
-  const topLanguages = Array.from(languageCounts.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10)
-    .map(([name, count]) => ({ name, count }));
+  const topLanguages = getTopK(languageCounts, 10);
 
   return {
     topTopics,
@@ -665,11 +662,21 @@ export async function fetchActivity(
   );
 
   const eventCountMap = new Map<string, number>();
+  const dayCache = new Map<string, number>();
 
   for (const event of allEvents) {
-    const date = new Date(event.created_at);
-    const day = date.getUTCDay(); // 0=Sun, 6=Sat
-    const hour = date.getUTCHours();
+    const createdAt = event.created_at;
+    const datePart = createdAt.slice(0, 10);
+
+    let day = dayCache.get(datePart);
+    if (day === undefined) {
+      day = new Date(datePart).getUTCDay(); // 0=Sun, 6=Sat
+      dayCache.set(datePart, day);
+    }
+
+    // Fast hour extraction from YYYY-MM-DDTHH:MM:SSZ
+    const charCodeZero = '0'.charCodeAt(0);
+    const hour = (createdAt.charCodeAt(11) - charCodeZero) * 10 + (createdAt.charCodeAt(12) - charCodeZero);
     heatmap[day][hour]++;
 
     eventCountMap.set(event.type, (eventCountMap.get(event.type) ?? 0) + 1);
@@ -687,6 +694,29 @@ export async function fetchActivity(
 }
 
 // ===== 6. fetchUserSummary =====
+
+
+/**
+ * 効率的に Map から上位 K 件を抽出するヘルパー関数
+ * 配列の作成とソートを最小限に抑えることでパフォーマンスを向上させます
+ */
+function getTopK(map: Map<string, number>, k: number = 10): { name: string; count: number }[] {
+  const top: { name: string; count: number }[] = [];
+  for (const [name, count] of map.entries()) {
+    if (top.length < k) {
+      top.push({ name, count });
+      top.sort((a, b) => b.count - a.count);
+    } else if (count > top[k - 1].count) {
+      let i = k - 2;
+      while (i >= 0 && top[i].count < count) {
+        top[i + 1] = top[i];
+        i--;
+      }
+      top[i + 1] = { name, count };
+    }
+  }
+  return top;
+}
 
 /**
  * 結果を処理し、エラーがあれば記録するヘルパー関数
