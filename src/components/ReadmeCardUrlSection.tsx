@@ -30,6 +30,12 @@ export default function ReadmeCardUrlSection({ username, layout, options }: Prop
       stats: "stats",
       topLanguages: "langs",
       topRepos: "repos",
+      profile: null,
+      contributions: null,
+      heatmap: null,
+      interests: null,
+      skills: null,
+      repos: "repos",
     };
 
     const selected = layout.blocks

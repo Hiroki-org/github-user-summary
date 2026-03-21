@@ -1,10 +1,16 @@
 import type { CardDisplayOptions, CardLayout } from "@/lib/types";
+export type { CardDisplayOptions, CardLayout };
 import { DEFAULT_CARD_LAYOUT } from "@/lib/types";
 
 const LAYOUT_KEY = "card-layout";
 const OPTIONS_KEY = "card-display-options";
 
-const defaultOptions: CardDisplayOptions = {
+export const DEFAULT_DISPLAY_OPTIONS: CardDisplayOptions = {
+    showAvatar: true,
+    showBio: true,
+    showStats: true,
+    showLanguage: true,
+    showRepos: true,
     showCompany: true,
     showLocation: true,
     showWebsite: true,
@@ -34,7 +40,7 @@ function safeParse<T>(raw: string | null): T | null {
 
 export function loadCardSettings(): { layout: CardLayout; options: CardDisplayOptions } {
     if (!hasWindow()) {
-        return { layout: DEFAULT_CARD_LAYOUT, options: defaultOptions };
+        return { layout: DEFAULT_CARD_LAYOUT, options: DEFAULT_DISPLAY_OPTIONS };
     }
 
     const parsedLayout = safeParse<CardLayout>(window.localStorage.getItem(LAYOUT_KEY));
@@ -42,7 +48,7 @@ export function loadCardSettings(): { layout: CardLayout; options: CardDisplayOp
 
     return {
         layout: parsedLayout ?? DEFAULT_CARD_LAYOUT,
-        options: { ...defaultOptions, ...(parsedOptions ?? {}) },
+        options: { ...DEFAULT_DISPLAY_OPTIONS, ...(parsedOptions ?? {}) },
     };
 }
 
@@ -58,6 +64,6 @@ export function saveCardSettings(layout: CardLayout, options: CardDisplayOptions
 export function getDefaultCardSettings(): { layout: CardLayout; options: CardDisplayOptions } {
     return {
         layout: DEFAULT_CARD_LAYOUT,
-        options: defaultOptions,
+        options: DEFAULT_DISPLAY_OPTIONS,
     };
 }

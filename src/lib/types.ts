@@ -101,7 +101,18 @@ export type YearInReviewData = {
   }[];
 };
 
-export type CardBlockId = "avatar" | "bio" | "stats" | "topLanguages" | "topRepos";
+export type CardBlockId =
+  | "profile"
+  | "contributions"
+  | "heatmap"
+  | "interests"
+  | "skills"
+  | "repos"
+  | "avatar"
+  | "bio"
+  | "stats"
+  | "topLanguages"
+  | "topRepos";
 
 export type CardBlock = {
   id: CardBlockId;
@@ -114,6 +125,11 @@ export type CardLayout = {
 };
 
 export type CardDisplayOptions = {
+  showAvatar?: boolean;
+  showBio?: boolean;
+  showStats?: boolean;
+  showLanguage?: boolean;
+  showRepos?: boolean;
   showCompany?: boolean;
   showLocation?: boolean;
   showWebsite?: boolean;
@@ -128,6 +144,11 @@ export type CardDisplayOptions = {
 
 export const DEFAULT_CARD_LAYOUT: CardLayout = {
   blocks: [
+    { id: "profile", visible: true, column: "full" },
+    { id: "contributions", visible: true, column: "full" },
+    { id: "heatmap", visible: true, column: "full" },
+    { id: "interests", visible: true, column: "full" },
+    { id: "skills", visible: true, column: "full" },
     { id: "avatar", visible: true, column: "left" },
     { id: "bio", visible: true, column: "left" },
     { id: "stats", visible: true, column: "left" },

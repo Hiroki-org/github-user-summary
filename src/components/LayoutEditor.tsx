@@ -34,6 +34,12 @@ const BLOCK_LABELS: Record<CardBlockId, string> = {
   stats: "Stats",
   topLanguages: "Top Languages",
   topRepos: "Top Repositories",
+  profile: "Profile Card",
+  contributions: "Contributions",
+  heatmap: "Activity Heatmap",
+  interests: "Interests",
+  skills: "Skills",
+  repos: "Popular Repos",
 };
 
 const CONTAINER_LABELS: Record<CardBlock["column"], string> = {

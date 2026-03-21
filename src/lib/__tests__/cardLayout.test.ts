@@ -45,7 +45,7 @@ describe("cardLayout utilities", () => {
       column: "full",
     });
     expect(normalized.blocks.some((b) => (b as { id: string }).id === "unknown")).toBe(false);
-    expect(normalized.blocks).toHaveLength(5);
+    expect(normalized.blocks).toHaveLength(DEFAULT_CARD_LAYOUT.blocks.length);
   });
 
 describe("toggleBlockVisibility", () => {
@@ -94,10 +94,13 @@ describe("toggleBlockVisibility", () => {
 
   it("moveBlock moves between columns", () => {
     const layout = cloneDefaultCardLayout();
+    // In DEFAULT_CARD_LAYOUT, "topRepos" is in "right" column.
+    // There are several blocks in "full" column: profile, contributions, heatmap, interests, skills
     const moved = moveBlock(layout, "topRepos", "full", 0);
 
     const full = moved.blocks.filter((b) => b.column === "full").map((b) => b.id);
-    expect(full).toEqual(["topRepos"]);
+    expect(full).toContain("topRepos");
+    expect(full[0]).toBe("topRepos");
   });
 
   it("moveBlock returns original layout when moving non-existent block", () => {
@@ -110,12 +113,11 @@ describe("toggleBlockVisibility", () => {
 
   it("moveBlock clamps targetIndex when negative", () => {
     const layout = cloneDefaultCardLayout();
-    // Default left column is ["avatar", "bio", "stats", "topLanguages"]
-    // Move "topLanguages" to -5 should put it at index 0
-    const moved = moveBlock(layout, "topLanguages", "left", -5);
+    // Default left column is ["avatar", "bio", "stats"]
+    const moved = moveBlock(layout, "stats", "left", -5);
 
     const left = moved.blocks.filter((b) => b.column === "left").map((b) => b.id);
-    expect(left).toEqual(["topLanguages", "avatar", "bio", "stats"]);
+    expect(left).toEqual(["stats", "avatar", "bio"]);
   });
 
   it("moveBlock clamps targetIndex when exceeding column length", () => {

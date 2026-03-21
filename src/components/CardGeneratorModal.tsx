@@ -133,7 +133,7 @@ export default function CardGeneratorModal({
         modalRef.current.focus();
       }
 
-      const handleKeyDown = (e: KeyboardEvent) => {
+      const handleKeyDown = (e: globalThis.KeyboardEvent) => {
         if (e.key === "Escape") {
           handleClose();
         }
