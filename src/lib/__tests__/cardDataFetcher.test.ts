@@ -97,4 +97,19 @@ describe("fetchCardData", () => {
         const firstCall = mockFetch.mock.calls[0];
         expect(firstCall[1].headers.Authorization).toBe("Bearer abc-token");
     });
+
+    it("throws GitHubApiError on timeout (AbortError)", async () => {
+        const abortError = new Error("The operation was aborted");
+        abortError.name = "AbortError";
+
+        mockFetch.mockRejectedValueOnce(abortError);
+
+        const { fetchCardData } = await import("@/lib/cardDataFetcher");
+
+        await expect(fetchCardData("alice")).rejects.toMatchObject({
+            name: "GitHubApiError",
+            message: expect.stringContaining("time"),
+            status: 504,
+        });
+    });
 });
