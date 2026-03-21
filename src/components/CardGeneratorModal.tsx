@@ -1,77 +1,65 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import {
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  type KeyboardEvent,
+} from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import { toPng, toBlob } from "html-to-image";
-
-import type {
-  CardBlockId,
-  CardDisplayOptions,
-  CardLayout,
-  UserSummary,
-} from "@/lib/types";
+import type { UserSummary, CardLayout, CardBlockId } from "@/lib/types";
+import BusinessCard from "./BusinessCard";
 import {
   cloneDefaultCardLayout,
-  LAYOUT_STORAGE_KEY,
   normalizeCardLayout,
   toggleBlockVisibility,
+  LAYOUT_STORAGE_KEY,
 } from "@/lib/cardLayout";
-
-import BusinessCard from "./BusinessCard";
+import { DEFAULT_DISPLAY_OPTIONS, type CardDisplayOptions } from "@/lib/cardSettings";
 import LayoutEditor from "./LayoutEditor";
+import { logger } from "@/lib/logger";
 
-const DEFAULT_DISPLAY_OPTIONS: CardDisplayOptions = {
-  showCompany: false,
-  showLocation: false,
-  showWebsite: false,
-  showTwitter: false,
-  showJoinedDate: false,
-  showTopics: false,
-  showContributionBreakdown: false,
-  showStreaks: false,
-  showInterests: false,
-  showActivityBreakdown: false,
-};
-
-const MAIN_BLOCKS: Array<{ id: CardBlockId; label: string }> = [
-  { id: "avatar", label: "Show Avatar" },
-  { id: "bio", label: "Show Bio" },
-  { id: "stats", label: "Show Stats" },
-  { id: "topLanguages", label: "Top Languages" },
-  { id: "topRepos", label: "Top Repositories" },
-];
-
-const DETAIL_OPTIONS: Array<{ key: keyof CardDisplayOptions; label: string }> =
-  [
-    { key: "showCompany", label: "Show Company" },
-    { key: "showLocation", label: "Show Location" },
-    { key: "showWebsite", label: "Show Website" },
-    { key: "showTwitter", label: "Show Twitter" },
-    { key: "showJoinedDate", label: "Joined Date" },
-    { key: "showTopics", label: "Show Topics" },
-    { key: "showContributionBreakdown", label: "Contribution Details" },
-    { key: "showStreaks", label: "Show Streaks" },
-    { key: "showInterests", label: "Show Interests" },
-    { key: "showActivityBreakdown", label: "Activity Breakdown" },
-  ];
-
-type Props = {
-  summary: UserSummary;
+interface CardGeneratorModalProps {
   isOpen: boolean;
   onClose: () => void;
-};
+  summary: UserSummary;
+}
 
-export default function CardGeneratorModal({ summary, isOpen, onClose }: Props) {
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+const MAIN_BLOCKS: { id: CardBlockId; label: string }[] = [
+  { id: "profile", label: "Profile" },
+  { id: "contributions", label: "Contributions" },
+  { id: "heatmap", label: "Activity Heatmap" },
+  { id: "interests", label: "Interests" },
+  { id: "repos", label: "Popular Repos" },
+  { id: "skills", label: "Skills" },
+];
+
+const DETAIL_OPTIONS: { key: keyof CardDisplayOptions; label: string }[] = [
+  { key: "showAvatar", label: "Avatar" },
+  { key: "showBio", label: "Bio" },
+  { key: "showStats", label: "Stats" },
+  { key: "showLocation", label: "Location" },
+  { key: "showJoinedDate", label: "Joined Date" },
+  { key: "showTopics", label: "Topics" },
+  { key: "showLanguage", label: "Languages" },
+];
+
+export default function CardGeneratorModal({
+  isOpen,
+  onClose,
+  summary,
+}: CardGeneratorModalProps) {
+  const [activeTab, setActiveTab] = useState<"settings" | "layout">("settings");
+  const [mounted, setMounted] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">(
     "idle",
   );
-  const [mounted, setMounted] = useState(false);
   const [isLayoutHydrated, setIsLayoutHydrated] = useState(false);
-  const [activeTab, setActiveTab] = useState<"settings" | "layout">("settings");
-
   const [layout, setLayout] = useState<CardLayout>(cloneDefaultCardLayout());
   const [displayOptions, setDisplayOptions] = useState<CardDisplayOptions>(
     DEFAULT_DISPLAY_OPTIONS,
@@ -132,7 +120,7 @@ export default function CardGeneratorModal({ summary, isOpen, onClose }: Props) 
       });
       return dataUrl;
     } catch (err) {
-      console.error("Failed to generate image", err);
+      logger.error("Failed to generate image", err);
       return null;
     }
   }, []);
@@ -175,7 +163,7 @@ export default function CardGeneratorModal({ summary, isOpen, onClose }: Props) 
             setPreviewUrl(url);
           }
         } catch (err) {
-          console.error("Failed to generate image", err);
+          // Error is already logged in generateImage
           if (!isCancelled) {
             setPreviewUrl(null);
           }
@@ -213,7 +201,7 @@ export default function CardGeneratorModal({ summary, isOpen, onClose }: Props) 
     link.download = `${summary.profile?.login || "github"}-summary-card.png`;
     link.href = previewUrl;
     link.click();
-  }, [previewUrl, summary.profile?.login]);
+  }, [summary.profile?.login, previewUrl]);
 
   const handleCopy = useCallback(async () => {
     if (!cardRef.current) return;
@@ -231,7 +219,7 @@ export default function CardGeneratorModal({ summary, isOpen, onClose }: Props) 
       setCopyStatus("copied");
       setTimeout(() => setCopyStatus("idle"), 2000);
     } catch (err) {
-      console.error("Failed to copy", err);
+      logger.error("Failed to copy", err);
       setCopyStatus("error");
     }
   }, []);
