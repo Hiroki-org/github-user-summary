@@ -5,7 +5,8 @@ type GitHubViewerResponse = {
 };
 
 export async function fetchViewerLogin(token: string): Promise<string> {
-  if (!/^[A-Za-z0-9_=-]+$/.test(token)) {
+  // Basic validation to prevent header injection / SSRF
+  if (!/^[A-Za-z0-9_=\-\.]+$/.test(token)) {
     throw new GitHubApiError("Invalid token format", 400);
   }
 
