@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { logger } from "@/lib/logger";
 
 type Props = {
   username: string;
@@ -28,18 +29,46 @@ export default function ShareButtons({ username }: Props) {
   }, [username]);
 
   const handleCopy = useCallback(async () => {
+    let clipboardError: unknown = null;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(getShareUrl());
+        showCopiedFeedback();
+        return;
+      } catch (err) {
+        clipboardError = err;
+      }
+    } else {
+      clipboardError = new Error("Clipboard API not available");
+    }
+
+    // Fallback for older browsers
+    const textArea = document.createElement("textarea");
+    textArea.value = getShareUrl();
+    document.body.appendChild(textArea);
+
+    let successful = false;
+    let fallbackError: unknown = null;
+
     try {
-      await navigator.clipboard.writeText(getShareUrl());
-    } catch {
-      // Fallback for older browsers
-      const textArea = document.createElement("textarea");
-      textArea.value = getShareUrl();
-      document.body.appendChild(textArea);
       textArea.select();
-      document.execCommand("copy");
+      successful = document.execCommand("copy");
+      if (!successful) {
+        fallbackError = new Error("document.execCommand('copy') failed");
+      }
+    } catch (err) {
+      successful = false;
+      fallbackError = err;
+    } finally {
       document.body.removeChild(textArea);
     }
-    showCopiedFeedback();
+
+    if (successful) {
+      showCopiedFeedback();
+    } else {
+      logger.error("Failed to copy", clipboardError, fallbackError);
+    }
   }, [getShareUrl, showCopiedFeedback]);
 
   const handleTwitterShare = useCallback(() => {
