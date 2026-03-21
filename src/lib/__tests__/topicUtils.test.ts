@@ -86,8 +86,6 @@ describe("getTopicSizeClass", () => {
     expect(getTopicSizeClass(15, 10)).toBe("text-base font-semibold");
   });
 
-  // NaN/Infinity は実装側で明示ガードしていないため、
-  // 現在の比較ロジックに基づく暗黙的な挙動をここで固定する。
   it("count が NaN の場合 'text-xs' を返す", () => {
     expect(getTopicSizeClass(NaN, 10)).toBe("text-xs");
   });
@@ -102,5 +100,14 @@ describe("getTopicSizeClass", () => {
 
   it("maxCount が Infinity の場合 'text-xs' を返す", () => {
     expect(getTopicSizeClass(5, Infinity)).toBe("text-xs");
+  });
+
+  // ---------- Additional Edge Cases (Requested) ----------
+  it("returns 'text-xs' when count is 0", () => {
+    expect(getTopicSizeClass(0, 10)).toBe("text-xs");
+  });
+
+  it("returns 'text-base font-semibold' when count equals maxCount", () => {
+    expect(getTopicSizeClass(10, 10)).toBe("text-base font-semibold");
   });
 });
