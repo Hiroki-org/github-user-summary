@@ -86,6 +86,8 @@ describe("getTopicSizeClass", () => {
     expect(getTopicSizeClass(15, 10)).toBe("text-base font-semibold");
   });
 
+  // NaN/Infinity は実装側で明示ガードしていないため、
+  // 現在の比較ロジックに基づく暗黙的な挙動をここで固定する。
   it("count が NaN の場合 'text-xs' を返す", () => {
     expect(getTopicSizeClass(NaN, 10)).toBe("text-xs");
   });
