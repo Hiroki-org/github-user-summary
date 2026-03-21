@@ -48,7 +48,34 @@ describe("buildHourlyHeatmapFromCommitDates", () => {
         const totalCommits = heatmap.flat().reduce((sum, count) => sum + count, 0);
         expect(totalCommits).toBe(1);
     });
+
+    it("correctly handles boundary times (midnight and 23:59:59)", () => {
+        const commitDates = [
+            "2023-01-01T00:00:00Z", // Sunday (0), Hour 0
+            "2023-01-01T23:59:59Z", // Sunday (0), Hour 23
+            "2023-01-07T00:00:00Z", // Saturday (6), Hour 0
+        ];
+        const heatmap = buildHourlyHeatmapFromCommitDates(commitDates);
+        expect(heatmap[0][0]).toBe(1);
+        expect(heatmap[0][23]).toBe(1);
+        expect(heatmap[6][0]).toBe(1);
+        const totalCommits = heatmap.flat().reduce((sum, count) => sum + count, 0);
+        expect(totalCommits).toBe(3);
+    });
+
+    it("correctly handles different timezone offsets in ISO strings", () => {
+        const commitDates = [
+            "2023-01-01T10:00:00+09:00", // Sunday 01:00 UTC
+            "2023-01-01T10:00:00-05:00", // Sunday 15:00 UTC
+        ];
+        const heatmap = buildHourlyHeatmapFromCommitDates(commitDates);
+        expect(heatmap[0][1]).toBe(1);
+        expect(heatmap[0][15]).toBe(1);
+        const totalCommits = heatmap.flat().reduce((sum, count) => sum + count, 0);
+        expect(totalCommits).toBe(2);
+    });
 });
+
 
 describe("getMostActiveHour", () => {
     it("returns 0 if heatmap is malformed (not 7x24 matrix)", () => {
