@@ -137,4 +137,56 @@ describe("GET /api/dashboard/summary", () => {
     expect(response.status).toBe(500);
     expect(data.error).toBe("Unknown error");
   });
+
+  it("returns 500 if fetchUserSummary fails with UserNotFoundError", async () => {
+    const mockSession = {
+      accessToken: "fake-token",
+      user: { login: "testuser" },
+    };
+
+    class UserNotFoundError extends Error {
+      constructor(username: string) {
+        super(`User "${username}" not found`);
+        this.name = "UserNotFoundError";
+      }
+    }
+
+    vi.mocked(getServerSession).mockResolvedValueOnce(mockSession);
+    vi.mocked(fetchUserSummary).mockRejectedValueOnce(new UserNotFoundError("testuser"));
+
+    const { GET } = await import("./route");
+    const response = await GET();
+    const data = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(data.error).toBe('User "testuser" not found');
+  });
+
+  it("returns 500 if fetchUserSummary fails with RateLimitError", async () => {
+    const mockSession = {
+      accessToken: "fake-token",
+      user: { login: "testuser" },
+    };
+
+    class RateLimitError extends Error {
+      resetAt: Date;
+      constructor(resetTimestamp: number) {
+        const resetDate = new Date(resetTimestamp * 1000);
+        super(`GitHub API rate limit exceeded. Resets at ${resetDate.toISOString()}`);
+        this.name = "RateLimitError";
+        this.resetAt = resetDate;
+      }
+    }
+
+    vi.mocked(getServerSession).mockResolvedValueOnce(mockSession);
+    const mockRateLimitError = new RateLimitError(1234567890);
+    vi.mocked(fetchUserSummary).mockRejectedValueOnce(mockRateLimitError);
+
+    const { GET } = await import("./route");
+    const response = await GET();
+    const data = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(data.error).toBe(mockRateLimitError.message);
+  });
 });
