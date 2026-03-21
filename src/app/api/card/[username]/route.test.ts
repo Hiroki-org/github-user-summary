@@ -53,3 +53,35 @@ describe("GET /api/card/[username] cache headers", () => {
         expect(response.headers.get("Cache-Control")).toBe("public, s-maxage=60, stale-while-revalidate=120");
     });
 });
+
+describe("GET /api/card/[username] error responses", () => {
+    const runErrorTest = async (mockData: null | Error, username: string, expectedMessage: string, expectedStatus: number) => {
+        const { fetchCardData } = await import("@/lib/cardDataFetcher");
+        const { renderErrorCardResponse } = await import("@/lib/cardRenderer");
+
+        if (mockData instanceof Error) {
+            vi.mocked(fetchCardData).mockRejectedValueOnce(mockData);
+        } else {
+            vi.mocked(fetchCardData).mockResolvedValueOnce(mockData);
+        }
+
+        const { GET } = await import("./route");
+        const req = new Request(`http://localhost/api/card/${username}`);
+        await GET(req, { params: Promise.resolve({ username }) });
+
+        expect(renderErrorCardResponse).toHaveBeenCalledWith(expect.objectContaining({
+            message: expectedMessage,
+            status: expectedStatus,
+            cacheControl: "public, s-maxage=60, stale-while-revalidate=120",
+            fontUrl: "http://localhost/fonts/NotoSans-Regular.ttf"
+        }));
+    };
+
+    it("returns 404 and correct message when user not found", async () => {
+        await runErrorTest(null, "ghost", "User not found", 404);
+    });
+
+    it("returns 503 and correct message on API error", async () => {
+        await runErrorTest(new Error("API Error"), "erroruser", "Temporarily unavailable", 503);
+    });
+});
