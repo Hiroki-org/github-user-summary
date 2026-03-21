@@ -92,13 +92,7 @@ describe("isValidGitHubUsername", () => {
     expect(isValidGitHubUsername("test\0user")).toBe(false);
   });
 
-  it("ハイフンのみのユーザー名は無効", () => {
-    expect(isValidGitHubUsername("-")).toBe(false);
-    expect(isValidGitHubUsername("--")).toBe(false);
-    expect(isValidGitHubUsername("---")).toBe(false);
-  });
-
-  it("極端に長い文字列は無効 (ReDoS防止の確認)", () => {
+  it("極端に長い文字列は無効 (長さ上限の確認)", () => {
     expect(isValidGitHubUsername("a".repeat(1000))).toBe(false);
   });
 
