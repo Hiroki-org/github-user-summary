@@ -3,6 +3,47 @@ import "server-only";
 import { GitHubApiError, RateLimitError, UserNotFoundError, type YearInReviewData } from "@/lib/types";
 import { buildHourlyHeatmapFromCommitDates, getMostActiveDayFromCalendar, getMostActiveHour } from "@/lib/yearInReviewUtils";
 
+const YEAR_IN_REVIEW_QUERY = `query($login: String!, $from: DateTime!, $to: DateTime!, $maxRepositories: Int!) {
+    user(login: $login) {
+      contributionsCollection(from: $from, to: $to) {
+        totalCommitContributions
+        totalPullRequestContributions
+        totalIssueContributions
+        totalPullRequestReviewContributions
+        contributionCalendar {
+          totalContributions
+          weeks {
+            contributionDays {
+              date
+              contributionCount
+            }
+          }
+        }
+        commitContributionsByRepository(maxRepositories: $maxRepositories) {
+          repository {
+            name
+            owner { login }
+          }
+          contributions { totalCount }
+        }
+        pullRequestContributionsByRepository(maxRepositories: $maxRepositories) {
+          repository {
+            name
+            owner { login }
+          }
+          contributions { totalCount }
+        }
+        issueContributionsByRepository(maxRepositories: $maxRepositories) {
+          repository {
+            name
+            owner { login }
+          }
+          contributions { totalCount }
+        }
+      }
+    }
+  }`;
+
 const GITHUB_API = "https://api.github.com";
 const GITHUB_GRAPHQL = "https://api.github.com/graphql";
 
@@ -51,47 +92,6 @@ type GitHubCommit = {
         } | null;
     };
 };
-
-const YEAR_IN_REVIEW_QUERY = `query($login: String!, $from: DateTime!, $to: DateTime!) {
-    user(login: $login) {
-      contributionsCollection(from: $from, to: $to) {
-        totalCommitContributions
-        totalPullRequestContributions
-        totalIssueContributions
-        totalPullRequestReviewContributions
-        contributionCalendar {
-          totalContributions
-          weeks {
-            contributionDays {
-              date
-              contributionCount
-            }
-          }
-        }
-        commitContributionsByRepository(maxRepositories: 10) {
-          repository {
-            name
-            owner { login }
-          }
-          contributions { totalCount }
-        }
-        pullRequestContributionsByRepository(maxRepositories: 10) {
-          repository {
-            name
-            owner { login }
-          }
-          contributions { totalCount }
-        }
-        issueContributionsByRepository(maxRepositories: 10) {
-          repository {
-            name
-            owner { login }
-          }
-          contributions { totalCount }
-        }
-      }
-    }
-  }`;
 
 function headers(token: string): HeadersInit {
     return {
@@ -201,7 +201,7 @@ async function fetchCommitDatesForTopRepos(
 }
 
 
-function formatYearInReviewData(
+function buildYearInReviewData(
     year: number,
     collection: NonNullable<YearInReviewResponse["user"]>["contributionsCollection"],
     commitDates: string[]
@@ -234,12 +234,12 @@ export async function fetchYearInReviewData(username: string, year: number, toke
     const from = new Date(Date.UTC(year, 0, 1, 0, 0, 0));
     const to = new Date(Date.UTC(year, 11, 31, 23, 59, 59));
 
-    const query = YEAR_IN_REVIEW_QUERY;
 
-    const response = await graphql<YearInReviewResponse>(query, token, {
+    const response = await graphql<YearInReviewResponse>(YEAR_IN_REVIEW_QUERY, token, {
         login: username,
         from: from.toISOString(),
         to: to.toISOString(),
+        maxRepositories: 10,
     });
 
     if (!response.user) {
@@ -247,7 +247,6 @@ export async function fetchYearInReviewData(username: string, year: number, toke
     }
 
     const collection = response.user.contributionsCollection;
-
     const commitDates = await fetchCommitDatesForTopRepos(
         username,
         token,
@@ -256,7 +255,7 @@ export async function fetchYearInReviewData(username: string, year: number, toke
         collection.commitContributionsByRepository
     );
 
-    return formatYearInReviewData(year, collection, commitDates);
+    return buildYearInReviewData(year, collection, commitDates);
 }
 
 export async function fetchCommitActivityHeatmap(username: string, year: number, token?: string): Promise<number[][]> {
