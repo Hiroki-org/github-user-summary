@@ -5,8 +5,12 @@ type GitHubViewerResponse = {
 };
 
 export async function fetchViewerLogin(token: string): Promise<string> {
+<<<<<<< HEAD
   // Basic validation to prevent header injection / SSRF
   if (!/^[A-Za-z0-9_=\-\.]+$/.test(token)) {
+=======
+  if (!/^[A-Za-z0-9_.-]+$/.test(token)) {
+>>>>>>> fix-githubviewer-token-validation-7865754078279387833
     throw new GitHubApiError("Invalid token format", 400);
   }
 
