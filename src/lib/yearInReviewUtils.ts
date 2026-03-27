@@ -5,14 +5,9 @@ export function buildHourlyHeatmapFromCommitDates(commitDates: string[]): number
     const dayCache = new Map<string, number>();
 
     for (const dateString of commitDates) {
-        // Fast path for strict UTC ISO 8601 strings like "2023-01-01T10:00:00Z"
-        if (
-            dateString.length === 20 &&
-            dateString[10] === 'T' &&
-            dateString[13] === ':' &&
-            dateString[16] === ':' &&
-            dateString[19] === 'Z'
-        ) {
+        // Fast path for standard ISO 8601 strings ending in Z or with timezone offset
+        // Matches typical format like "2023-01-01T10:00:00Z"
+        if (dateString.length >= 19 && dateString[10] === 'T') {
             const datePart = dateString.slice(0, 10);
 
             // Check cache for day
@@ -33,27 +28,16 @@ export function buildHourlyHeatmapFromCommitDates(commitDates: string[]): number
                 dayCache.set(datePart, day);
             }
 
-            // Parse time manually
+            // Parse hour manually
             const h1 = dateString.charCodeAt(11) - 48;
             const h2 = dateString.charCodeAt(12) - 48;
-            const m1 = dateString.charCodeAt(14) - 48;
-            const m2 = dateString.charCodeAt(15) - 48;
-            const s1 = dateString.charCodeAt(17) - 48;
-            const s2 = dateString.charCodeAt(18) - 48;
 
-            if (
-                h1 >= 0 && h1 <= 9 &&
-                h2 >= 0 && h2 <= 9 &&
-                m1 >= 0 && m1 <= 9 &&
-                m2 >= 0 && m2 <= 9 &&
-                s1 >= 0 && s1 <= 9 &&
-                s2 >= 0 && s2 <= 9
-            ) {
+            if (h1 >= 0 && h1 <= 9 && h2 >= 0 && h2 <= 9) {
                 const hour = h1 * 10 + h2;
-                const minute = m1 * 10 + m2;
-                const second = s1 * 10 + s2;
 
-                if (hour < 24 && minute < 60 && second < 60) {
+                // if there is a timezone offset (+09:00 or -05:00) we can't just use the cached day and raw hour
+                // we have to adjust for it, which means we might as well use standard date parsing
+                if (dateString.endsWith('Z') || dateString.length === 20 || (dateString.length === 24 && dateString.endsWith('.000Z'))) {
                     heatmap[day][hour] += 1;
                     continue;
                 }
