@@ -189,6 +189,9 @@ async function fetchCommitDatesForTopRepos(
         const dates = new Array<string>(commits.length);
         let count = 0;
         for (let i = 0; i < commits.length; i++) {
+            if (i > 0 && i % 1000 === 0) {
+                await new Promise((resolve) => setTimeout(resolve, 0));
+            }
             const date = commits[i].commit.author?.date;
             if (date) {
                 dates[count++] = date;
@@ -298,6 +301,9 @@ export async function fetchCommitActivityHeatmap(username: string, year: number,
     const dates = new Array<string>(commits.length);
     let count = 0;
     for (let i = 0; i < commits.length; i++) {
+        if (i > 0 && i % 1000 === 0) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+        }
         const date = commits[i].commit.author?.date;
         if (date) {
             dates[count++] = date;
