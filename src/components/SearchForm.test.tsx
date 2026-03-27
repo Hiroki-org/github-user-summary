@@ -21,7 +21,7 @@ vi.mock("react", async (importOriginal) => {
   const actual = await importOriginal<typeof import("react")>();
   return {
     ...actual,
-    useTransition: (...args: any[]) => useTransitionMock(...args),
+    useTransition: () => useTransitionMock(),
   };
 });
 
@@ -50,10 +50,13 @@ describe("SearchForm", () => {
     expect(button.disabled).toBe(true);
   });
 
-  it("enables the search button when input has text", () => {
+  it("enables the search button only when input has non-whitespace text", () => {
     render(<SearchForm />);
     const input = screen.getByPlaceholderText("GitHub username");
     const button = screen.getByRole("button", { name: "Search" }) as HTMLButtonElement;
+
+    fireEvent.change(input, { target: { value: "   " } });
+    expect(button.disabled).toBe(true);
 
     fireEvent.change(input, { target: { value: "johndoe" } });
     expect(button.disabled).toBe(false);
