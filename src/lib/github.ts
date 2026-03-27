@@ -37,8 +37,9 @@ function headers(token?: string): HeadersInit {
 }
 
 function handleRateLimit(res: Response): never {
+  const ONE_HOUR_IN_SECONDS = 60 * 60;
   const resetHeader = res.headers.get("X-RateLimit-Reset");
-  const resetTimestamp = resetHeader ? parseInt(resetHeader, 10) : Math.floor(Date.now() / 1000) + 3600;
+  const resetTimestamp = resetHeader ? parseInt(resetHeader, 10) : Math.floor(Date.now() / 1000) + ONE_HOUR_IN_SECONDS;
   throw new RateLimitError(resetTimestamp);
 }
 
