@@ -12,6 +12,7 @@ const SUCCESS_CACHE_HEADERS = {
 const FALLBACK_CACHE_HEADERS = {
   "Cache-Control": "no-store",
 };
+const ONE_DAY_IN_SECONDS = 24 * 60 * 60;
 
 export async function GET(
   request: NextRequest,
@@ -29,8 +30,11 @@ export async function GET(
 
   try {
     const res = await fetch(`https://api.github.com/users/${encodeURIComponent(username)}`, {
-      headers: { Accept: "application/vnd.github.v3+json" },
-      next: { revalidate: 86400 },
+      headers: {
+        Accept: "application/vnd.github.v3+json",
+        "User-Agent": "github-user-summary",
+      },
+      next: { revalidate: ONE_DAY_IN_SECONDS },
     });
     if (res.ok) {
       const data = await res.json();
