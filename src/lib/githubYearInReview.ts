@@ -3,7 +3,8 @@ import "server-only";
 import { GitHubApiError, RateLimitError, UserNotFoundError, type YearInReviewData } from "@/lib/types";
 import { buildHourlyHeatmapFromCommitDates, getMostActiveDayFromCalendar, getMostActiveHour } from "@/lib/yearInReviewUtils";
 
-const YEAR_IN_REVIEW_QUERY = `query($login: String!, $from: DateTime!, $to: DateTime!, $maxRepositories: Int!) {
+
+const YEAR_IN_REVIEW_STATS_QUERY = `query($login: String!, $from: DateTime!, $to: DateTime!) {
     user(login: $login) {
       contributionsCollection(from: $from, to: $to) {
         totalCommitContributions
@@ -19,6 +20,13 @@ const YEAR_IN_REVIEW_QUERY = `query($login: String!, $from: DateTime!, $to: Date
             }
           }
         }
+      }
+    }
+  }`;
+
+const YEAR_IN_REVIEW_REPOS_QUERY = `query($login: String!, $from: DateTime!, $to: DateTime!, $maxRepositories: Int!) {
+    user(login: $login) {
+      contributionsCollection(from: $from, to: $to) {
         commitContributionsByRepository(maxRepositories: $maxRepositories) {
           repository {
             name
@@ -234,26 +242,44 @@ export async function fetchYearInReviewData(username: string, year: number, toke
     const to = new Date(Date.UTC(year, 11, 31, 23, 59, 59));
 
     try {
-        const response = await graphql<YearInReviewResponse>(YEAR_IN_REVIEW_QUERY, token, {
+        const statsPromise = graphql<YearInReviewResponse>(YEAR_IN_REVIEW_STATS_QUERY, token, {
+            login: username,
+            from: from.toISOString(),
+            to: to.toISOString(),
+        });
+
+        const reposResponse = await graphql<YearInReviewResponse>(YEAR_IN_REVIEW_REPOS_QUERY, token, {
             login: username,
             from: from.toISOString(),
             to: to.toISOString(),
             maxRepositories: 10,
         });
 
-        if (!response.user) {
+        if (!reposResponse.user) {
             throw new UserNotFoundError(username);
         }
 
-        const collection = response.user.contributionsCollection;
+        const reposCollection = reposResponse.user.contributionsCollection;
 
-        const commitDates = await fetchCommitDatesForTopRepos(
+        const commitDatesPromise = fetchCommitDatesForTopRepos(
             username,
             token,
             from.toISOString(),
             to.toISOString(),
-            collection.commitContributionsByRepository
+            reposCollection.commitContributionsByRepository
         );
+
+        const statsResponse = await statsPromise;
+        if (!statsResponse.user) {
+            throw new UserNotFoundError(username);
+        }
+
+        const collection = {
+            ...statsResponse.user.contributionsCollection,
+            ...reposCollection,
+        } as NonNullable<YearInReviewResponse["user"]>["contributionsCollection"];
+
+        const commitDates = await commitDatesPromise;
 
         return buildYearInReviewData(year, collection, commitDates);
     } catch (error) {
