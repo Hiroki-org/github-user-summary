@@ -269,7 +269,7 @@ export async function fetchYearInReviewData(username: string, year: number, toke
             reposCollection.commitContributionsByRepository
         );
 
-        const statsResponse = await statsPromise;
+        const [statsResponse, commitDates] = await Promise.all([statsPromise, commitDatesPromise]);
         if (!statsResponse.user) {
             throw new UserNotFoundError(username);
         }
@@ -278,8 +278,6 @@ export async function fetchYearInReviewData(username: string, year: number, toke
             ...statsResponse.user.contributionsCollection,
             ...reposCollection,
         } as NonNullable<YearInReviewResponse["user"]>["contributionsCollection"];
-
-        const commitDates = await commitDatesPromise;
 
         return buildYearInReviewData(year, collection, commitDates);
     } catch (error) {
