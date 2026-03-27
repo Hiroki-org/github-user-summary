@@ -63,6 +63,17 @@ describe("buildHourlyHeatmapFromCommitDates", () => {
         expect(totalCommits).toBe(3);
     });
 
+    it("ignores malformed UTC timestamps even if hour is parseable", () => {
+        const commitDates = [
+            "2023-01-01T10:00:00Z",
+            "2024-03-01T12:99:99Z", // invalid minute and second
+        ];
+        const heatmap = buildHourlyHeatmapFromCommitDates(commitDates);
+        expect(heatmap[0][10]).toBe(1);
+        const totalCommits = heatmap.flat().reduce((sum, count) => sum + count, 0);
+        expect(totalCommits).toBe(1);
+    });
+
     it("correctly handles different timezone offsets in ISO strings", () => {
         const commitDates = [
             "2023-01-01T10:00:00+09:00", // Sunday 01:00 UTC
