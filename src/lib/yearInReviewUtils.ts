@@ -3,6 +3,14 @@ export function buildHourlyHeatmapFromCommitDates(commitDates: string[]): number
 
     // Performance Optimization: Cache weekday calculations to avoid expensive Date parsing in the loop
     const dayCache = new Map<string, number>();
+    const incrementFromFullDate = (dateString: string): boolean => {
+        const date = new Date(dateString);
+        if (Number.isNaN(date.getTime())) {
+            return false;
+        }
+        heatmap[date.getUTCDay()][date.getUTCHours()] += 1;
+        return true;
+    };
 
     for (const dateString of commitDates) {
         // Fast path for standard ISO 8601 strings ending in Z or with timezone offset
@@ -18,10 +26,7 @@ export function buildHourlyHeatmapFromCommitDates(commitDates: string[]): number
                 const date = new Date(datePart + "T00:00:00Z");
                 if (Number.isNaN(date.getTime())) {
                     // Fall back to original method if something goes wrong with parsing this substring
-                    const fullDate = new Date(dateString);
-                    if (!Number.isNaN(fullDate.getTime())) {
-                        heatmap[fullDate.getUTCDay()][fullDate.getUTCHours()] += 1;
-                    }
+                    incrementFromFullDate(dateString);
                     continue;
                 }
                 day = date.getUTCDay();
@@ -35,9 +40,9 @@ export function buildHourlyHeatmapFromCommitDates(commitDates: string[]): number
             if (h1 >= 0 && h1 <= 9 && h2 >= 0 && h2 <= 9) {
                 const hour = h1 * 10 + h2;
 
-                // if there is a timezone offset (+09:00 or -05:00) we can't just use the cached day and raw hour
-                // we have to adjust for it, which means we might as well use standard date parsing
-                if (dateString.endsWith('Z') || dateString.length === 20 || (dateString.length === 24 && dateString.endsWith('.000Z'))) {
+                // If there is a timezone offset (+09:00 or -05:00) we can't just use the cached day and raw hour.
+                // We can only use the fast path safely for UTC (`Z`) timestamps.
+                if (hour < 24 && dateString.endsWith('Z')) {
                     heatmap[day][hour] += 1;
                     continue;
                 }
@@ -45,11 +50,7 @@ export function buildHourlyHeatmapFromCommitDates(commitDates: string[]): number
         }
 
         // Fallback for non-standard dates or dates with timezone offsets
-        const date = new Date(dateString);
-        if (Number.isNaN(date.getTime())) {
-            continue;
-        }
-        heatmap[date.getUTCDay()][date.getUTCHours()] += 1;
+        incrementFromFullDate(dateString);
     }
     return heatmap;
 }
