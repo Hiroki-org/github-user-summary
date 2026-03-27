@@ -1,116 +1,147 @@
 // @vitest-environment jsdom
 import { renderHook, waitFor } from "@testing-library/react";
-import { useThemeColor } from "../useThemeColor";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const mockGetColorAsync = vi.fn().mockResolvedValue({
+import { useThemeColor } from "@/hooks/useThemeColor";
+
+type MockColor = {
+  value: [number, number, number, number];
+  hex: string;
+  rgba: string;
+};
+
+type AccentResult = {
+  accent: string;
+  accentRgb: string;
+  accentHover: string;
+};
+
+const MOCK_COLOR: MockColor = {
   value: [100, 150, 200, 255],
   hex: "#6496c8",
-  rgba: "rgba(100,150,200,1)"
-});
-const mockDestroy = vi.fn();
+  rgba: "rgba(100,150,200,1)",
+};
 
-// Mock fast-average-color
+const MOCK_ACCENT_RESULT: AccentResult = {
+  accent: "mock-accent",
+  accentRgb: "100, 150, 200",
+  accentHover: "mock-accent-hover",
+};
+
+const { mockGetColorAsync, mockDestroy, mockAdjustAccentColor } = vi.hoisted(() => ({
+  mockGetColorAsync: vi.fn(),
+  mockDestroy: vi.fn(),
+  mockAdjustAccentColor: vi.fn(),
+}));
+
 vi.mock("fast-average-color", () => {
+  class MockFastAverageColor {
+    getColorAsync = mockGetColorAsync;
+    destroy = mockDestroy;
+  }
+
   return {
-    FastAverageColor: function() {
-      // @ts-expect-error mock implementation
-      this.getColorAsync = mockGetColorAsync;
-      // @ts-expect-error mock implementation
-      this.destroy = mockDestroy;
-      return this;
-    }
+    FastAverageColor: MockFastAverageColor,
   };
 });
 
-// Mock @/lib/color
 vi.mock("@/lib/color", () => ({
-  adjustAccentColor: vi.fn().mockReturnValue({
-    accent: "mock-accent",
-    accentRgb: "100, 150, 200",
-    accentHover: "mock-accent-hover"
-  })
+  adjustAccentColor: mockAdjustAccentColor,
 }));
 
 describe("useThemeColor", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     document.documentElement.style.cssText = "";
+    mockGetColorAsync.mockResolvedValue(MOCK_COLOR);
+    mockAdjustAccentColor.mockReturnValue(MOCK_ACCENT_RESULT);
   });
 
   afterEach(() => {
-    vi.unstubAllGlobals();
+    document.documentElement.style.cssText = "";
   });
 
-  it("should apply topLanguageColor immediately as fallback", () => {
+  it("applies the fallback color immediately", () => {
     renderHook(() => useThemeColor({ topLanguageColor: "#ff0000" }));
 
-    expect(document.documentElement.style.getPropertyValue("--accent")).toBe("mock-accent");
-    expect(document.documentElement.style.getPropertyValue("--accent-rgb")).toBe("100, 150, 200");
-    expect(document.documentElement.style.getPropertyValue("--accent-hover")).toBe("mock-accent-hover");
+    expect(mockAdjustAccentColor).toHaveBeenCalledWith("#ff0000");
+    expect(document.documentElement.style.getPropertyValue("--accent")).toBe(MOCK_ACCENT_RESULT.accent);
+    expect(document.documentElement.style.getPropertyValue("--accent-rgb")).toBe(MOCK_ACCENT_RESULT.accentRgb);
+    expect(document.documentElement.style.getPropertyValue("--accent-hover")).toBe(MOCK_ACCENT_RESULT.accentHover);
   });
 
-  it("should extract and apply color from avatarUrl asynchronously", async () => {
-    const { unmount } = renderHook(() => useThemeColor({ avatarUrl: "https://example.com/avatar.jpg" }));
+  it("applies the avatar color after the fallback when both inputs are provided", async () => {
+    renderHook(() =>
+      useThemeColor({
+        topLanguageColor: "#ff0000",
+        avatarUrl: "https://example.com/avatar.jpg",
+      })
+    );
 
     await waitFor(() => {
       expect(mockGetColorAsync).toHaveBeenCalled();
     });
 
-    expect(document.documentElement.style.getPropertyValue("--accent")).toBe("mock-accent");
-    expect(document.documentElement.style.getPropertyValue("--accent-rgb")).toBe("100, 150, 200");
-    expect(document.documentElement.style.getPropertyValue("--accent-hover")).toBe("mock-accent-hover");
-
-    unmount();
+    expect(mockAdjustAccentColor).toHaveBeenNthCalledWith(1, "#ff0000");
+    expect(mockAdjustAccentColor).toHaveBeenNthCalledWith(2, [100, 150, 200]);
+    expect(document.documentElement.style.getPropertyValue("--accent")).toBe(MOCK_ACCENT_RESULT.accent);
+    expect(document.documentElement.style.getPropertyValue("--accent-rgb")).toBe(MOCK_ACCENT_RESULT.accentRgb);
+    expect(document.documentElement.style.getPropertyValue("--accent-hover")).toBe(MOCK_ACCENT_RESULT.accentHover);
   });
 
-  it("should clean up CSS variables and destroy FastAverageColor on unmount", () => {
+  it("cleans up CSS variables and destroys FastAverageColor on unmount", () => {
     const { unmount } = renderHook(() => useThemeColor({ topLanguageColor: "#ff0000" }));
-
-    // Check initial variables are set
-    expect(document.documentElement.style.getPropertyValue("--accent")).toBe("mock-accent");
 
     unmount();
 
-    expect(mockDestroy).toHaveBeenCalled();
+    expect(mockDestroy).toHaveBeenCalledTimes(1);
     expect(document.documentElement.style.getPropertyValue("--accent")).toBe("");
     expect(document.documentElement.style.getPropertyValue("--accent-rgb")).toBe("");
     expect(document.documentElement.style.getPropertyValue("--accent-hover")).toBe("");
   });
 
-  it("should not apply extracted color if unmounted before promise resolves", async () => {
-    let resolvePromise: (value: { value: [number, number, number, number], hex: string, rgba: string }) => void = () => {};
-    mockGetColorAsync.mockReturnValueOnce(new Promise((resolve) => {
-      resolvePromise = resolve;
-    }));
+  it("ignores an extracted color if unmounted before the promise resolves", async () => {
+    let resolveColor!: (value: MockColor) => void;
 
-    const { unmount } = renderHook(() => useThemeColor({ avatarUrl: "https://example.com/avatar.jpg" }));
+    mockGetColorAsync.mockReturnValueOnce(
+      new Promise<MockColor>((resolve) => {
+        resolveColor = resolve;
+      })
+    );
 
-    // Unmount before promise resolves
+    const { unmount } = renderHook(() =>
+      useThemeColor({
+        avatarUrl: "https://example.com/avatar.jpg",
+      })
+    );
+
     unmount();
+    resolveColor(MOCK_COLOR);
 
-    // Now resolve the promise
-    resolvePromise({ value: [100, 150, 200, 255], hex: "#6496c8", rgba: "rgba(100,150,200,1)" });
-
-    // Wait a tick for promise handlers
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    // Because it unmounted, resetColor was called and then the promise resolution should be ignored
     expect(document.documentElement.style.getPropertyValue("--accent")).toBe("");
+    expect(document.documentElement.style.getPropertyValue("--accent-rgb")).toBe("");
+    expect(document.documentElement.style.getPropertyValue("--accent-hover")).toBe("");
   });
 
-  it("should handle extraction errors gracefully", async () => {
-    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it("logs a warning when avatar color extraction fails", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     mockGetColorAsync.mockRejectedValueOnce(new Error("Network error"));
 
-    const { unmount } = renderHook(() => useThemeColor({ avatarUrl: "https://example.com/avatar.jpg" }));
+    renderHook(() =>
+      useThemeColor({
+        avatarUrl: "https://example.com/avatar.jpg",
+      })
+    );
 
     await waitFor(() => {
-      expect(mockGetColorAsync).toHaveBeenCalled();
-      expect(consoleWarnSpy).toHaveBeenCalledWith("Failed to extract color from avatar, keeping fallback color.", expect.any(Error));
+      expect(warnSpy).toHaveBeenCalledWith(
+        "Failed to extract color from avatar, keeping fallback color.",
+        expect.any(Error)
+      );
     });
 
-    consoleWarnSpy.mockRestore();
-    unmount();
+    warnSpy.mockRestore();
   });
 });
