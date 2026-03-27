@@ -186,13 +186,18 @@ async function fetchCommitDatesForTopRepos(
         }
 
         const commits = (await res.json()) as GitHubCommit[];
-        const dates: string[] = [];
-        for (const commit of commits) {
-            const date = commit.commit.author?.date;
+        const dates = new Array<string>(commits.length);
+        let count = 0;
+        for (let i = 0; i < commits.length; i++) {
+            if (i > 0 && i % 1000 === 0) {
+                await new Promise((resolve) => setTimeout(resolve, 0));
+            }
+            const date = commits[i].commit.author?.date;
             if (date) {
-                dates.push(date);
+                dates[count++] = date;
             }
         }
+        dates.length = count;
         return dates;
     });
 
@@ -293,9 +298,18 @@ export async function fetchCommitActivityHeatmap(username: string, year: number,
     }
 
     const commits = (await res.json()) as GitHubCommit[];
-    const dates = commits
-        .map((commit) => commit.commit.author?.date)
-        .filter((value): value is string => Boolean(value));
+    const dates = new Array<string>(commits.length);
+    let count = 0;
+    for (let i = 0; i < commits.length; i++) {
+        if (i > 0 && i % 1000 === 0) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+        }
+        const date = commits[i].commit.author?.date;
+        if (date) {
+            dates[count++] = date;
+        }
+    }
+    dates.length = count;
 
     return buildHourlyHeatmapFromCommitDates(dates);
 }
