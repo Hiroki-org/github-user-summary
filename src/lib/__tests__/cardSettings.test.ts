@@ -75,6 +75,43 @@ describe("cardSettings", () => {
             expect(getItemMock).toHaveBeenCalledWith("card-display-options");
         });
 
+        it("safely handles invalid JSON for layout but valid JSON for options", () => {
+            const mockOptions: Partial<CardDisplayOptions> = { showTwitter: false, showLocation: false };
+            getItemMock.mockReturnValueOnce("{invalid-json: true");
+            getItemMock.mockReturnValueOnce(JSON.stringify(mockOptions));
+
+            const settings = loadCardSettings();
+
+            expect(settings.layout).toEqual(DEFAULT_CARD_LAYOUT);
+            expect(settings.options.showTwitter).toBe(false);
+            expect(settings.options.showLocation).toBe(false);
+            expect(settings.options.showCompany).toBe(true);
+        });
+
+        it("safely handles null for layout but valid JSON for options", () => {
+            const mockOptions: Partial<CardDisplayOptions> = { showTwitter: false, showLocation: false };
+            getItemMock.mockReturnValueOnce(null);
+            getItemMock.mockReturnValueOnce(JSON.stringify(mockOptions));
+
+            const settings = loadCardSettings();
+
+            expect(settings.layout).toEqual(DEFAULT_CARD_LAYOUT);
+            expect(settings.options.showTwitter).toBe(false);
+            expect(settings.options.showLocation).toBe(false);
+            expect(settings.options.showCompany).toBe(true);
+        });
+
+        it("safely handles valid JSON for layout but null for options", () => {
+            const mockLayout: CardLayout = { blocks: [{ id: "bio", visible: true, column: "left" }] };
+            getItemMock.mockReturnValueOnce(JSON.stringify(mockLayout));
+            getItemMock.mockReturnValueOnce(null);
+
+            const settings = loadCardSettings();
+
+            expect(settings.layout).toEqual(mockLayout);
+            expect(settings.options.showCompany).toBe(true);
+        });
+
         it("returns parsed settings from localStorage when window is defined", () => {
             const mockLayout: CardLayout = { blocks: [{ id: "bio", visible: true, column: "left" }] };
             const mockOptions: Partial<CardDisplayOptions> = { showTwitter: false, showLocation: false };
