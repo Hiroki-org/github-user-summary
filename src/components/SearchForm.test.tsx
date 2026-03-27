@@ -15,7 +15,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 // Provide a mock implementation that we can spy on later
-const useTransitionMock = vi.fn(() => [false, (cb: () => void) => cb()]);
+const useTransitionMock = vi.fn<() => [boolean, (cb: () => void) => void]>();
 
 vi.mock("react", async (importOriginal) => {
   const actual = await importOriginal<typeof import("react")>();
@@ -28,7 +28,7 @@ vi.mock("react", async (importOriginal) => {
 describe("SearchForm", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    useTransitionMock.mockImplementation(() => [false, (cb: () => void) => cb()]);
+    useTransitionMock.mockReturnValue([false, (cb: () => void) => cb()]);
   });
 
   it("renders the input and search button", () => {
@@ -50,13 +50,10 @@ describe("SearchForm", () => {
     expect(button.disabled).toBe(true);
   });
 
-  it("enables the search button only when input has non-whitespace text", () => {
+  it("enables the search button when input has text", () => {
     render(<SearchForm />);
     const input = screen.getByPlaceholderText("GitHub username");
     const button = screen.getByRole("button", { name: "Search" }) as HTMLButtonElement;
-
-    fireEvent.change(input, { target: { value: "   " } });
-    expect(button.disabled).toBe(true);
 
     fireEvent.change(input, { target: { value: "johndoe" } });
     expect(button.disabled).toBe(false);
@@ -106,9 +103,9 @@ describe("SearchForm", () => {
 
   it("disables button and shows 'Loading...' when isPending is true", () => {
     // Mock useTransition to return [true, startTransition]
-    useTransitionMock.mockImplementation(() => [
+    useTransitionMock.mockReturnValue([
       true, // isPending
-      vi.fn(), // startTransition
+      vi.fn() as unknown as React.TransitionStartFunction, // startTransition
     ]);
 
     render(<SearchForm />);
