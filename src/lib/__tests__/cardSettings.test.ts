@@ -75,22 +75,12 @@ describe("cardSettings", () => {
             expect(getItemMock).toHaveBeenCalledWith("card-display-options");
         });
 
-        it("safely handles invalid JSON for layout but valid JSON for options", () => {
+        it.each([
+            ["invalid JSON", "{invalid-json: true"],
+            ["null", null],
+        ])("safely handles %s for layout but valid JSON for options", (_, layoutValue) => {
             const mockOptions: Partial<CardDisplayOptions> = { showTwitter: false, showLocation: false };
-            getItemMock.mockReturnValueOnce("{invalid-json: true");
-            getItemMock.mockReturnValueOnce(JSON.stringify(mockOptions));
-
-            const settings = loadCardSettings();
-
-            expect(settings.layout).toEqual(DEFAULT_CARD_LAYOUT);
-            expect(settings.options.showTwitter).toBe(false);
-            expect(settings.options.showLocation).toBe(false);
-            expect(settings.options.showCompany).toBe(true);
-        });
-
-        it("safely handles null for layout but valid JSON for options", () => {
-            const mockOptions: Partial<CardDisplayOptions> = { showTwitter: false, showLocation: false };
-            getItemMock.mockReturnValueOnce(null);
+            getItemMock.mockReturnValueOnce(layoutValue);
             getItemMock.mockReturnValueOnce(JSON.stringify(mockOptions));
 
             const settings = loadCardSettings();
