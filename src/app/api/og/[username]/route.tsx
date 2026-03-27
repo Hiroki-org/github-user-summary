@@ -21,7 +21,7 @@ export async function GET(
   try {
     const res = await fetch(`https://api.github.com/users/${encodeURIComponent(username)}`, {
       headers: { Accept: "application/vnd.github.v3+json" },
-      next: { revalidate: 600 },
+      next: { revalidate: 86400 },
     });
     if (res.ok) {
       const data = await res.json();
@@ -153,6 +153,9 @@ export async function GET(
     {
       width: 1200,
       height: 630,
+      headers: {
+        "Cache-Control": "public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400",
+      },
     }
   );
 }
