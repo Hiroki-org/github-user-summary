@@ -5,6 +5,14 @@ import { logger } from "@/lib/logger";
 
 export const runtime = "edge";
 
+const SUCCESS_CACHE_HEADERS = {
+  "Cache-Control": "public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400",
+};
+
+const FALLBACK_CACHE_HEADERS = {
+  "Cache-Control": "no-store",
+};
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ username: string }> }
@@ -17,6 +25,7 @@ export async function GET(
   let avatarUrl = "";
   let followers = 0;
   let publicRepos = 0;
+  let cacheHeaders = FALLBACK_CACHE_HEADERS;
 
   try {
     const res = await fetch(`https://api.github.com/users/${encodeURIComponent(username)}`, {
@@ -30,6 +39,7 @@ export async function GET(
       avatarUrl = data.avatar_url ?? "";
       followers = data.followers ?? 0;
       publicRepos = data.public_repos ?? 0;
+      cacheHeaders = SUCCESS_CACHE_HEADERS;
     }
   } catch (error) {
     logger.error(`Failed to fetch GitHub profile for OG image: ${username}`, error);
@@ -153,9 +163,7 @@ export async function GET(
     {
       width: 1200,
       height: 630,
-      headers: {
-        "Cache-Control": "public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400",
-      },
+      headers: cacheHeaders,
     }
   );
 }
