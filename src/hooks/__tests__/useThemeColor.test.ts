@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
 import { renderHook, waitFor } from "@testing-library/react";
 import { useThemeColor } from "../useThemeColor";
-import { describe, it, expect, vi, beforeEach, afterEach, Mock } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 const mockGetColorAsync = vi.fn().mockResolvedValue({
-  value: [100, 150, 200, 255]
+  value: [100, 150, 200, 255],
+  hex: "#6496c8",
+  rgba: "rgba(100,150,200,1)"
 });
 const mockDestroy = vi.fn();
 
@@ -12,9 +14,9 @@ const mockDestroy = vi.fn();
 vi.mock("fast-average-color", () => {
   return {
     FastAverageColor: function() {
-      // @ts-ignore
+      // @ts-expect-error mock implementation
       this.getColorAsync = mockGetColorAsync;
-      // @ts-ignore
+      // @ts-expect-error mock implementation
       this.destroy = mockDestroy;
       return this;
     }
@@ -77,7 +79,7 @@ describe("useThemeColor", () => {
   });
 
   it("should not apply extracted color if unmounted before promise resolves", async () => {
-    let resolvePromise: any;
+    let resolvePromise: (value: { value: [number, number, number, number], hex: string, rgba: string }) => void = () => {};
     mockGetColorAsync.mockReturnValueOnce(new Promise((resolve) => {
       resolvePromise = resolve;
     }));
@@ -88,7 +90,7 @@ describe("useThemeColor", () => {
     unmount();
 
     // Now resolve the promise
-    resolvePromise({ value: [100, 150, 200, 255] });
+    resolvePromise({ value: [100, 150, 200, 255], hex: "#6496c8", rgba: "rgba(100,150,200,1)" });
 
     // Wait a tick for promise handlers
     await new Promise((resolve) => setTimeout(resolve, 0));
