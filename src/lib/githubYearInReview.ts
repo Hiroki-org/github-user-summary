@@ -247,6 +247,8 @@ export async function fetchYearInReviewData(username: string, year: number, toke
             from: from.toISOString(),
             to: to.toISOString(),
         });
+        // Drain early rejection to avoid unhandled rejection before the Promise is awaited below.
+        void statsPromise.catch(() => undefined);
 
         const reposResponse = await graphql<YearInReviewResponse>(YEAR_IN_REVIEW_REPOS_QUERY, token, {
             login: username,
@@ -255,31 +257,26 @@ export async function fetchYearInReviewData(username: string, year: number, toke
             maxRepositories: 10,
         });
 
-        if (!reposResponse.user) {
+        const commitDatesPromise = reposResponse.user
+            ? fetchCommitDatesForTopRepos(
+                  username,
+                  token,
+                  from.toISOString(),
+                  to.toISOString(),
+                  reposResponse.user.contributionsCollection.commitContributionsByRepository
+              )
+            : Promise.resolve<string[]>([]);
+
+        const [statsResponse, commitDates] = await Promise.all([statsPromise, commitDatesPromise]);
+        if (!reposResponse.user || !statsResponse.user) {
             throw new UserNotFoundError(username);
         }
 
         const reposCollection = reposResponse.user.contributionsCollection;
-
-        const commitDatesPromise = fetchCommitDatesForTopRepos(
-            username,
-            token,
-            from.toISOString(),
-            to.toISOString(),
-            reposCollection.commitContributionsByRepository
-        );
-
-        const statsResponse = await statsPromise;
-        if (!statsResponse.user) {
-            throw new UserNotFoundError(username);
-        }
-
         const collection = {
             ...statsResponse.user.contributionsCollection,
             ...reposCollection,
         } as NonNullable<YearInReviewResponse["user"]>["contributionsCollection"];
-
-        const commitDates = await commitDatesPromise;
 
         return buildYearInReviewData(year, collection, commitDates);
     } catch (error) {
