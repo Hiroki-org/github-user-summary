@@ -186,14 +186,9 @@ async function fetchCommitDatesForTopRepos(
         }
 
         const commits = (await res.json()) as GitHubCommit[];
-        const dates: string[] = [];
-        for (const commit of commits) {
-            const date = commit.commit.author?.date;
-            if (date) {
-                dates.push(date);
-            }
-        }
-        return dates;
+        return commits
+            .map((commit) => commit.commit.author?.date)
+            .filter((value): value is string => Boolean(value));
     });
 
     const results = await Promise.all(promises);
