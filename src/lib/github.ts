@@ -1,5 +1,5 @@
 import "server-only";
-import { logger } from "./logger";
+import { logger } from "@/lib/logger";
 
 import type {
   UserProfile,
@@ -641,7 +641,7 @@ export async function fetchActivity(
   );
 
   // Suppress unhandled promise rejections for subsequent pages if we break early or throw
-  promises.forEach((p) => p.catch((e) => logger.error("Suppressed event fetch error:", e)));
+  promises.forEach((p) => p.catch((e) => logger.error("Event fetch promise rejected:", e)));
 
   for (const p of promises) {
     try {
