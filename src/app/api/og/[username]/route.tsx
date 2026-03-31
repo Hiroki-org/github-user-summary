@@ -4,6 +4,9 @@ import { NextRequest } from "next/server";
 import { logger } from "@/lib/logger";
 
 export const runtime = "edge";
+const ONE_HOUR_IN_SECONDS = 60 * 60;
+const ONE_DAY_IN_SECONDS = 24 * ONE_HOUR_IN_SECONDS;
+const OG_CACHE_CONTROL = `public, max-age=${ONE_HOUR_IN_SECONDS}, s-maxage=${ONE_DAY_IN_SECONDS}, stale-while-revalidate=${ONE_DAY_IN_SECONDS}`;
 
 export async function GET(
   request: NextRequest,
@@ -20,8 +23,11 @@ export async function GET(
 
   try {
     const res = await fetch(`https://api.github.com/users/${encodeURIComponent(username)}`, {
-      headers: { Accept: "application/vnd.github.v3+json" },
-      next: { revalidate: 600 },
+      headers: {
+        Accept: "application/vnd.github.v3+json",
+        "User-Agent": "github-user-summary",
+      },
+      next: { revalidate: ONE_DAY_IN_SECONDS },
     });
     if (res.ok) {
       const data = await res.json();
@@ -153,6 +159,9 @@ export async function GET(
     {
       width: 1200,
       height: 630,
+      headers: {
+        "Cache-Control": OG_CACHE_CONTROL,
+      },
     }
   );
 }
