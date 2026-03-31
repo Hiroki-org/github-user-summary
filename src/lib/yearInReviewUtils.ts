@@ -1,13 +1,55 @@
 export function buildHourlyHeatmapFromCommitDates(commitDates: string[]): number[][] {
     const heatmap = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
+
+    // Performance Optimization: Cache weekday calculations to avoid expensive Date parsing in the loop
+    const dayCache = new Map<string, number>();
+
     for (const dateString of commitDates) {
+        // Fast path for standard ISO 8601 strings ending in Z or with timezone offset
+        // Matches typical format like "2023-01-01T10:00:00Z"
+        if (dateString.length >= 19 && dateString[10] === 'T') {
+            const datePart = dateString.slice(0, 10);
+
+            // Check cache for day
+            let day = dayCache.get(datePart);
+
+            // If missing, compute via Date parsing (but cached per day)
+            if (day === undefined) {
+                const date = new Date(datePart + "T00:00:00Z");
+                if (Number.isNaN(date.getTime())) {
+                    // Fall back to original method if something goes wrong with parsing this substring
+                    const fullDate = new Date(dateString);
+                    if (!Number.isNaN(fullDate.getTime())) {
+                        heatmap[fullDate.getUTCDay()][fullDate.getUTCHours()] += 1;
+                    }
+                    continue;
+                }
+                day = date.getUTCDay();
+                dayCache.set(datePart, day);
+            }
+
+            // Parse hour manually
+            const h1 = dateString.charCodeAt(11) - 48;
+            const h2 = dateString.charCodeAt(12) - 48;
+
+            if (h1 >= 0 && h1 <= 9 && h2 >= 0 && h2 <= 9) {
+                const hour = h1 * 10 + h2;
+
+                // if there is a timezone offset (+09:00 or -05:00) we can't just use the cached day and raw hour
+                // we have to adjust for it, which means we might as well use standard date parsing
+                if (dateString.endsWith('Z') || dateString.length === 20 || (dateString.length === 24 && dateString.endsWith('.000Z'))) {
+                    heatmap[day][hour] += 1;
+                    continue;
+                }
+            }
+        }
+
+        // Fallback for non-standard dates or dates with timezone offsets
         const date = new Date(dateString);
         if (Number.isNaN(date.getTime())) {
             continue;
         }
-        const day = date.getUTCDay();
-        const hour = date.getUTCHours();
-        heatmap[day][hour] += 1;
+        heatmap[date.getUTCDay()][date.getUTCHours()] += 1;
     }
     return heatmap;
 }
