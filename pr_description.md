@@ -1,10 +1,11 @@
-🔒 HTTPヘッダーインジェクションの脆弱性修正
+🧪 [testing improvement] Add comprehensive unit tests for SearchForm component
 
-🎯 **What:**
-`src/lib/githubViewer.ts` と `src/lib/github.ts` において、セッショントークンを検証せずに直接 `fetch` 呼び出しの `Authorization` ヘッダーに渡していた脆弱性を修正しました。
-
-⚠️ **Risk:**
-不適切なトークン検証により、攻撃者がトークン内に `\r\n`（CRLF）などの改行文字を含めることで、HTTPヘッダーインジェクションやSSRF（Server-Side Request Forgery）攻撃を引き起こす可能性がありました。これにより、任意のAPIリクエストが実行されたり、セッションハイジャックのリスクが生じる恐れがありました。
-
-🛡️ **Solution:**
-APIを呼び出す前に、提供されたトークンが標準のGitHubトークン形式（英数字、ハイフン、アンダースコア、等号のみ）に一致するかを検証する正規表現チェック（`/^[A-Za-z0-9_=-]+$/`）を追加しました。無効なフォーマットの場合は、APIリクエストを行う前に `GitHubApiError` がスローされます。
+🎯 **What:** The `SearchForm` component lacked unit tests, leaving critical user interaction (searching for GitHub users) unverified.
+📊 **Coverage:** This PR adds `src/components/SearchForm.test.tsx` utilizing `@testing-library/react` and `vitest`. The test suite now covers:
+  - Form rendering (input and submit button).
+  - State updates when typing in the input.
+  - Form submission logic and conditional disabling of the search button for empty inputs.
+  - Ensuring whitespace-only submissions are prevented.
+  - Verification that the username is trimmed and URI encoded properly before calling `router.push`.
+  - Simulating the React `useTransition` loading state where the button becomes disabled and displays "Loading...".
+✨ **Result:** Enhanced test coverage and reliability for user search workflows. Improved testing confidence by mocking `next/navigation` and React hooks effectively.
