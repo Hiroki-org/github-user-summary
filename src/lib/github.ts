@@ -37,14 +37,18 @@ function headers(token?: string): HeadersInit {
   return h;
 }
 
+function handleRateLimit(res: Response): never {
+  const resetHeader = res.headers.get("X-RateLimit-Reset");
+  const resetTimestamp = resetHeader ? parseInt(resetHeader, 10) : Math.floor(Date.now() / 1000) + 3600;
+  throw new RateLimitError(resetTimestamp);
+}
+
 async function handleResponse<T>(res: Response): Promise<T> {
   if (res.status === 404) {
     throw new UserNotFoundError("unknown");
   }
   if (res.status === 403) {
-    const resetHeader = res.headers.get("X-RateLimit-Reset");
-    const resetTimestamp = resetHeader ? parseInt(resetHeader, 10) : Math.floor(Date.now() / 1000) + 3600;
-    throw new RateLimitError(resetTimestamp);
+    handleRateLimit(res);
   }
   if (!res.ok) {
     const body = await res.text().catch(() => "Unknown error");
@@ -69,9 +73,7 @@ async function graphql<T>(query: string, token?: string, variables?: Record<stri
     next: { revalidate: 300 },
   });
   if (res.status === 403) {
-    const resetHeader = res.headers.get("X-RateLimit-Reset");
-    const resetTimestamp = resetHeader ? parseInt(resetHeader, 10) : Math.floor(Date.now() / 1000) + 3600;
-    throw new RateLimitError(resetTimestamp);
+    handleRateLimit(res);
   }
   if (!res.ok) {
     const body = await res.text().catch(() => "Unknown error");
