@@ -15,7 +15,7 @@ type DashboardStatsResponse = {
     heatmap: number[][];
 };
 
-const fetcher = async <T>(url: string): Promise<T> => {
+export const fetcher = async <T>(url: string): Promise<T> => {
     const response = await fetch(url);
     if (!response.ok) {
         const body = await response.text().catch(() => "Unknown error");
