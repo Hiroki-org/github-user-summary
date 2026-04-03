@@ -291,7 +291,7 @@ function createBlock(
           alignItems: "center",
         }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+
         <img
           src={data.profile.avatarUrl}
           width={58}

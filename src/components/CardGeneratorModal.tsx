@@ -5,7 +5,7 @@ import {
   useCallback,
   useRef,
   useEffect,
-  type KeyboardEvent,
+
 } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
@@ -162,7 +162,7 @@ export default function CardGeneratorModal({
           if (!isCancelled) {
             setPreviewUrl(url);
           }
-        } catch (err) {
+        } catch {
           // Error is already logged in generateImage
           if (!isCancelled) {
             setPreviewUrl(null);

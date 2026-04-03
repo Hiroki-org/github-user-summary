@@ -3,12 +3,10 @@ import { getDefaultCardSettings, loadCardSettings, saveCardSettings } from "../c
 import { DEFAULT_CARD_LAYOUT, CardLayout, CardDisplayOptions } from "../types";
 
 describe("cardSettings", () => {
-    let originalWindow: typeof window | undefined;
     let getItemMock: ReturnType<typeof vi.fn>;
     let setItemMock: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
-        originalWindow = globalThis.window;
         getItemMock = vi.fn();
         setItemMock = vi.fn();
 
