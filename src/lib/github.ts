@@ -640,12 +640,30 @@ export async function fetchActivity(
     )
   );
 
-  // Suppress unhandled promise rejections for subsequent pages if we break early or throw
-  promises.forEach((p) => p.catch((e) => logger.error("Event fetch promise rejected:", e)));
+  let rejectFast: (reason?: unknown) => void;
+  const fatalErrorPromise = new Promise<never>((_, reject) => {
+    rejectFast = reject;
+  });
 
-  for (const p of promises) {
+  const wrappedPromises = promises.map((p) =>
+    p.catch((error) => {
+      if (
+        error instanceof UserNotFoundError ||
+        error instanceof RateLimitError
+      ) {
+        rejectFast(error);
+      }
+      throw error;
+    })
+  );
+
+  // Suppress unhandled promise rejections for subsequent pages if we break early or throw
+  wrappedPromises.forEach((p) => p.catch((e) => logger.error("Event fetch promise rejected:", e)));
+  fatalErrorPromise.catch(() => {});
+
+  for (const p of wrappedPromises) {
     try {
-      const events = await p;
+      const events = await Promise.race([p, fatalErrorPromise]);
       allEvents.push(...events);
       if (events.length < 100) break;
     } catch (error) {
