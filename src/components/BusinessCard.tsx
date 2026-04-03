@@ -1,6 +1,7 @@
 import { forwardRef } from "react";
 import type { CardBlockId, CardDisplayOptions, CardLayout, UserSummary } from "@/lib/types";
 import { DEFAULT_CARD_LAYOUT } from "@/lib/types";
+import Image from "next/image";
 import {
   BuildingIcon,
   CalendarIcon,
@@ -43,12 +44,14 @@ const BusinessCard = forwardRef<HTMLDivElement, Props>(({ summary, layout, optio
 
   const renderAvatarBlock = () => (
     <div className="mb-10 flex items-center gap-8">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <Image
         src={profile.avatar_url}
         alt={profile.login}
+        width={160}
+        height={160}
         className="h-40 w-40 rounded-full border-4 border-card-border shadow-xl"
         crossOrigin="anonymous"
+        unoptimized
       />
       <div>
         <h1 className="mb-2 text-5xl font-bold tracking-tight text-white">
