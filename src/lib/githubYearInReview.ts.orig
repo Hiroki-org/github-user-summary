@@ -290,27 +290,15 @@ export async function fetchCommitActivityHeatmap(username: string, year: number,
         throw new GitHubApiError("Commit activity requires authentication token", 401);
     }
 
+    const yearData = await fetchYearInReviewData(username, year, token);
     const from = new Date(Date.UTC(year, 0, 1, 0, 0, 0));
     const to = new Date(Date.UTC(year, 11, 31, 23, 59, 59));
 
-    const reposResponse = await graphql<YearInReviewResponse>(YEAR_IN_REVIEW_REPOS_QUERY, token, {
-        login: username,
-        from: from.toISOString(),
-        to: to.toISOString(),
-        maxRepositories: 10,
-    });
-
-    if (!reposResponse.user) {
-        throw new UserNotFoundError(username);
-    }
-
-    const topRepository = mergeTopRepository(reposResponse.user.contributionsCollection);
-
-    if (!topRepository) {
+    if (!yearData.topRepository) {
         return Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
     }
 
-    const [owner, repo] = topRepository.name.split("/");
+    const [owner, repo] = yearData.topRepository.name.split("/");
     const url = new URL(`${GITHUB_API}/repos/${owner}/${repo}/commits`);
     url.searchParams.set("author", username);
     url.searchParams.set("since", from.toISOString());

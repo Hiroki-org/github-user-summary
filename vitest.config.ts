@@ -17,6 +17,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "server-only": require.resolve("./node_modules/server-only/empty.js")
     },
   },
 });
