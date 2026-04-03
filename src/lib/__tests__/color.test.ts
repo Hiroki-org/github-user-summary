@@ -206,7 +206,7 @@ describe("adjustAccentColor", () => {
         },
         g: 0,
         b: 0
-      } as any;
+      } as unknown as Parameters<typeof adjustAccentColor>[0];
 
       const result = adjustAccentColor(badInput);
 
