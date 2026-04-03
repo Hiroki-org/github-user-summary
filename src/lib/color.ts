@@ -2,6 +2,7 @@ import { colord, extend, type Colord } from "colord";
 import mixPlugin from "colord/plugins/mix";
 import namesPlugin from "colord/plugins/names";
 import a11yPlugin from "colord/plugins/a11y";
+import { logger } from "./logger";
 
 extend([mixPlugin, namesPlugin, a11yPlugin]);
 
@@ -81,8 +82,13 @@ function generateColorResult(c: Colord): ColorResult {
  * @param color Hex string or RGB object/array
  */
 export function adjustAccentColor(color: ColorInput): ColorResult {
-  const parsed = parseColor(color);
-  const saturated = ensureSaturation(parsed);
-  const lightened = adjustLightness(saturated);
-  return generateColorResult(lightened);
+  try {
+    const parsed = parseColor(color);
+    const saturated = ensureSaturation(parsed);
+    const lightened = adjustLightness(saturated);
+    return generateColorResult(lightened);
+  } catch (error) {
+    logger.error("Failed to adjust accent color:", error);
+    return generateColorResult(colord(DEFAULT_ACCENT_COLOR));
+  }
 }
