@@ -43,7 +43,6 @@ const BusinessCard = forwardRef<HTMLDivElement, Props>(({ summary, layout, optio
 
   const renderAvatarBlock = () => (
     <div className="mb-10 flex items-center gap-8">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={profile.avatar_url}
         alt={profile.login}
