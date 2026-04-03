@@ -120,7 +120,7 @@ async function graphql<T>(query: string, token: string, variables: Record<string
         method: "POST",
         headers: headers(token),
         body: JSON.stringify({ query, variables }),
-        cache: "no-store",
+        cache: "force-cache", next: { revalidate: 86400 },
     });
 
     if (res.status === 403) {
@@ -185,7 +185,7 @@ async function fetchCommitDatesForTopRepos(
         url.searchParams.set("until", toIso);
         url.searchParams.set("per_page", "100");
 
-        const res = await fetch(url.toString(), { headers: headers(token), cache: "no-store" });
+        const res = await fetch(url.toString(), { headers: headers(token), cache: "force-cache", next: { revalidate: 86400 } });
         if (res.status === 403) {
             handleRateLimit(res);
         }
@@ -305,7 +305,7 @@ export async function fetchCommitActivityHeatmap(username: string, year: number,
     url.searchParams.set("until", to.toISOString());
     url.searchParams.set("per_page", "100");
 
-    const res = await fetch(url.toString(), { headers: headers(token), cache: "no-store" });
+    const res = await fetch(url.toString(), { headers: headers(token), cache: "force-cache", next: { revalidate: 86400 } });
     if (res.status === 403) {
         handleRateLimit(res);
     }
