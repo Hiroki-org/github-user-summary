@@ -1,26 +1,17 @@
 "use client";
 
-import {
-  useState,
-  useCallback,
-  useRef,
-  useEffect,
-  type KeyboardEvent,
-} from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
-import { toPng, toBlob } from "html-to-image";
-import type { UserSummary, CardLayout, CardBlockId } from "@/lib/types";
+import type { UserSummary, CardBlockId } from "@/lib/types";
 import BusinessCard from "./BusinessCard";
-import {
-  cloneDefaultCardLayout,
-  normalizeCardLayout,
-  toggleBlockVisibility,
-  LAYOUT_STORAGE_KEY,
-} from "@/lib/cardLayout";
-import { DEFAULT_DISPLAY_OPTIONS, type CardDisplayOptions } from "@/lib/cardSettings";
+import type { CardDisplayOptions } from "@/lib/cardSettings";
 import LayoutEditor from "./LayoutEditor";
-import { logger } from "@/lib/logger";
+import ModalHeader from "./CardGeneratorModalParts/ModalHeader";
+import ModalSettingsTab from "./CardGeneratorModalParts/ModalSettingsTab";
+import ModalActions from "./CardGeneratorModalParts/ModalActions";
+import { useCardImageGenerator } from "@/hooks/useCardImageGenerator";
+import { useCardSettings } from "@/hooks/useCardSettings";
 
 interface CardGeneratorModalProps {
   isOpen: boolean;
@@ -54,76 +45,44 @@ export default function CardGeneratorModal({
 }: CardGeneratorModalProps) {
   const [activeTab, setActiveTab] = useState<"settings" | "layout">("settings");
   const [mounted, setMounted] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">(
-    "idle",
-  );
-  const [isLayoutHydrated, setIsLayoutHydrated] = useState(false);
-  const [layout, setLayout] = useState<CardLayout>(cloneDefaultCardLayout());
-  const [displayOptions, setDisplayOptions] = useState<CardDisplayOptions>(
-    DEFAULT_DISPLAY_OPTIONS,
-  );
 
   const cardRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
+    /* eslint-disable-next-line react-hooks/set-state-in-effect */
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (!mounted) {
-      return;
-    }
+  const {
+    layout,
+    setLayout,
+    displayOptions,
+    toggleMainBlockVisibility,
+    toggleDisplayOption,
+    isBlockVisible,
+  } = useCardSettings(mounted);
 
-    try {
-      const raw = localStorage.getItem(LAYOUT_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        setLayout(normalizeCardLayout(parsed));
-      } else {
-        setLayout(cloneDefaultCardLayout());
-      }
-    } catch {
-      setLayout(cloneDefaultCardLayout());
-    } finally {
-      setIsLayoutHydrated(true);
-    }
-  }, [mounted]);
-
-  useEffect(() => {
-    if (!mounted || !isLayoutHydrated) {
-      return;
-    }
-
-    try {
-      localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(layout));
-    } catch {
-      // Ignore storage write failures (private mode, quota exceeded, etc.)
-    }
-  }, [layout, mounted, isLayoutHydrated]);
+  const {
+    isGenerating,
+    previewUrl,
+    setPreviewUrl,
+    copyStatus,
+    handleDownload,
+    handleCopy,
+  } = useCardImageGenerator({
+    cardRef,
+    isOpen,
+    layout,
+    displayOptions,
+    username: summary.profile?.login || "github",
+  });
 
   const handleClose = useCallback(() => {
     onClose();
     setPreviewUrl(null);
-  }, [onClose]);
-
-  const generateImage = useCallback(async () => {
-    if (!cardRef.current) return null;
-    try {
-      const dataUrl = await toPng(cardRef.current, {
-        cacheBust: true,
-        pixelRatio: 1,
-        backgroundColor: "#0d1117",
-      });
-      return dataUrl;
-    } catch (err) {
-      logger.error("Failed to generate image", err);
-      return null;
-    }
-  }, []);
+  }, [onClose, setPreviewUrl]);
 
   useEffect(() => {
     if (isOpen) {
@@ -150,94 +109,6 @@ export default function CardGeneratorModal({
     }
   }, [isOpen, handleClose]);
 
-  useEffect(() => {
-    if (isOpen && !previewUrl) {
-      let isCancelled = false;
-      setIsGenerating(true);
-
-      const generate = async () => {
-        try {
-          await document.fonts.ready;
-          const url = await generateImage();
-          if (!isCancelled) {
-            setPreviewUrl(url);
-          }
-        } catch (err) {
-          // Error is already logged in generateImage
-          if (!isCancelled) {
-            setPreviewUrl(null);
-          }
-        } finally {
-          if (!isCancelled) {
-            setIsGenerating(false);
-          }
-        }
-      };
-
-      let rafId: number;
-      const timer = setTimeout(() => {
-        rafId = requestAnimationFrame(() => {
-          generate();
-        });
-      }, 100);
-
-      return () => {
-        isCancelled = true;
-        clearTimeout(timer);
-        if (rafId) cancelAnimationFrame(rafId);
-      };
-    }
-  }, [isOpen, previewUrl, generateImage]);
-
-  useEffect(() => {
-    if (isOpen) {
-      setPreviewUrl(null);
-    }
-  }, [layout, displayOptions, isOpen]);
-
-  const handleDownload = useCallback(() => {
-    if (!previewUrl) return;
-    const link = document.createElement("a");
-    link.download = `${summary.profile?.login || "github"}-summary-card.png`;
-    link.href = previewUrl;
-    link.click();
-  }, [summary.profile?.login, previewUrl]);
-
-  const handleCopy = useCallback(async () => {
-    if (!cardRef.current) return;
-    try {
-      setCopyStatus("idle");
-      const blob = await toBlob(cardRef.current, {
-        cacheBust: true,
-        backgroundColor: "#0d1117",
-      });
-      if (!blob) throw new Error("Failed to create blob");
-
-      await navigator.clipboard.write([
-        new ClipboardItem({ "image/png": blob }),
-      ]);
-      setCopyStatus("copied");
-      setTimeout(() => setCopyStatus("idle"), 2000);
-    } catch (err) {
-      logger.error("Failed to copy", err);
-      setCopyStatus("error");
-    }
-  }, []);
-
-  const toggleMainBlockVisibility = (blockId: CardBlockId) => {
-    setLayout((prev) => toggleBlockVisibility(prev, blockId));
-  };
-
-  const toggleDisplayOption = (key: keyof CardDisplayOptions) => {
-    setDisplayOptions((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  const isBlockVisible = (blockId: CardBlockId): boolean => {
-    return (
-      layout.blocks.find((block) => block.id === blockId)?.visible ?? false
-    );
-  };
-
   if (!isOpen || !mounted) return null;
 
   return createPortal(
@@ -262,32 +133,7 @@ export default function CardGeneratorModal({
           onClick={(e) => e.stopPropagation()}
           tabIndex={-1}
         >
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-foreground">
-              Profile Card
-            </h2>
-            <button
-              type="button"
-              onClick={handleClose}
-              className="rounded-full p-2 text-muted transition-colors hover:bg-white/10 hover:text-foreground"
-              aria-label="Close"
-            >
-              <svg
-                aria-hidden="true"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M18 6 6 18" />
-                <path d="m6 6 12 12" />
-              </svg>
-            </button>
-          </div>
+          <ModalHeader onClose={handleClose} />
 
           <div className="mb-3 flex gap-2">
             <button
@@ -307,37 +153,14 @@ export default function CardGeneratorModal({
           </div>
 
           {activeTab === "settings" && (
-            <div className="mb-4 grid grid-cols-2 gap-3 rounded-lg border border-card-border/50 bg-card-bg/50 p-4 md:grid-cols-3">
-              {MAIN_BLOCKS.map(({ id, label }) => (
-                <label
-                  key={id}
-                  className="flex cursor-pointer select-none items-center gap-2 text-sm text-muted hover:text-foreground"
-                >
-                  <input
-                    type="checkbox"
-                    checked={isBlockVisible(id)}
-                    onChange={() => toggleMainBlockVisibility(id)}
-                    className="rounded border-card-border bg-background text-accent focus:ring-accent"
-                  />
-                  {label}
-                </label>
-              ))}
-
-              {DETAIL_OPTIONS.map(({ key, label }) => (
-                <label
-                  key={key as string}
-                  className="flex cursor-pointer select-none items-center gap-2 text-sm text-muted hover:text-foreground"
-                >
-                  <input
-                    type="checkbox"
-                    checked={displayOptions[key] ?? false}
-                    onChange={() => toggleDisplayOption(key)}
-                    className="rounded border-card-border bg-background text-accent focus:ring-accent"
-                  />
-                  {label}
-                </label>
-              ))}
-            </div>
+            <ModalSettingsTab
+              MAIN_BLOCKS={MAIN_BLOCKS}
+              DETAIL_OPTIONS={DETAIL_OPTIONS}
+              isBlockVisible={isBlockVisible}
+              toggleMainBlockVisibility={toggleMainBlockVisibility}
+              displayOptions={displayOptions}
+              toggleDisplayOption={toggleDisplayOption}
+            />
           )}
 
           {activeTab === "layout" && (
@@ -369,82 +192,12 @@ export default function CardGeneratorModal({
             )}
           </div>
 
-          <div className="mt-6 flex flex-wrap justify-end gap-4">
-            <button
-              type="button"
-              onClick={handleCopy}
-              disabled={!previewUrl}
-              className="inline-flex items-center gap-2 rounded-md border border-card-border bg-card-bg px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/5 disabled:opacity-50"
-            >
-              {copyStatus === "copied" ? (
-                <>
-                  <svg
-                    aria-hidden="true"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                  Copied!
-                </>
-              ) : (
-                <>
-                  <svg
-                    aria-hidden="true"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <rect
-                      x="9"
-                      y="9"
-                      width="13"
-                      height="13"
-                      rx="2"
-                      ry="2"
-                    />
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                  </svg>
-                  Copy Image
-                </>
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={handleDownload}
-              disabled={!previewUrl}
-              className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110 disabled:opacity-50"
-            >
-              <svg
-                aria-hidden="true"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" x2="12" y1="15" y2="3" />
-              </svg>
-              Download PNG
-            </button>
-          </div>
+          <ModalActions
+            previewUrl={previewUrl}
+            copyStatus={copyStatus}
+            handleCopy={handleCopy}
+            handleDownload={handleDownload}
+          />
         </div>
       </div>
 
