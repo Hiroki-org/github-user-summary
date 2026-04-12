@@ -469,6 +469,28 @@ describe("fetchActivity", () => {
     const totalHeatmap = result.heatmap.flat().reduce((a, b) => a + b, 0);
     expect(totalHeatmap).toBe(0);
   });
+
+  it("1ページ目が100件未満なら後続ページを取得しない", async () => {
+    mockFetch.mockImplementation((url: string | URL | Request) => {
+      const urlStr =
+        typeof url === "string" ? url : url instanceof URL ? url.toString() : url.url;
+
+      if (urlStr.includes("page=1")) {
+        return Promise.resolve(jsonResponse(MOCK_EVENTS));
+      }
+
+      return Promise.resolve(
+        jsonResponse(null, 403, { "X-RateLimit-Reset": "1700000000" }),
+      );
+    });
+
+    const { fetchActivity } = await import("../github");
+    const result = await fetchActivity("testuser", "fake-token");
+
+    expect(result.totalEvents).toBe(MOCK_EVENTS.length);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
   describe("Error handling", () => {
     it("ユーザーが存在しない場合 UserNotFoundError をスローする", async () => {
       mockFetch
@@ -568,15 +590,11 @@ describe("fetchUserSummary", () => {
    * fetch の呼び出し順は非決定的。URL ベースでモックを返す。
    */
   function setupUrlBasedMock() {
-    // GraphQL 呼び出しカウンター (pinned → repos → contributions の順で異なるデータを返す)
-    let graphqlCallCount = 0;
-
     mockFetch.mockImplementation((url: string | URL | Request, options?: RequestInit) => {
       const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : url.url;
 
       // GraphQL エンドポイント
       if (urlStr.includes("/graphql")) {
-        graphqlCallCount++;
         const body = options?.body ? JSON.parse(options.body as string) : {};
         const query = body.query || "";
 

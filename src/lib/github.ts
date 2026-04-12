@@ -1,5 +1,4 @@
 import "server-only";
-import { logger } from "@/lib/logger";
 
 import type {
   UserProfile,
@@ -630,40 +629,17 @@ export async function fetchActivity(
   username: string,
   token?: string
 ): Promise<ActivityData> {
-  const pages = [1, 2, 3];
   const allEvents: GitHubEvent[] = [];
 
-  const promises = pages.map((page) =>
+  const fetchPage = (page: number) =>
     restGet<GitHubEvent[]>(
       `/users/${encodeURIComponent(username)}/events/public?per_page=100&page=${page}`,
       token
-    )
-  );
+    );
 
-  let rejectFast: (reason?: unknown) => void;
-  const fatalErrorPromise = new Promise<never>((_, reject) => {
-    rejectFast = reject;
-  });
-
-  const wrappedPromises = promises.map((p) =>
-    p.catch((error) => {
-      if (
-        error instanceof UserNotFoundError ||
-        error instanceof RateLimitError
-      ) {
-        rejectFast(error);
-      }
-      throw error;
-    })
-  );
-
-  // Suppress unhandled promise rejections for subsequent pages if we break early or throw
-  wrappedPromises.forEach((p) => p.catch((e) => logger.error("Event fetch promise rejected:", e)));
-  fatalErrorPromise.catch(() => {});
-
-  for (const p of wrappedPromises) {
+  for (const page of [1, 2, 3]) {
     try {
-      const events = await Promise.race([p, fatalErrorPromise]);
+      const events = await fetchPage(page);
       allEvents.push(...events);
       if (events.length < 100) break;
     } catch (error) {
