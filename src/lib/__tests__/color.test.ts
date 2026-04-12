@@ -1,8 +1,9 @@
 import { colord, extend } from "colord";
 import a11yPlugin from "colord/plugins/a11y";
 extend([a11yPlugin]);
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { adjustAccentColor } from "../color";
+import { logger } from "../logger";
 
 /**
  * adjustAccentColor のユニットテスト
@@ -188,6 +189,37 @@ describe("adjustAccentColor", () => {
         const contrast = colord(result.accent).contrast(DARK_BACKGROUND);
         expect(contrast).toBeGreaterThanOrEqual(MINIMUM_CONTRAST_RATIO);
       }
+    });
+  });
+
+  // ---------- エラーハンドリング ----------
+  describe("Error handling", () => {
+    it("should handle thrown errors, log them, and return a default fallback color", () => {
+      const loggerSpy = vi.spyOn(logger, "error").mockImplementation(() => {});
+
+      // Create an object that throws when 'r' is accessed, this bypasses the initial Array.isArray check
+      // and throws inside parseColor / colord() if it inspects the object keys.
+      // Another sure way to trigger a crash in parseColor is passing an object that causes colord to fail.
+      const badInput = {
+        get r() {
+          throw new Error("Synthetic Error for Testing");
+        },
+        g: 0,
+        b: 0
+      } as unknown as Parameters<typeof adjustAccentColor>[0];
+
+      const result = adjustAccentColor(badInput);
+
+      // Verify logger was called
+      expect(loggerSpy).toHaveBeenCalledTimes(1);
+      expect(loggerSpy).toHaveBeenCalledWith("Failed to adjust accent color:", expect.any(Error));
+
+      // Verify fallback was used (DEFAULT_ACCENT_COLOR = #58a6ff)
+      // we check properties rather than exact value just to be safe, but it should match #58a6ff
+      expect(result).toHaveProperty("accent");
+      expect(result.accent).toMatch(/^#[0-9a-f]{6}$/i);
+
+      loggerSpy.mockRestore();
     });
   });
 });
