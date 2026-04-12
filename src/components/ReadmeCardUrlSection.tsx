@@ -9,6 +9,105 @@ interface Props {
   options: CardDisplayOptions;
 }
 
+const blockMap: Record<
+  CardBlockId,
+  "bio" | "stats" | "langs" | "repos" | null
+> = {
+  avatar: null,
+  bio: "bio",
+  stats: "stats",
+  topLanguages: "langs",
+  topRepos: "repos",
+  profile: null,
+  contributions: null,
+  heatmap: null,
+  interests: null,
+  skills: null,
+  repos: "repos",
+};
+
+export function generateReadmeUrl({
+  username,
+  layout,
+  options,
+  readmeTheme,
+  readmeCols,
+  includeStreak,
+  includeHeatmap,
+  origin,
+}: {
+  username?: string | null;
+  layout: CardLayout;
+  options: CardDisplayOptions;
+  readmeTheme: string;
+  readmeCols: number;
+  includeStreak: boolean;
+  includeHeatmap: boolean;
+  origin: string;
+}) {
+  if (!username) {
+    return "";
+  }
+
+  const activeBlocks = layout.blocks
+    .filter((block) => block.visible)
+    .map((block) => ({ block, target: blockMap[block.id] }))
+    .filter(
+      (
+        item,
+      ): item is {
+        block: CardLayout["blocks"][number];
+        target: "bio" | "stats" | "langs" | "repos";
+      } => Boolean(item.target),
+    );
+
+  const selected = activeBlocks.map((item) => item.target);
+
+  const selectedBlocks: Array<
+    "bio" | "stats" | "langs" | "repos" | "streak" | "heatmap"
+  > = [...selected];
+
+  if (includeStreak) {
+    selectedBlocks.push("streak");
+  }
+
+  if (includeHeatmap) {
+    selectedBlocks.push("heatmap");
+  }
+
+  const uniqueBlocks = Array.from(new Set(selectedBlocks));
+
+  const layoutParts = activeBlocks.map(
+    (item) => `${item.block.column}:${item.target}`,
+  );
+
+  const hide = [];
+  if (options.showContributionBreakdown === false) {
+    hide.push("stars");
+  }
+  if (options.showActivityBreakdown === false) {
+    hide.push("forks");
+  }
+
+  const params = new URLSearchParams();
+  params.set("format", "png");
+  params.set("theme", readmeTheme);
+  params.set("cols", String(readmeCols));
+  params.set(
+    "blocks",
+    uniqueBlocks.length > 0 ? uniqueBlocks.join(",") : "bio,stats,langs",
+  );
+  if (layoutParts.length > 0) {
+    params.set("layout", layoutParts.join(","));
+  }
+  if (hide.length > 0) {
+    params.set("hide", hide.join(","));
+  }
+  params.set("width", "600");
+
+  return `${origin}/api/card/${encodeURIComponent(username)}?${params.toString()}`;
+}
+
 export default function ReadmeCardUrlSection({ username, layout, options }: Props) {
   const [readmeTheme, setReadmeTheme] = useState<"light" | "dark">("light");
   const [readmeCols, setReadmeCols] = useState<1 | 2>(1);
@@ -17,90 +116,21 @@ export default function ReadmeCardUrlSection({ username, layout, options }: Prop
   const [copyState, setCopyState] = useState("");
 
   const readmeUrl = useMemo(() => {
-    if (!username) {
-      return "";
-    }
-
-    const blockMap: Record<
-      CardBlockId,
-      "bio" | "stats" | "langs" | "repos" | null
-    > = {
-      avatar: null,
-      bio: "bio",
-      stats: "stats",
-      topLanguages: "langs",
-      topRepos: "repos",
-      profile: null,
-      contributions: null,
-      heatmap: null,
-      interests: null,
-      skills: null,
-      repos: "repos",
-    };
-
-    const selected = layout.blocks
-      .filter((block) => block.visible)
-      .map((block) => blockMap[block.id])
-      .filter((block): block is "bio" | "stats" | "langs" | "repos" =>
-        Boolean(block),
-      );
-
-    const selectedBlocks: Array<
-      "bio" | "stats" | "langs" | "repos" | "streak" | "heatmap"
-    > = [...selected];
-
-    if (includeStreak) {
-      selectedBlocks.push("streak");
-    }
-
-    if (includeHeatmap) {
-      selectedBlocks.push("heatmap");
-    }
-
-    const uniqueBlocks = Array.from(new Set(selectedBlocks));
-
-    const layoutParts = layout.blocks
-      .filter((block) => block.visible && blockMap[block.id])
-      .map((block) => {
-        const target = blockMap[block.id];
-        if (!target) {
-          return null;
-        }
-        return `${block.column}:${target}`;
-      })
-      .filter((value): value is string => Boolean(value));
-
-    const hide = [];
-    if (options.showContributionBreakdown === false) {
-      hide.push("stars");
-    }
-    if (options.showActivityBreakdown === false) {
-      hide.push("forks");
-    }
-
-    const params = new URLSearchParams();
-    params.set("format", "png");
-    params.set("theme", readmeTheme);
-    params.set("cols", String(readmeCols));
-    params.set(
-      "blocks",
-      uniqueBlocks.length > 0 ? uniqueBlocks.join(",") : "bio,stats,langs",
-    );
-    if (layoutParts.length > 0) {
-      params.set("layout", layoutParts.join(","));
-    }
-    if (hide.length > 0) {
-      params.set("hide", hide.join(","));
-    }
-    params.set("width", "600");
-
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    return `${origin}/api/card/${encodeURIComponent(username)}?${params.toString()}`;
+    return generateReadmeUrl({
+      username,
+      layout,
+      options,
+      readmeTheme,
+      readmeCols,
+      includeStreak,
+      includeHeatmap,
+      origin,
+    });
   }, [
     username,
-    layout.blocks,
-    options.showContributionBreakdown,
-    options.showActivityBreakdown,
+    layout,
+    options,
     readmeTheme,
     readmeCols,
     includeStreak,
