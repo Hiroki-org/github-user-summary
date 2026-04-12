@@ -14,10 +14,12 @@ type SegmentData = {
   dashOffset: number;
 };
 
+const STROKE_WIDTH = 28;
+
 function DonutChart({ segments, size, totalCount }: { segments: SegmentData[], size: number, totalCount: number }) {
   const cx = size / 2;
   const cy = size / 2;
-  const strokeWidth = 28;
+  const strokeWidth = STROKE_WIDTH;
   const radius = (size - strokeWidth) / 2;
 
   return (
@@ -133,7 +135,7 @@ export default function LanguageChart({ languages, size = 180 }: Props) {
   if (languages.length === 0) return null;
 
   const top = languages.slice(0, 8);
-  const strokeWidth = 28;
+  const strokeWidth = STROKE_WIDTH;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
