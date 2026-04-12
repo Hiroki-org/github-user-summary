@@ -57,15 +57,10 @@ function parseBlocks(raw: string | null): CardBlockType[] {
     return DEFAULT_BLOCKS;
   }
 
-  const unique: CardBlockType[] = [];
-  for (const block of requested) {
-    if (!VALID_BLOCKS.includes(block as CardBlockType)) {
-      continue;
-    }
-    if (!unique.includes(block as CardBlockType)) {
-      unique.push(block as CardBlockType);
-    }
-  }
+  const unique = Array.from(new Set(requested)).filter(
+    (block): block is CardBlockType =>
+      VALID_BLOCKS.includes(block as CardBlockType),
+  );
 
   return unique.length > 0 ? unique : DEFAULT_BLOCKS;
 }

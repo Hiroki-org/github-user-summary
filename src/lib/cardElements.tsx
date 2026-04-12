@@ -71,151 +71,163 @@ export function levelColor(
   return "#15803d";
 }
 
-export function createBlock(
-  block: CardBlockType,
+function createBioBlock(data: CardData, theme: ThemePalette): ReactElement {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "row",
+        gap: 14,
+        alignItems: "center",
+      }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={data.profile.avatarUrl}
+        width={58}
+        height={58}
+        style={{ borderRadius: 999, border: `2px solid ${theme.border}` }}
+        alt="avatar"
+      />
+      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <div style={{ color: theme.text, fontSize: 22, fontWeight: 700 }}>
+          {data.profile.name}
+        </div>
+        <div style={{ color: theme.subtext, fontSize: 14 }}>
+          @{data.profile.login}
+        </div>
+        {data.profile.bio ? (
+          <div style={{ color: theme.subtext, fontSize: 13, maxWidth: 470 }}>
+            {data.profile.bio.length > 110
+              ? `${data.profile.bio.slice(0, 110)}...`
+              : data.profile.bio}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function createStatsBlock(
   data: CardData,
   theme: ThemePalette,
   hide: Set<string>,
 ): ReactElement {
-  if (block === "bio") {
-    return (
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ color: theme.text, fontSize: 16, fontWeight: 700 }}>
+        Stats
+      </div>
       <div
         style={{
           display: "flex",
           flexDirection: "row",
           gap: 14,
-          alignItems: "center",
+          color: theme.subtext,
+          fontSize: 14,
         }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={data.profile.avatarUrl}
-          width={58}
-          height={58}
-          style={{ borderRadius: 999, border: `2px solid ${theme.border}` }}
-          alt="avatar"
-        />
-        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <div style={{ color: theme.text, fontSize: 22, fontWeight: 700 }}>
-            {data.profile.name}
-          </div>
-          <div style={{ color: theme.subtext, fontSize: 14 }}>
-            @{data.profile.login}
-          </div>
-          {data.profile.bio ? (
-            <div style={{ color: theme.subtext, fontSize: 13, maxWidth: 470 }}>
-              {data.profile.bio.length > 110
-                ? `${data.profile.bio.slice(0, 110)}...`
-                : data.profile.bio}
-            </div>
-          ) : null}
-        </div>
+        <div>Followers: {data.profile.followers.toLocaleString()}</div>
+        <div>Following: {data.profile.following.toLocaleString()}</div>
+        <div>Repos: {data.profile.publicRepos.toLocaleString()}</div>
+        {!hide.has("stars") ? (
+          <div>Stars: {data.totalStars.toLocaleString()}</div>
+        ) : null}
       </div>
-    );
-  }
+    </div>
+  );
+}
 
-  if (block === "stats") {
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <div style={{ color: theme.text, fontSize: 16, fontWeight: 700 }}>
-          Stats
-        </div>
+function createLanguagesBlock(
+  data: CardData,
+  theme: ThemePalette,
+): ReactElement {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+      <div style={{ color: theme.text, fontSize: 16, fontWeight: 700 }}>
+        Top Languages
+      </div>
+      {data.languages.slice(0, 4).map((lang) => (
         <div
+          key={lang.name}
           style={{
             display: "flex",
             flexDirection: "row",
-            gap: 14,
-            color: theme.subtext,
-            fontSize: 14,
-          }}
-        >
-          <div>Followers: {data.profile.followers.toLocaleString()}</div>
-          <div>Following: {data.profile.following.toLocaleString()}</div>
-          <div>Repos: {data.profile.publicRepos.toLocaleString()}</div>
-          {!hide.has("stars") ? (
-            <div>Stars: {data.totalStars.toLocaleString()}</div>
-          ) : null}
-        </div>
-      </div>
-    );
-  }
-
-  if (block === "langs") {
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-        <div style={{ color: theme.text, fontSize: 16, fontWeight: 700 }}>
-          Top Languages
-        </div>
-        {data.languages.slice(0, 4).map((lang) => (
-          <div
-            key={lang.name}
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              justifyContent: "space-between",
-              fontSize: 13,
-              color: theme.subtext,
-            }}
-          >
-            <span>{lang.name}</span>
-            <span>{lang.percentage.toFixed(1)}%</span>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  if (block === "repos") {
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-        <div style={{ color: theme.text, fontSize: 16, fontWeight: 700 }}>
-          Top Repositories
-        </div>
-        {data.repos.slice(0, 3).map((repo) => (
-          <div
-            key={repo.name}
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              justifyContent: "space-between",
-              fontSize: 13,
-              color: theme.subtext,
-            }}
-          >
-            <span>{repo.name}</span>
-            <span>
-              {!hide.has("stars") ? `★${repo.stars}` : ""}
-              {!hide.has("stars") && !hide.has("forks") ? " / " : ""}
-              {!hide.has("forks") ? `⑂${repo.forks}` : ""}
-            </span>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  if (block === "streak") {
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <div style={{ color: theme.text, fontSize: 16, fontWeight: 700 }}>
-          Streak
-        </div>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            gap: 16,
-            color: theme.subtext,
+            justifyContent: "space-between",
             fontSize: 13,
+            color: theme.subtext,
           }}
         >
-          <span>Current: {data.streak.current} days</span>
-          <span>Longest: {data.streak.longest} days</span>
+          <span>{lang.name}</span>
+          <span>{lang.percentage.toFixed(1)}%</span>
         </div>
-      </div>
-    );
-  }
+      ))}
+    </div>
+  );
+}
 
+function createReposBlock(
+  data: CardData,
+  theme: ThemePalette,
+  hide: Set<string>,
+): ReactElement {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+      <div style={{ color: theme.text, fontSize: 16, fontWeight: 700 }}>
+        Top Repositories
+      </div>
+      {data.repos.slice(0, 3).map((repo) => (
+        <div
+          key={repo.name}
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "space-between",
+            fontSize: 13,
+            color: theme.subtext,
+          }}
+        >
+          <span>{repo.name}</span>
+          <span>
+            {!hide.has("stars") ? `★${repo.stars}` : ""}
+            {!hide.has("stars") && !hide.has("forks") ? " / " : ""}
+            {!hide.has("forks") ? `⑂${repo.forks}` : ""}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function createStreakBlock(
+  data: CardData,
+  theme: ThemePalette,
+): ReactElement {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ color: theme.text, fontSize: 16, fontWeight: 700 }}>
+        Streak
+      </div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          gap: 16,
+          color: theme.subtext,
+          fontSize: 13,
+        }}
+      >
+        <span>Current: {data.streak.current} days</span>
+        <span>Longest: {data.streak.longest} days</span>
+      </div>
+    </div>
+  );
+}
+
+function createHeatmapBlock(
+  data: CardData,
+  theme: ThemePalette,
+): ReactElement {
   const days = data.heatmap.days.slice(-42);
   const columns: Array<Array<{ date: string; count: number }>> = [];
   for (let i = 0; i < days.length; i += 7) {
@@ -253,6 +265,28 @@ export function createBlock(
       </div>
     </div>
   );
+}
+
+export function createBlock(
+  block: CardBlockType,
+  data: CardData,
+  theme: ThemePalette,
+  hide: Set<string>,
+): ReactElement {
+  switch (block) {
+    case "bio":
+      return createBioBlock(data, theme);
+    case "stats":
+      return createStatsBlock(data, theme, hide);
+    case "langs":
+      return createLanguagesBlock(data, theme);
+    case "repos":
+      return createReposBlock(data, theme, hide);
+    case "streak":
+      return createStreakBlock(data, theme);
+    case "heatmap":
+      return createHeatmapBlock(data, theme);
+  }
 }
 
 export function blockContainer(
