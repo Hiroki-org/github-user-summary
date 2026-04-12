@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseCardQueryParams, resolveBlockLayout } from "@/lib/cardRenderer";
+import { parseCardQueryParams, resolveBlockLayout } from "@/lib/cardOptions";
 
 describe("parseCardQueryParams", () => {
     it("falls back to defaults for invalid params", () => {

@@ -112,4 +112,49 @@ describe("fetchCardData", () => {
             status: 504,
         });
     });
+  it("handles fallback parse when date is invalid format", async () => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date("2023-10-30T00:00:00Z"));
+
+        try {
+        mockFetch
+            .mockResolvedValueOnce(jsonResponse({
+                login: "alice",
+                name: "Alice",
+                avatar_url: "https://example.com/a.png",
+                bio: "hello",
+                followers: 10,
+                following: 4,
+                public_repos: 12,
+            }))
+            .mockResolvedValueOnce(jsonResponse([
+                {
+                    name: "repo-1",
+                    stargazers_count: 20,
+                    forks_count: 2,
+                    language: "TypeScript",
+                    html_url: "https://github.com/alice/repo-1",
+                    pushed_at: "Tue, 24 Oct 2023 12:34:56 GMT",
+                },
+                {
+                    name: "repo-2",
+                    stargazers_count: 5,
+                    forks_count: 1,
+                    language: "TypeScript",
+                    html_url: "https://github.com/alice/repo-2",
+                    pushed_at: "invalid-date", // Unparsable
+                },
+            ]));
+
+        const { fetchCardData } = await import("@/lib/cardDataFetcher");
+        const result = await fetchCardData("alice");
+
+        expect(result).not.toBeNull();
+        expect(result?.heatmap.days).toHaveLength(42);
+        expect(result?.heatmap.days.find((day) => day.date === "2023-10-24")?.count).toBe(1);
+        expect(result?.heatmap.maxCount).toBe(1);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
 });
