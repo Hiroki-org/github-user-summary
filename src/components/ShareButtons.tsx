@@ -1,27 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { logger } from "@/lib/logger";
+import { useCallback } from "react";
+import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
 
 type Props = {
   username: string;
 };
 
 export default function ShareButtons({ username }: Props) {
-  const [copied, setCopied] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, []);
-
-  const showCopiedFeedback = useCallback(() => {
-    setCopied(true);
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => setCopied(false), 2000);
-  }, []);
+  const { copied, copyToClipboard } = useCopyToClipboard();
 
   const getShareUrl = useCallback(() => {
     if (typeof window === "undefined") return "";
@@ -29,47 +16,8 @@ export default function ShareButtons({ username }: Props) {
   }, [username]);
 
   const handleCopy = useCallback(async () => {
-    let clipboardError: unknown = null;
-
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      try {
-        await navigator.clipboard.writeText(getShareUrl());
-        showCopiedFeedback();
-        return;
-      } catch (err) {
-        clipboardError = err;
-      }
-    } else {
-      clipboardError = new Error("Clipboard API not available");
-    }
-
-    // Fallback for older browsers
-    const textArea = document.createElement("textarea");
-    textArea.value = getShareUrl();
-    document.body.appendChild(textArea);
-
-    let successful = false;
-    let fallbackError: unknown = null;
-
-    try {
-      textArea.select();
-      successful = document.execCommand("copy");
-      if (!successful) {
-        fallbackError = new Error("document.execCommand('copy') failed");
-      }
-    } catch (err) {
-      successful = false;
-      fallbackError = err;
-    } finally {
-      document.body.removeChild(textArea);
-    }
-
-    if (successful) {
-      showCopiedFeedback();
-    } else {
-      logger.error("Failed to copy", clipboardError, fallbackError);
-    }
-  }, [getShareUrl, showCopiedFeedback]);
+    await copyToClipboard(getShareUrl());
+  }, [getShareUrl, copyToClipboard]);
 
   const handleTwitterShare = useCallback(() => {
     const text = `Check out ${username}'s GitHub profile summary!`;
