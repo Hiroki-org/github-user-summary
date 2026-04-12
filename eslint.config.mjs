@@ -8,13 +8,13 @@ const eslintConfig = defineConfig([
   {
     files: [
       "**/src/lib/cardRenderer.tsx",
-      "**/src/components/ProfileCard.tsx",
+      "**/src/components/BusinessCard.tsx",
       "**/src/app/api/og/**/route.tsx",
-      "**/src/components/LoginButton.tsx"
+      "**/src/components/LoginButton.tsx",
     ],
     rules: {
-      "@next/next/no-img-element": "off"
-    }
+      "@next/next/no-img-element": "off",
+    },
   },
   // Override default ignores of eslint-config-next.
   globalIgnores([
