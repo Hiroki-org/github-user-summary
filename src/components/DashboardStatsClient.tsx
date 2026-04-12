@@ -21,6 +21,79 @@ function buildEventSeries(events: { type: string; count: number }[]) {
   }));
 }
 
+function StatBarChart({
+  title,
+  data,
+  xAxisKey,
+  barKey,
+  barColor,
+}: {
+  title: string;
+  data: Array<Record<string, string | number>>;
+  xAxisKey: string;
+  barKey: string;
+  barColor: string;
+}) {
+  return (
+    <div className="rounded-xl border border-card-border bg-card-bg p-4">
+      <h2 className="mb-3 text-sm font-medium text-muted">{title}</h2>
+      <div className="h-64">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data}>
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="rgba(148, 163, 184, 0.2)"
+            />
+            <XAxis
+              dataKey={xAxisKey}
+              stroke="currentColor"
+              tick={{ fill: "#94a3b8", fontSize: 12 }}
+            />
+            <YAxis
+              stroke="currentColor"
+              tick={{ fill: "#94a3b8", fontSize: 12 }}
+            />
+            <Tooltip />
+            <Bar dataKey={barKey} fill={barColor} radius={[6, 6, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+function EventBreakdownChart({
+  chartData,
+}: {
+  chartData: { name: string; count: number }[];
+}) {
+  return (
+    <StatBarChart
+      title="Recent Event Breakdown"
+      data={chartData}
+      xAxisKey="name"
+      barKey="count"
+      barColor="#0ea5e9"
+    />
+  );
+}
+
+function MonthlyContributionsChart({
+  data,
+}: {
+  data: { month: string; total: number }[];
+}) {
+  return (
+    <StatBarChart
+      title="Monthly Contributions"
+      data={data}
+      xAxisKey="month"
+      barKey="total"
+      barColor="#22c55e"
+    />
+  );
+}
+
 export default function DashboardStatsClient() {
   const year = useMemo(() => new Date().getUTCFullYear(), []);
   const {
@@ -76,59 +149,8 @@ export default function DashboardStatsClient() {
       </header>
 
       <section className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-card-border bg-card-bg p-4">
-          <h2 className="mb-3 text-sm font-medium text-muted">
-            Recent Event Breakdown
-          </h2>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="rgba(148, 163, 184, 0.2)"
-                />
-                <XAxis
-                  dataKey="name"
-                  stroke="currentColor"
-                  tick={{ fill: "#94a3b8", fontSize: 12 }}
-                />
-                <YAxis
-                  stroke="currentColor"
-                  tick={{ fill: "#94a3b8", fontSize: 12 }}
-                />
-                <Tooltip />
-                <Bar dataKey="count" fill="#0ea5e9" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-card-border bg-card-bg p-4">
-          <h2 className="mb-3 text-sm font-medium text-muted">
-            Monthly Contributions
-          </h2>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={contributionMonthly}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="rgba(148, 163, 184, 0.2)"
-                />
-                <XAxis
-                  dataKey="month"
-                  stroke="currentColor"
-                  tick={{ fill: "#94a3b8", fontSize: 12 }}
-                />
-                <YAxis
-                  stroke="currentColor"
-                  tick={{ fill: "#94a3b8", fontSize: 12 }}
-                />
-                <Tooltip />
-                <Bar dataKey="total" fill="#22c55e" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+        <EventBreakdownChart chartData={chartData} />
+        <MonthlyContributionsChart data={contributionMonthly} />
       </section>
 
       <section>
