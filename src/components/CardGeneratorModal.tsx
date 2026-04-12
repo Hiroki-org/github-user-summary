@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -5,7 +6,6 @@ import {
   useCallback,
   useRef,
   useEffect,
-  type KeyboardEvent,
 } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
@@ -47,31 +47,12 @@ const DETAIL_OPTIONS: { key: keyof CardDisplayOptions; label: string }[] = [
   { key: "showLanguage", label: "Languages" },
 ];
 
-export default function CardGeneratorModal({
-  isOpen,
-  onClose,
-  summary,
-}: CardGeneratorModalProps) {
-  const [activeTab, setActiveTab] = useState<"settings" | "layout">("settings");
-  const [mounted, setMounted] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">(
-    "idle",
-  );
+function useCardSettings(mounted: boolean) {
   const [isLayoutHydrated, setIsLayoutHydrated] = useState(false);
   const [layout, setLayout] = useState<CardLayout>(cloneDefaultCardLayout());
   const [displayOptions, setDisplayOptions] = useState<CardDisplayOptions>(
     DEFAULT_DISPLAY_OPTIONS,
   );
-
-  const cardRef = useRef<HTMLDivElement>(null);
-  const modalRef = useRef<HTMLDivElement>(null);
-  const previousFocusRef = useRef<HTMLElement | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (!mounted) {
@@ -105,10 +86,43 @@ export default function CardGeneratorModal({
     }
   }, [layout, mounted, isLayoutHydrated]);
 
-  const handleClose = useCallback(() => {
-    onClose();
-    setPreviewUrl(null);
-  }, [onClose]);
+  const toggleMainBlockVisibility = useCallback((blockId: CardBlockId) => {
+    setLayout((prev) => toggleBlockVisibility(prev, blockId));
+  }, []);
+
+  const toggleDisplayOption = useCallback((key: keyof CardDisplayOptions) => {
+    setDisplayOptions((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
+
+  const isBlockVisible = useCallback((blockId: CardBlockId): boolean => {
+    return (
+      layout.blocks.find((block) => block.id === blockId)?.visible ?? false
+    );
+  }, [layout.blocks]);
+
+  return {
+    layout,
+    setLayout,
+    displayOptions,
+    setDisplayOptions,
+    toggleMainBlockVisibility,
+    toggleDisplayOption,
+    isBlockVisible,
+  };
+}
+
+function useCardPreview(
+  isOpen: boolean,
+  cardRef: React.RefObject<HTMLDivElement | null>,
+  summary: UserSummary,
+  layout: CardLayout,
+  displayOptions: CardDisplayOptions
+) {
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">(
+    "idle",
+  );
 
   const generateImage = useCallback(async () => {
     if (!cardRef.current) return null;
@@ -123,32 +137,7 @@ export default function CardGeneratorModal({
       logger.error("Failed to generate image", err);
       return null;
     }
-  }, []);
-
-  useEffect(() => {
-    if (isOpen) {
-      previousFocusRef.current = document.activeElement as HTMLElement;
-
-      if (modalRef.current) {
-        modalRef.current.focus();
-      }
-
-      const handleKeyDown = (e: globalThis.KeyboardEvent) => {
-        if (e.key === "Escape") {
-          handleClose();
-        }
-      };
-
-      document.addEventListener("keydown", handleKeyDown);
-
-      return () => {
-        document.removeEventListener("keydown", handleKeyDown);
-        if (previousFocusRef.current) {
-          previousFocusRef.current.focus();
-        }
-      };
-    }
-  }, [isOpen, handleClose]);
+  }, [cardRef]);
 
   useEffect(() => {
     if (isOpen && !previewUrl) {
@@ -162,8 +151,7 @@ export default function CardGeneratorModal({
           if (!isCancelled) {
             setPreviewUrl(url);
           }
-        } catch (err) {
-          // Error is already logged in generateImage
+        } catch {
           if (!isCancelled) {
             setPreviewUrl(null);
           }
@@ -222,21 +210,212 @@ export default function CardGeneratorModal({
       logger.error("Failed to copy", err);
       setCopyStatus("error");
     }
+  }, [cardRef]);
+
+  return {
+    isGenerating,
+    previewUrl,
+    setPreviewUrl,
+    copyStatus,
+    handleDownload,
+    handleCopy,
+  };
+}
+
+function SettingsTab({
+  isBlockVisible,
+  toggleMainBlockVisibility,
+  displayOptions,
+  toggleDisplayOption,
+}: {
+  isBlockVisible: (id: CardBlockId) => boolean;
+  toggleMainBlockVisibility: (id: CardBlockId) => void;
+  displayOptions: CardDisplayOptions;
+  toggleDisplayOption: (key: keyof CardDisplayOptions) => void;
+}) {
+  return (
+    <div className="mb-4 grid grid-cols-2 gap-3 rounded-lg border border-card-border/50 bg-card-bg/50 p-4 md:grid-cols-3">
+      {MAIN_BLOCKS.map(({ id, label }) => (
+        <label
+          key={id}
+          className="flex cursor-pointer select-none items-center gap-2 text-sm text-muted hover:text-foreground"
+        >
+          <input
+            type="checkbox"
+            checked={isBlockVisible(id)}
+            onChange={() => toggleMainBlockVisibility(id)}
+            className="rounded border-card-border bg-background text-accent focus:ring-accent"
+          />
+          {label}
+        </label>
+      ))}
+
+      {DETAIL_OPTIONS.map(({ key, label }) => (
+        <label
+          key={key as string}
+          className="flex cursor-pointer select-none items-center gap-2 text-sm text-muted hover:text-foreground"
+        >
+          <input
+            type="checkbox"
+            checked={displayOptions[key] ?? false}
+            onChange={() => toggleDisplayOption(key)}
+            className="rounded border-card-border bg-background text-accent focus:ring-accent"
+          />
+          {label}
+        </label>
+      ))}
+    </div>
+  );
+}
+
+function ActionButtons({
+  handleCopy,
+  handleDownload,
+  previewUrl,
+  copyStatus,
+}: {
+  handleCopy: () => void;
+  handleDownload: () => void;
+  previewUrl: string | null;
+  copyStatus: "idle" | "copied" | "error";
+}) {
+  return (
+    <div className="mt-6 flex flex-wrap justify-end gap-4">
+      <button
+        type="button"
+        onClick={handleCopy}
+        disabled={!previewUrl}
+        className="inline-flex items-center gap-2 rounded-md border border-card-border bg-card-bg px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/5 disabled:opacity-50"
+      >
+        {copyStatus === "copied" ? (
+          <>
+            <svg
+              aria-hidden="true"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            Copied!
+          </>
+        ) : (
+          <>
+            <svg
+              aria-hidden="true"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+            </svg>
+            Copy Image
+          </>
+        )}
+      </button>
+
+      <button
+        type="button"
+        onClick={handleDownload}
+        disabled={!previewUrl}
+        className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110 disabled:opacity-50"
+      >
+        <svg
+          aria-hidden="true"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" x2="12" y1="15" y2="3" />
+        </svg>
+        Download PNG
+      </button>
+    </div>
+  );
+}
+
+export default function CardGeneratorModal({
+  isOpen,
+  onClose,
+  summary,
+}: CardGeneratorModalProps) {
+  const [activeTab, setActiveTab] = useState<"settings" | "layout">("settings");
+  const [mounted, setMounted] = useState(false);
+
+  const cardRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
   }, []);
 
-  const toggleMainBlockVisibility = (blockId: CardBlockId) => {
-    setLayout((prev) => toggleBlockVisibility(prev, blockId));
-  };
+  const {
+    layout,
+    setLayout,
+    displayOptions,
+    toggleMainBlockVisibility,
+    toggleDisplayOption,
+    isBlockVisible,
+  } = useCardSettings(mounted);
 
-  const toggleDisplayOption = (key: keyof CardDisplayOptions) => {
-    setDisplayOptions((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
+  const {
+    isGenerating,
+    previewUrl,
+    setPreviewUrl,
+    copyStatus,
+    handleDownload,
+    handleCopy,
+  } = useCardPreview(isOpen, cardRef, summary, layout, displayOptions);
 
-  const isBlockVisible = (blockId: CardBlockId): boolean => {
-    return (
-      layout.blocks.find((block) => block.id === blockId)?.visible ?? false
-    );
-  };
+  const handleClose = useCallback(() => {
+    onClose();
+    setPreviewUrl(null);
+  }, [onClose, setPreviewUrl]);
+
+  useEffect(() => {
+    if (isOpen) {
+      previousFocusRef.current = document.activeElement as HTMLElement;
+
+      if (modalRef.current) {
+        modalRef.current.focus();
+      }
+
+      const handleKeyDown = (e: globalThis.KeyboardEvent) => {
+        if (e.key === "Escape") {
+          handleClose();
+        }
+      };
+
+      document.addEventListener("keydown", handleKeyDown);
+
+      return () => {
+        document.removeEventListener("keydown", handleKeyDown);
+        if (previousFocusRef.current) {
+          previousFocusRef.current.focus();
+        }
+      };
+    }
+  }, [isOpen, handleClose]);
 
   if (!isOpen || !mounted) return null;
 
@@ -307,37 +486,12 @@ export default function CardGeneratorModal({
           </div>
 
           {activeTab === "settings" && (
-            <div className="mb-4 grid grid-cols-2 gap-3 rounded-lg border border-card-border/50 bg-card-bg/50 p-4 md:grid-cols-3">
-              {MAIN_BLOCKS.map(({ id, label }) => (
-                <label
-                  key={id}
-                  className="flex cursor-pointer select-none items-center gap-2 text-sm text-muted hover:text-foreground"
-                >
-                  <input
-                    type="checkbox"
-                    checked={isBlockVisible(id)}
-                    onChange={() => toggleMainBlockVisibility(id)}
-                    className="rounded border-card-border bg-background text-accent focus:ring-accent"
-                  />
-                  {label}
-                </label>
-              ))}
-
-              {DETAIL_OPTIONS.map(({ key, label }) => (
-                <label
-                  key={key as string}
-                  className="flex cursor-pointer select-none items-center gap-2 text-sm text-muted hover:text-foreground"
-                >
-                  <input
-                    type="checkbox"
-                    checked={displayOptions[key] ?? false}
-                    onChange={() => toggleDisplayOption(key)}
-                    className="rounded border-card-border bg-background text-accent focus:ring-accent"
-                  />
-                  {label}
-                </label>
-              ))}
-            </div>
+            <SettingsTab
+              isBlockVisible={isBlockVisible}
+              toggleMainBlockVisibility={toggleMainBlockVisibility}
+              displayOptions={displayOptions}
+              toggleDisplayOption={toggleDisplayOption}
+            />
           )}
 
           {activeTab === "layout" && (
@@ -369,82 +523,12 @@ export default function CardGeneratorModal({
             )}
           </div>
 
-          <div className="mt-6 flex flex-wrap justify-end gap-4">
-            <button
-              type="button"
-              onClick={handleCopy}
-              disabled={!previewUrl}
-              className="inline-flex items-center gap-2 rounded-md border border-card-border bg-card-bg px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-white/5 disabled:opacity-50"
-            >
-              {copyStatus === "copied" ? (
-                <>
-                  <svg
-                    aria-hidden="true"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                  Copied!
-                </>
-              ) : (
-                <>
-                  <svg
-                    aria-hidden="true"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <rect
-                      x="9"
-                      y="9"
-                      width="13"
-                      height="13"
-                      rx="2"
-                      ry="2"
-                    />
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                  </svg>
-                  Copy Image
-                </>
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={handleDownload}
-              disabled={!previewUrl}
-              className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-white transition-all hover:brightness-110 disabled:opacity-50"
-            >
-              <svg
-                aria-hidden="true"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" x2="12" y1="15" y2="3" />
-              </svg>
-              Download PNG
-            </button>
-          </div>
+          <ActionButtons
+            handleCopy={handleCopy}
+            handleDownload={handleDownload}
+            previewUrl={previewUrl}
+            copyStatus={copyStatus}
+          />
         </div>
       </div>
 
