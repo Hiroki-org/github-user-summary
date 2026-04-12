@@ -3,12 +3,13 @@
 import { useState, useCallback, useEffect, type RefObject } from "react";
 import { toPng, toBlob } from "html-to-image";
 import { logger } from "@/lib/logger";
+import type { CardDisplayOptions, CardLayout } from "@/lib/types";
 
 interface UseCardImageGeneratorProps {
   cardRef: RefObject<HTMLDivElement | null>;
   isOpen: boolean;
-  layout: unknown;
-  displayOptions: unknown;
+  layout: CardLayout;
+  displayOptions: CardDisplayOptions;
   username: string;
 }
 
@@ -32,8 +33,8 @@ export function useCardImageGenerator({
         backgroundColor: "#0d1117",
       });
       return dataUrl;
-    } catch {
-      logger.error("Failed to generate image");
+    } catch (err) {
+      logger.error("Failed to generate image", err);
       return null;
     }
   }, [cardRef]);
@@ -50,7 +51,8 @@ export function useCardImageGenerator({
           if (!isCancelled) {
             setPreviewUrl(url);
           }
-        } catch {
+        } catch (err) {
+          logger.error("Image generation process failed", err);
           if (!isCancelled) {
             setPreviewUrl(null);
           }
@@ -105,8 +107,8 @@ export function useCardImageGenerator({
       ]);
       setCopyStatus("copied");
       setTimeout(() => setCopyStatus("idle"), 2000);
-    } catch {
-      logger.error("Failed to copy");
+    } catch (err) {
+      logger.error("Failed to copy", err);
       setCopyStatus("error");
     }
   }, [cardRef]);
