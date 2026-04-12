@@ -295,6 +295,10 @@ describe("fetcher", () => {
         vi.clearAllMocks();
     });
 
+    afterEach(() => {
+        global.fetch = originalFetch;
+    });
+
     it("throws an error with the response text when not ok", async () => {
         global.fetch = vi.fn().mockResolvedValue({
             ok: false,
