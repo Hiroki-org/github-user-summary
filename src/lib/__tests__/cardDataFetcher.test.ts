@@ -112,9 +112,11 @@ describe("fetchCardData", () => {
             status: 504,
         });
     });
-});
+  it("handles fallback parse when date is invalid format", async () => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date("2023-10-30T00:00:00Z"));
 
-    it("handles fallback parse when date is invalid format", async () => {
+        try {
         mockFetch
             .mockResolvedValueOnce(jsonResponse({
                 login: "alice",
@@ -132,7 +134,7 @@ describe("fetchCardData", () => {
                     forks_count: 2,
                     language: "TypeScript",
                     html_url: "https://github.com/alice/repo-1",
-                    pushed_at: "2023/10/24 12:34:56", // Invalid ISO but parsable by new Date()
+                    pushed_at: "Tue, 24 Oct 2023 12:34:56 GMT",
                 },
                 {
                     name: "repo-2",
@@ -149,5 +151,10 @@ describe("fetchCardData", () => {
 
         expect(result).not.toBeNull();
         expect(result?.heatmap.days).toHaveLength(42);
-        // We just ensure it doesn't crash and falls back gracefully
+        expect(result?.heatmap.days.find((day) => day.date === "2023-10-24")?.count).toBe(1);
+        expect(result?.heatmap.maxCount).toBe(1);
+        } finally {
+            vi.useRealTimers();
+        }
     });
+});

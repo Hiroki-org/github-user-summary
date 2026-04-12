@@ -177,9 +177,7 @@ function buildHeatmapFromRepoPushes(repos: CardRepoData[]): { days: { date: stri
             if (Number.isNaN(pushed.getTime())) {
                 continue;
             }
-            key = new Date(Date.UTC(pushed.getUTCFullYear(), pushed.getUTCMonth(), pushed.getUTCDate()))
-                .toISOString()
-                .slice(0, 10);
+            key = pushed.toISOString().slice(0, 10);
         }
 
         if (dayCounts.has(key)) {
