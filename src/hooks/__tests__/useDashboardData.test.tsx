@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
-import { useDashboardData, useYearInReview, useDashboardStats } from "../useDashboardData";
+import { useDashboardData, useYearInReview, useDashboardStats, fetcher } from "../useDashboardData";
 import { useSession } from "next-auth/react";
 import { SWRConfig } from "swr";
 import React from "react";
@@ -286,5 +286,26 @@ describe("fetcher error edge cases", () => {
         });
 
         expect(result.current.error.message).toBe("Request failed (502)");
+    });
+});
+
+
+describe("fetcher", () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    afterEach(() => {
+        global.fetch = originalFetch;
+    });
+
+    it("throws an error with the response text when not ok", async () => {
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: false,
+            status: 404,
+            text: async () => "Not Found",
+        });
+
+        await expect(fetcher("/api/test")).rejects.toThrow("Not Found");
     });
 });
