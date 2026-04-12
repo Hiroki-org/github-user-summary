@@ -49,12 +49,19 @@ export function generateReadmeUrl({
     return "";
   }
 
-  const selected = layout.blocks
+  const activeBlocks = layout.blocks
     .filter((block) => block.visible)
-    .map((block) => blockMap[block.id])
-    .filter((block): block is "bio" | "stats" | "langs" | "repos" =>
-      Boolean(block),
+    .map((block) => ({ block, target: blockMap[block.id] }))
+    .filter(
+      (
+        item,
+      ): item is {
+        block: CardLayout["blocks"][number];
+        target: "bio" | "stats" | "langs" | "repos";
+      } => Boolean(item.target),
     );
+
+  const selected = activeBlocks.map((item) => item.target);
 
   const selectedBlocks: Array<
     "bio" | "stats" | "langs" | "repos" | "streak" | "heatmap"
@@ -70,16 +77,9 @@ export function generateReadmeUrl({
 
   const uniqueBlocks = Array.from(new Set(selectedBlocks));
 
-  const layoutParts = layout.blocks
-    .filter((block) => block.visible && blockMap[block.id])
-    .map((block) => {
-      const target = blockMap[block.id];
-      if (!target) {
-        return null;
-      }
-      return `${block.column}:${target}`;
-    })
-    .filter((value): value is string => Boolean(value));
+  const layoutParts = activeBlocks.map(
+    (item) => `${item.block.column}:${item.target}`,
+  );
 
   const hide = [];
   if (options.showContributionBreakdown === false) {
