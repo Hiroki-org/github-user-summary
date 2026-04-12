@@ -1,3 +1,4 @@
+import type { CSSProperties, ReactNode } from "react";
 import type { ContributionData } from "@/lib/types";
 import ContributionGraph from "./ContributionGraph";
 
@@ -5,7 +6,7 @@ type Stat = {
   label: string;
   value: number;
   color: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   suffix?: string;
 };
 
@@ -74,12 +75,17 @@ const getStats = (contributions: ContributionData): Stat[] => [
 ];
 
 function StatCard({ stat, index }: { stat: Stat; index: number }) {
+  const statColorStyle = { "--stat-color": stat.color } as CSSProperties;
+
   return (
     <div
       className="group rounded-lg border border-card-border/50 bg-card-bg/30 p-4 text-center hover:border-accent hover:bg-accent/5 hover:scale-105 transition-all duration-300"
       style={{ animation: `scaleIn 0.4s ease-out ${index * 0.05}s backwards` }}
     >
-      <div className="mb-2 flex justify-center text-muted group-hover:text-foreground transition-colors" style={{ color: stat.color }}>
+      <div
+        className="mb-2 flex justify-center transition-colors [color:var(--stat-color)] group-hover:text-foreground"
+        style={statColorStyle}
+      >
         {stat.icon}
       </div>
       <div className="text-2xl font-bold tracking-tight" style={{ color: stat.color }}>
