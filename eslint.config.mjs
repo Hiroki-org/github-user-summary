@@ -6,7 +6,11 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   {
-    files: ["src/components/BusinessCard.tsx", "src/lib/cardRenderer.tsx"],
+    files: [
+      "src/components/BusinessCard.tsx",
+      "src/lib/cardRenderer.tsx",
+      "src/app/api/og/*/route.tsx",
+    ],
     rules: {
       "@next/next/no-img-element": "off",
     },
