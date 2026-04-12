@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import type { LanguageStats } from "@/lib/types";
 
 type Props = {
@@ -12,22 +13,28 @@ export default function LanguageChartDonut({ top, size }: Props) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
-  // Build arc segments
-  const segments = [];
-  let accumulated = 0;
-  for (const lang of top) {
-    const pct = lang.percentage / 100;
-    const dashLength = pct * circumference;
-    const offset = -accumulated * circumference + circumference * 0.25; // start at 12 o'clock
-    segments.push({
-      name: lang.name,
-      color: lang.color,
-      percentage: lang.percentage,
-      dashArray: `${dashLength} ${circumference - dashLength}`,
-      dashOffset: offset,
-    });
-    accumulated += pct;
-  }
+  const segments = useMemo(() => {
+    const result = [];
+    let accumulated = 0;
+
+    for (const lang of top) {
+      const pct = lang.percentage / 100;
+      const dashLength = pct * circumference;
+      const offset = -accumulated * circumference + circumference * 0.25; // start at 12 o'clock
+      result.push({
+        name: lang.name,
+        color: lang.color,
+        percentage: lang.percentage,
+        dashArray: `${dashLength} ${circumference - dashLength}`,
+        dashOffset: offset,
+      });
+      accumulated += pct;
+    }
+
+    return result;
+  }, [top, circumference]);
+
+  const reversedSegments = useMemo(() => [...segments].reverse(), [segments]);
 
   return (
     <div className="relative group">
@@ -51,26 +58,30 @@ export default function LanguageChartDonut({ top, size }: Props) {
         />
 
         {/* Segments (render in reverse so first segment paints on top) */}
-        {[...segments].reverse().map((seg, i) => (
-          <circle
-            key={seg.name}
-            cx={cx}
-            cy={cy}
-            r={radius}
-            fill="none"
-            stroke={seg.color}
-            strokeWidth={strokeWidth}
-            strokeDasharray={seg.dashArray}
-            strokeDashoffset={seg.dashOffset}
-            className="transition-all duration-300 hover:opacity-80 cursor-pointer"
-            style={{
-              animation: `fadeIn 1s ease-out ${i * 0.1}s backwards`,
-              transformOrigin: 'center',
-            }}
-          >
-            <title>{seg.name}: {seg.percentage.toFixed(1)}%</title>
-          </circle>
-        ))}
+        {reversedSegments.map((seg, i) => {
+          const originalIndex = segments.length - 1 - i;
+
+          return (
+            <circle
+              key={seg.name}
+              cx={cx}
+              cy={cy}
+              r={radius}
+              fill="none"
+              stroke={seg.color}
+              strokeWidth={strokeWidth}
+              strokeDasharray={seg.dashArray}
+              strokeDashoffset={seg.dashOffset}
+              className="transition-all duration-300 hover:opacity-80 cursor-pointer"
+              style={{
+                animation: `fadeIn 1s ease-out ${originalIndex * 0.1}s backwards`,
+                transformOrigin: "center",
+              }}
+            >
+              <title>{seg.name}: {seg.percentage.toFixed(1)}%</title>
+            </circle>
+          );
+        })}
 
         {/* Center label */}
         <text

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import type { LanguageStats } from "@/lib/types";
 import LanguageChartDonut from "./LanguageChartDonut";
 import LanguageChartLegend from "./LanguageChartLegend";
@@ -13,9 +14,8 @@ type Props = {
  * Pure SVG — no external chart libraries.
  */
 export default function LanguageChart({ languages, size = 180 }: Props) {
-  if (languages.length === 0) return null;
-
-  const top = languages.slice(0, 8);
+  const top = useMemo(() => languages.slice(0, 8), [languages]);
+  if (top.length === 0) return null;
 
   return (
     <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start animate-fade-in">
