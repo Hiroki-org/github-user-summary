@@ -52,6 +52,7 @@ const BusinessCard = forwardRef<HTMLDivElement, Props>(({ summary, layout, optio
         className="h-40 w-40 rounded-full border-4 border-card-border shadow-xl"
         crossOrigin="anonymous"
         unoptimized
+        priority
       />
       <div>
         <h1 className="mb-2 text-5xl font-bold tracking-tight text-white">
