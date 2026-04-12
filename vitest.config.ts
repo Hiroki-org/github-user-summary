@@ -17,6 +17,10 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "server-only": path.join(
+        path.dirname(require.resolve("server-only")),
+        "empty.js",
+      ),
     },
   },
 });

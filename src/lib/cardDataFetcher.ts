@@ -169,13 +169,17 @@ function buildHeatmapFromRepoPushes(repos: CardRepoData[]): { days: { date: stri
     }
 
     for (const repo of repos) {
-        const pushed = new Date(repo.pushedAt);
-        if (Number.isNaN(pushed.getTime())) {
-            continue;
+        let key: string;
+        if (repo.pushedAt && repo.pushedAt.length >= 10 && repo.pushedAt[4] === '-' && repo.pushedAt[7] === '-') {
+            key = repo.pushedAt.slice(0, 10);
+        } else {
+            const pushed = new Date(repo.pushedAt);
+            if (Number.isNaN(pushed.getTime())) {
+                continue;
+            }
+            key = pushed.toISOString().slice(0, 10);
         }
-        const key = new Date(Date.UTC(pushed.getUTCFullYear(), pushed.getUTCMonth(), pushed.getUTCDate()))
-            .toISOString()
-            .slice(0, 10);
+
         if (dayCounts.has(key)) {
             dayCounts.set(key, (dayCounts.get(key) ?? 0) + 1);
         }
