@@ -89,6 +89,8 @@ export function adjustAccentColor(color: ColorInput): ColorResult {
     return generateColorResult(lightened);
   } catch (error) {
     logger.error("Failed to adjust accent color:", error);
-    return generateColorResult(colord(DEFAULT_ACCENT_COLOR));
+    return generateColorResult(
+      adjustLightness(ensureSaturation(colord(DEFAULT_ACCENT_COLOR))),
+    );
   }
 }
