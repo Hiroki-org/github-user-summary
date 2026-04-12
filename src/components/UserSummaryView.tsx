@@ -25,7 +25,7 @@ export default function UserSummaryView({ username, summary }: Props) {
       />
 
       {/* Background decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none fixed">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-[10%] -right-[10%] w-[60%] h-[60%] rounded-full bg-accent opacity-5 blur-[120px] animate-pulse-slow" />
         <div
           className="absolute top-[40%] -left-[10%] w-[50%] h-[50%] rounded-full bg-success opacity-5 blur-[120px] animate-pulse-slow"
@@ -36,11 +36,11 @@ export default function UserSummaryView({ username, summary }: Props) {
       {/* Main */}
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 relative z-10 animate-fade-in">
         {/* Errors */}
-        {summary.errors && summary.errors.length > 0 && (
+        {summary.errors.length > 0 && (
           <div className="mb-6 space-y-2 animate-slide-up">
-            {summary.errors.map((err) => (
+            {summary.errors.map((err, index) => (
               <div
-                key={err.section}
+                key={`${err.section}-${index}`}
                 className="rounded-md border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger"
               >
                 <strong>{err.section}:</strong> {err.message}
