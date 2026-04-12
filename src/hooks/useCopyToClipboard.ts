@@ -35,6 +35,10 @@ export function useCopyToClipboard(timeout = 2000) {
     // Fallback for older browsers
     const textArea = document.createElement("textarea");
     textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-9999px";
+    textArea.style.top = "0";
+    textArea.setAttribute("readonly", "");
     document.body.appendChild(textArea);
 
     let successful = false;
