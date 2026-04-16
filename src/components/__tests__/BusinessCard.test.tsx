@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 import type { CardLayout, UserSummary } from "@/lib/types";
-import BusinessCard from "../BusinessCard";
+import BusinessCard from "@/components/BusinessCard";
 
 const summary: UserSummary = {
   profile: {
@@ -71,7 +71,43 @@ const minimalLayout: CardLayout = {
   blocks: [{ id: "topLanguages", visible: true, column: "right" }],
 };
 
+const profileHeaderLayout: CardLayout = {
+  blocks: [{ id: "avatar", visible: true, column: "left" }],
+};
+
 describe("BusinessCard", () => {
+  it("applies wrapping class to long profile name", () => {
+    const longName = "Very Very Very Long Display Name That Should Wrap In Header";
+    const longSummary: UserSummary = {
+      ...summary,
+      profile: {
+        ...summary.profile!,
+        name: longName,
+      },
+    };
+
+    render(<BusinessCard summary={longSummary} layout={profileHeaderLayout} />);
+
+    const nameEl = screen.getByRole("heading", { name: longName });
+    expect(nameEl.className).toContain("break-words");
+  });
+
+  it("applies wrapping class to long profile login", () => {
+    const longLogin = "this-is-a-very-very-very-long-login-name";
+    const longSummary: UserSummary = {
+      ...summary,
+      profile: {
+        ...summary.profile!,
+        login: longLogin,
+      },
+    };
+
+    render(<BusinessCard summary={longSummary} layout={profileHeaderLayout} />);
+
+    const loginEl = screen.getByText(`@${longLogin}`);
+    expect(loginEl.className).toContain("break-all");
+  });
+
   it("uses flexible height instead of fixed 630px height", () => {
     render(<BusinessCard summary={summary} layout={minimalLayout} />);
 

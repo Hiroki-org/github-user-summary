@@ -50,8 +50,8 @@ const BusinessCard = forwardRef<HTMLDivElement, Props>(({ summary, layout, optio
         className="h-40 w-40 rounded-full border-4 border-card-border shadow-xl"
         crossOrigin="anonymous"
       />
-      <div>
-        <h1 className="mb-2 max-w-[760px] break-words text-5xl font-bold leading-tight tracking-tight text-white">
+      <div className="min-w-0 flex-1">
+        <h1 className="mb-2 break-words text-5xl font-bold leading-tight tracking-tight text-white">
           {profile.name || profile.login}
         </h1>
         <p className="break-all text-3xl font-medium text-gray-400">@{profile.login}</p>
