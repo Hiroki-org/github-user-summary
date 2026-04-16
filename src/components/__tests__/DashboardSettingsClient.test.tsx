@@ -13,7 +13,7 @@ vi.mock('next-auth/react', () => ({
 }));
 
 vi.mock('@/components/LayoutEditor', () => ({
-  default: ({ onToggleBlockVisibility, layout }: unknown) => (
+  default: ({ onToggleBlockVisibility, layout }: { onToggleBlockVisibility: (id: string) => void, layout: CardLayout }) => (
     <div data-testid="layout-editor" data-layout={JSON.stringify(layout)}>
       <button onClick={() => onToggleBlockVisibility('avatar')}>Toggle Avatar</button>
     </div>
@@ -21,15 +21,15 @@ vi.mock('@/components/LayoutEditor', () => ({
 }));
 
 vi.mock('@/components/DisplayOptionsSection', () => ({
-  default: ({ options, setOptions }: unknown) => (
+  default: ({ options, setOptions }: { options: CardDisplayOptions, setOptions: (updater: (prev: CardDisplayOptions) => CardDisplayOptions) => void }) => (
     <div data-testid="display-options" data-options={JSON.stringify(options)}>
-      <button onClick={() => setOptions((prev: unknown) => ({ ...prev, showCompany: false }))}>Toggle Company</button>
+      <button onClick={() => setOptions((prev) => ({ ...prev, showCompany: false }))}>Toggle Company</button>
     </div>
   ),
 }));
 
 vi.mock('@/components/ReadmeCardUrlSection', () => ({
-  default: ({ username }: unknown) => <div data-testid="readme-card-url" data-username={username || ''} />,
+  default: ({ username }: { username?: string | null }) => <div data-testid="readme-card-url" data-username={username || ''} />,
 }));
 
 vi.mock('@/lib/cardSettings', () => ({
