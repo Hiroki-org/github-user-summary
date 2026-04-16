@@ -120,19 +120,33 @@ function useCardPreview(
 ) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewSize, setPreviewSize] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">(
     "idle",
   );
 
   const generateImage = useCallback(async () => {
     if (!cardRef.current) return null;
+    const target = cardRef.current;
+    const rect = target.getBoundingClientRect();
+    const width = Math.max(
+      1,
+      Math.round(rect.width || target.scrollWidth || target.clientWidth),
+    );
+    const height = Math.max(
+      1,
+      Math.round(rect.height || target.scrollHeight || target.clientHeight),
+    );
     try {
-      const dataUrl = await toPng(cardRef.current, {
+      const dataUrl = await toPng(target, {
         cacheBust: true,
         pixelRatio: 1,
         backgroundColor: "#0d1117",
       });
-      return dataUrl;
+      return { dataUrl, width, height };
     } catch (err) {
       logger.error("Failed to generate image", err);
       return null;
@@ -147,13 +161,17 @@ function useCardPreview(
       const generate = async () => {
         try {
           await document.fonts.ready;
-          const url = await generateImage();
+          const image = await generateImage();
           if (!isCancelled) {
-            setPreviewUrl(url);
+            setPreviewUrl(image?.dataUrl ?? null);
+            setPreviewSize(
+              image ? { width: image.width, height: image.height } : null,
+            );
           }
         } catch {
           if (!isCancelled) {
             setPreviewUrl(null);
+            setPreviewSize(null);
           }
         } finally {
           if (!isCancelled) {
@@ -180,6 +198,7 @@ function useCardPreview(
   useEffect(() => {
     if (isOpen) {
       setPreviewUrl(null);
+      setPreviewSize(null);
     }
   }, [layout, displayOptions, isOpen]);
 
@@ -215,7 +234,9 @@ function useCardPreview(
   return {
     isGenerating,
     previewUrl,
+    previewSize,
     setPreviewUrl,
+    setPreviewSize,
     copyStatus,
     handleDownload,
     handleCopy,
@@ -381,7 +402,9 @@ export default function CardGeneratorModal({
   const {
     isGenerating,
     previewUrl,
+    previewSize,
     setPreviewUrl,
+    setPreviewSize,
     copyStatus,
     handleDownload,
     handleCopy,
@@ -390,7 +413,8 @@ export default function CardGeneratorModal({
   const handleClose = useCallback(() => {
     onClose();
     setPreviewUrl(null);
-  }, [onClose, setPreviewUrl]);
+    setPreviewSize(null);
+  }, [onClose, setPreviewSize, setPreviewUrl]);
 
   useEffect(() => {
     if (isOpen) {
@@ -514,8 +538,8 @@ export default function CardGeneratorModal({
               <Image
                 src={previewUrl}
                 alt="Card Preview"
-                width={1200}
-                height={900}
+                width={previewSize?.width ?? 1200}
+                height={previewSize?.height ?? 630}
                 className="max-h-full max-w-full rounded-lg object-contain shadow-lg"
               />
             ) : (

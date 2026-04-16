@@ -2,8 +2,9 @@
 import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { describe, expect, it } from "vitest";
-import BusinessCard from "../BusinessCard";
-import type { UserSummary } from "@/lib/types";
+
+import BusinessCard from "@/components/BusinessCard";
+import type { CardLayout, UserSummary } from "@/lib/types";
 
 const mockSummary: UserSummary = {
   profile: {
@@ -81,10 +82,18 @@ const mockSummary: UserSummary = {
   errors: [],
 };
 
+const minimalLayout: CardLayout = {
+  blocks: [{ id: "topLanguages", visible: true, column: "right" }],
+};
+
+const profileHeaderLayout: CardLayout = {
+  blocks: [{ id: "avatar", visible: true, column: "left" }],
+};
+
 describe("BusinessCard", () => {
   it("returns null if profile is missing", () => {
     const { container } = render(
-      <BusinessCard summary={{ ...mockSummary, profile: null }} />
+      <BusinessCard summary={{ ...mockSummary, profile: null }} />,
     );
     expect(container.firstChild).toBeNull();
   });
@@ -107,12 +116,12 @@ describe("BusinessCard", () => {
           showTwitter: true,
           showJoinedDate: true,
         }}
-      />
+      />,
     );
     expect(screen.getAllByText("This is a test bio")[0]).toBeInTheDocument();
     expect(screen.getAllByText("@testcompany")[0]).toBeInTheDocument();
     expect(screen.getAllByText("Test City")[0]).toBeInTheDocument();
-    expect(screen.getAllByText("test.blog")[0]).toBeInTheDocument(); // https:// replaced
+    expect(screen.getAllByText("test.blog")[0]).toBeInTheDocument();
     expect(screen.getAllByText("@testtwitter")[0]).toBeInTheDocument();
     expect(screen.getAllByText(/Joined Jan 2020/)[0]).toBeInTheDocument();
   });
@@ -125,18 +134,13 @@ describe("BusinessCard", () => {
           showContributionBreakdown: true,
           showStreaks: true,
         }}
-      />
+      />,
     );
-    // Main stats
-    expect(screen.getAllByText("580")[0]).toBeInTheDocument(); // totalContributions
-    expect(screen.getAllByText("100")[0]).toBeInTheDocument(); // followers
-    expect(screen.getAllByText("20")[0]).toBeInTheDocument(); // public_repos
-
-    // Breakdowns
-    expect(screen.getAllByText("500")[0]).toBeInTheDocument(); // totalCommits
-    expect(screen.getAllByText("50")[0]).toBeInTheDocument(); // totalPRs
-
-    // Streaks
+    expect(screen.getAllByText("580")[0]).toBeInTheDocument();
+    expect(screen.getAllByText("100")[0]).toBeInTheDocument();
+    expect(screen.getAllByText("20")[0]).toBeInTheDocument();
+    expect(screen.getAllByText("500")[0]).toBeInTheDocument();
+    expect(screen.getAllByText("50")[0]).toBeInTheDocument();
     expect(screen.getAllByText("15 days")[0]).toBeInTheDocument();
     expect(screen.getAllByText("5 days")[0]).toBeInTheDocument();
   });
@@ -150,21 +154,14 @@ describe("BusinessCard", () => {
           showInterests: true,
           showActivityBreakdown: true,
         }}
-      />
+      />,
     );
-    // Languages
     expect(screen.getAllByText("Top Languages")[0]).toBeInTheDocument();
     expect(screen.getAllByText("TypeScript")[0]).toBeInTheDocument();
-
-    // Topics
     expect(screen.getAllByText("Top Topics")[0]).toBeInTheDocument();
     expect(screen.getAllByText("#react")[0]).toBeInTheDocument();
-
-    // Interests
     expect(screen.getAllByText("Interests")[0]).toBeInTheDocument();
     expect(screen.getAllByText("#frontend")[0]).toBeInTheDocument();
-
-    // Activity
     expect(screen.getAllByText("Recent Activity")[0]).toBeInTheDocument();
     expect(screen.getAllByText("PushEvent")[0]).toBeInTheDocument();
   });
@@ -176,22 +173,85 @@ describe("BusinessCard", () => {
   });
 
   it("respects layout configuration", () => {
-    // Override default layout to only show avatar and stats
-    const layout = {
+    const layout: CardLayout = {
       blocks: [
-        { id: "avatar" as const, visible: true, column: "left" as const },
-        { id: "stats" as const, visible: true, column: "right" as const },
-        { id: "bio" as const, visible: false, column: "full" as const },
+        { id: "avatar", visible: true, column: "left" },
+        { id: "stats", visible: true, column: "right" },
+        { id: "bio", visible: false, column: "full" },
       ],
     };
 
     render(<BusinessCard summary={mockSummary} layout={layout} />);
 
-    // Visible blocks
     expect(screen.getByAltText("testuser")).toBeInTheDocument();
     expect(screen.getAllByText("580")[0]).toBeInTheDocument();
-
-    // Hidden blocks
     expect(screen.queryByText("This is a test bio")).not.toBeInTheDocument();
+  });
+
+  it("applies wrapping class to long profile name", () => {
+    const longName = "Very Very Very Long Display Name That Should Wrap In Header";
+    const longSummary: UserSummary = {
+      ...mockSummary,
+      profile: {
+        ...mockSummary.profile!,
+        name: longName,
+      },
+    };
+
+    render(<BusinessCard summary={longSummary} layout={profileHeaderLayout} />);
+
+    const nameEl = screen.getByRole("heading", { name: longName });
+    expect(nameEl.className).toContain("break-words");
+  });
+
+  it("applies wrapping class to long profile login", () => {
+    const longLogin = "this-is-a-very-very-very-long-login-name";
+    const longSummary: UserSummary = {
+      ...mockSummary,
+      profile: {
+        ...mockSummary.profile!,
+        login: longLogin,
+      },
+    };
+
+    render(<BusinessCard summary={longSummary} layout={profileHeaderLayout} />);
+
+    const loginEl = screen.getByText(`@${longLogin}`);
+    expect(loginEl.className).toContain("break-all");
+  });
+
+  it("uses flexible height instead of fixed 630px height", () => {
+    render(<BusinessCard summary={mockSummary} layout={minimalLayout} />);
+
+    const root = screen.getByTestId("business-card-root");
+    const classes = root.className.split(/\s+/);
+    expect(classes).toContain("min-h-[630px]");
+    expect(classes).not.toContain("h-[630px]");
+  });
+
+  it("applies wrapping class to long topic badges", () => {
+    render(
+      <BusinessCard
+        summary={{
+          ...mockSummary,
+          repositories: {
+            ...mockSummary.repositories!,
+            topics: [
+              {
+                name: "this-is-a-very-long-topic-name-that-should-wrap-in-the-card",
+                count: 1,
+              },
+            ],
+          },
+        }}
+        layout={minimalLayout}
+        options={{ showTopics: true }}
+      />,
+    );
+
+    const badge = screen.getByText(
+      "#this-is-a-very-long-topic-name-that-should-wrap-in-the-card",
+    );
+    expect(badge.className).toContain("break-all");
   });
 });
