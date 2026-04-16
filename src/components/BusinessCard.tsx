@@ -51,10 +51,10 @@ const BusinessCard = forwardRef<HTMLDivElement, Props>(({ summary, layout, optio
         crossOrigin="anonymous"
       />
       <div>
-        <h1 className="mb-2 text-5xl font-bold tracking-tight text-white">
+        <h1 className="mb-2 max-w-[760px] break-words text-5xl font-bold leading-tight tracking-tight text-white">
           {profile.name || profile.login}
         </h1>
-        <p className="text-3xl font-medium text-gray-400">@{profile.login}</p>
+        <p className="break-all text-3xl font-medium text-gray-400">@{profile.login}</p>
       </div>
     </div>
   );
@@ -202,7 +202,7 @@ const BusinessCard = forwardRef<HTMLDivElement, Props>(({ summary, layout, optio
             {topTopics.map((topic) => (
               <span
                 key={topic.name}
-                className="rounded-full bg-white/10 px-3 py-1 text-sm font-medium text-gray-200"
+                className="break-all rounded-full bg-white/10 px-3 py-1 text-sm font-medium text-gray-200"
               >
                 #{topic.name}
               </span>
@@ -220,7 +220,7 @@ const BusinessCard = forwardRef<HTMLDivElement, Props>(({ summary, layout, optio
             {interests.topTopics.slice(0, 8).map((topic) => (
               <span
                 key={topic.name}
-                className="rounded-full bg-accent/20 px-3 py-1 text-sm font-medium text-accent-light"
+                className="break-all rounded-full bg-accent/20 px-3 py-1 text-sm font-medium text-accent-light"
               >
                 #{topic.name}
               </span>
@@ -307,12 +307,13 @@ const BusinessCard = forwardRef<HTMLDivElement, Props>(({ summary, layout, optio
   return (
     <div
       ref={ref}
-      className="relative flex h-[630px] w-[1200px] flex-col justify-between overflow-hidden bg-gradient-to-br from-[#0d1117] to-[#161b22] p-16 font-sans text-white"
+      data-testid="business-card-root"
+      className="relative flex min-h-[630px] w-[1200px] flex-col overflow-hidden bg-gradient-to-br from-[#0d1117] to-[#161b22] p-16 font-sans text-white"
     >
       <div className="absolute -right-[10%] -top-[10%] h-[600px] w-[600px] rounded-full bg-accent/10 blur-[100px]" />
       <div className="absolute -bottom-[10%] -left-[10%] h-[500px] w-[500px] rounded-full bg-success/10 blur-[100px]" />
 
-      <div className="z-10 flex flex-1 flex-col gap-10">
+      <div className="z-10 flex flex-col gap-10">
         {fullBlocks.length > 0 && (
           <div className="space-y-8">
             {fullBlocks.map((block) => (
@@ -321,13 +322,13 @@ const BusinessCard = forwardRef<HTMLDivElement, Props>(({ summary, layout, optio
           </div>
         )}
 
-        <div className="flex flex-1 gap-16">
-          <div className="flex flex-1 flex-col justify-center space-y-8">
+        <div className="flex gap-16">
+          <div className="flex flex-1 flex-col space-y-8">
             {leftBlocks.map((block) => (
               <div key={block.id}>{renderBlock(block.id)}</div>
             ))}
           </div>
-          <div className="flex w-[400px] flex-col justify-center space-y-8">
+          <div className="flex w-[400px] flex-col space-y-8">
             {rightBlocks.map((block) => (
               <div key={block.id}>{renderBlock(block.id)}</div>
             ))}
