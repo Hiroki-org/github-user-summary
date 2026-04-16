@@ -193,4 +193,319 @@ describe("ShareButtons", () => {
     expect(screen.getByText("Copy URL")).toBeDefined();
     expect(screen.queryByText("Copied!")).toBeNull();
   });
+
+  it("uses document.execCommand as fallback when navigator.clipboard is undefined", async () => {
+    // 1. Mock clipboard to be undefined
+    const originalClipboard = navigator.clipboard;
+    Object.defineProperty(navigator, 'clipboard', {
+      value: undefined,
+      configurable: true,
+    });
+
+    // 2. Mock execCommand
+    const execCommandMock = vi.fn().mockReturnValue(true);
+    document.execCommand = execCommandMock;
+
+    render(<ShareButtons username="johndoe" />);
+
+    const copyButton = screen.getByRole("button", { name: "Copy profile URL" });
+
+    fireEvent.click(copyButton);
+
+    await waitFor(() => {
+      expect(execCommandMock).toHaveBeenCalledWith("copy");
+    });
+
+    // Check for success feedback
+    await waitFor(() => {
+      expect(screen.getByText("Copied!")).toBeDefined();
+    });
+
+    // Clear out React's state updates
+    await act(async () => {
+      vi.advanceTimersByTime(2500);
+    });
+
+    // Restore clipboard
+    Object.defineProperty(navigator, 'clipboard', {
+      value: originalClipboard,
+      configurable: true,
+    });
+  });
+
+  it("logs an error and does not show 'Copied!' feedback when both copy methods fail and clipboard is undefined", async () => {
+    const originalClipboard = navigator.clipboard;
+    Object.defineProperty(navigator, 'clipboard', {
+      value: undefined,
+      configurable: true,
+    });
+
+    const execCommandMock = vi.fn().mockReturnValue(false);
+    document.execCommand = execCommandMock;
+
+    render(<ShareButtons username="johndoe" />);
+
+    const copyButton = screen.getByRole("button", { name: "Copy profile URL" });
+
+    fireEvent.click(copyButton);
+
+    await waitFor(() => {
+      expect(execCommandMock).toHaveBeenCalledWith("copy");
+    });
+
+    expect(logger.error).toHaveBeenCalledWith(
+      "Failed to copy",
+      expect.any(Error),
+      expect.any(Error)
+    );
+
+    Object.defineProperty(navigator, 'clipboard', {
+      value: originalClipboard,
+      configurable: true,
+    });
+  });
+
+  it("uses document.execCommand as fallback and catches its error", async () => {
+    const originalClipboard = navigator.clipboard;
+    Object.defineProperty(navigator, 'clipboard', {
+      value: undefined,
+      configurable: true,
+    });
+
+    const execCommandMock = vi.fn().mockImplementation(() => {
+      throw new Error("execCommand crashed");
+    });
+    document.execCommand = execCommandMock;
+
+    render(<ShareButtons username="johndoe" />);
+
+    const copyButton = screen.getByRole("button", { name: "Copy profile URL" });
+
+    fireEvent.click(copyButton);
+
+    await waitFor(() => {
+      expect(execCommandMock).toHaveBeenCalledWith("copy");
+    });
+
+    expect(logger.error).toHaveBeenCalledWith(
+      "Failed to copy",
+      expect.any(Error), // clipboard API missing error
+      expect.any(Error)  // execCommand crash error
+    );
+
+    Object.defineProperty(navigator, 'clipboard', {
+      value: originalClipboard,
+      configurable: true,
+    });
+  });
+
+  it("uses document.execCommand as fallback when navigator.clipboard is undefined", async () => {
+    // 1. Mock clipboard to be undefined
+    const originalClipboard = navigator.clipboard;
+    Object.defineProperty(navigator, 'clipboard', {
+      value: undefined,
+      configurable: true,
+    });
+
+    // 2. Mock execCommand
+    const execCommandMock = vi.fn().mockReturnValue(true);
+    document.execCommand = execCommandMock;
+
+    render(<ShareButtons username="johndoe" />);
+
+    const copyButton = screen.getByRole("button", { name: "Copy profile URL" });
+
+    fireEvent.click(copyButton);
+
+    await waitFor(() => {
+      expect(execCommandMock).toHaveBeenCalledWith("copy");
+    });
+
+    // Check for success feedback
+    await waitFor(() => {
+      expect(screen.getByText("Copied!")).toBeDefined();
+    });
+
+    // Clear out React's state updates
+    await act(async () => {
+      vi.advanceTimersByTime(2500);
+    });
+
+    // Restore clipboard
+    Object.defineProperty(navigator, 'clipboard', {
+      value: originalClipboard,
+      configurable: true,
+    });
+  });
+
+  it("logs an error and does not show 'Copied!' feedback when both copy methods fail and clipboard is undefined", async () => {
+    const originalClipboard = navigator.clipboard;
+    Object.defineProperty(navigator, 'clipboard', {
+      value: undefined,
+      configurable: true,
+    });
+
+    const execCommandMock = vi.fn().mockReturnValue(false);
+    document.execCommand = execCommandMock;
+
+    render(<ShareButtons username="johndoe" />);
+
+    const copyButton = screen.getByRole("button", { name: "Copy profile URL" });
+
+    fireEvent.click(copyButton);
+
+    await waitFor(() => {
+      expect(execCommandMock).toHaveBeenCalledWith("copy");
+    });
+
+    expect(logger.error).toHaveBeenCalledWith(
+      "Failed to copy",
+      expect.any(Error),
+      expect.any(Error)
+    );
+
+    Object.defineProperty(navigator, 'clipboard', {
+      value: originalClipboard,
+      configurable: true,
+    });
+  });
+
+  it("uses document.execCommand as fallback and catches its error", async () => {
+    const originalClipboard = navigator.clipboard;
+    Object.defineProperty(navigator, 'clipboard', {
+      value: undefined,
+      configurable: true,
+    });
+
+    const execCommandMock = vi.fn().mockImplementation(() => {
+      throw new Error("execCommand crashed");
+    });
+    document.execCommand = execCommandMock;
+
+    render(<ShareButtons username="johndoe" />);
+
+    const copyButton = screen.getByRole("button", { name: "Copy profile URL" });
+
+    fireEvent.click(copyButton);
+
+    await waitFor(() => {
+      expect(execCommandMock).toHaveBeenCalledWith("copy");
+    });
+
+    expect(logger.error).toHaveBeenCalledWith(
+      "Failed to copy",
+      expect.any(Error), // clipboard API missing error
+      expect.any(Error)  // execCommand crash error
+    );
+
+    Object.defineProperty(navigator, 'clipboard', {
+      value: originalClipboard,
+      configurable: true,
+    });
+  });
+
+  it("uses document.execCommand as fallback when navigator.clipboard is undefined", async () => {
+    // 1. Mock clipboard to be undefined
+    const originalClipboard = navigator.clipboard;
+    Object.defineProperty(navigator, 'clipboard', {
+      value: undefined,
+      configurable: true,
+    });
+
+    // 2. Mock execCommand
+    const execCommandMock = vi.fn().mockReturnValue(true);
+    document.execCommand = execCommandMock;
+
+    render(<ShareButtons username="johndoe" />);
+
+    const copyButton = screen.getByRole("button", { name: "Copy profile URL" });
+
+    fireEvent.click(copyButton);
+
+    await waitFor(() => {
+      expect(execCommandMock).toHaveBeenCalledWith("copy");
+    });
+
+    // Check for success feedback
+    await waitFor(() => {
+      expect(screen.getByText("Copied!")).toBeDefined();
+    });
+
+    // Clear out React's state updates
+    await act(async () => {
+      vi.advanceTimersByTime(2500);
+    });
+
+    // Restore clipboard
+    Object.defineProperty(navigator, 'clipboard', {
+      value: originalClipboard,
+      configurable: true,
+    });
+  });
+
+  it("logs an error and does not show 'Copied!' feedback when both copy methods fail and clipboard is undefined", async () => {
+    const originalClipboard = navigator.clipboard;
+    Object.defineProperty(navigator, 'clipboard', {
+      value: undefined,
+      configurable: true,
+    });
+
+    const execCommandMock = vi.fn().mockReturnValue(false);
+    document.execCommand = execCommandMock;
+
+    render(<ShareButtons username="johndoe" />);
+
+    const copyButton = screen.getByRole("button", { name: "Copy profile URL" });
+
+    fireEvent.click(copyButton);
+
+    await waitFor(() => {
+      expect(execCommandMock).toHaveBeenCalledWith("copy");
+    });
+
+    expect(logger.error).toHaveBeenCalledWith(
+      "Failed to copy",
+      expect.any(Error),
+      expect.any(Error)
+    );
+
+    Object.defineProperty(navigator, 'clipboard', {
+      value: originalClipboard,
+      configurable: true,
+    });
+  });
+
+  it("uses document.execCommand as fallback and catches its error", async () => {
+    const originalClipboard = navigator.clipboard;
+    Object.defineProperty(navigator, 'clipboard', {
+      value: undefined,
+      configurable: true,
+    });
+
+    const execCommandMock = vi.fn().mockImplementation(() => {
+      throw new Error("execCommand crashed");
+    });
+    document.execCommand = execCommandMock;
+
+    render(<ShareButtons username="johndoe" />);
+
+    const copyButton = screen.getByRole("button", { name: "Copy profile URL" });
+
+    fireEvent.click(copyButton);
+
+    await waitFor(() => {
+      expect(execCommandMock).toHaveBeenCalledWith("copy");
+    });
+
+    expect(logger.error).toHaveBeenCalledWith(
+      "Failed to copy",
+      expect.any(Error), // clipboard API missing error
+      expect.any(Error)  // execCommand crash error
+    );
+
+    Object.defineProperty(navigator, 'clipboard', {
+      value: originalClipboard,
+      configurable: true,
+    });
+  });
 });
