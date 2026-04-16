@@ -14,7 +14,7 @@ import {
 import ActivityHeatmapGrid from "@/components/ActivityHeatmapGrid";
 import { useDashboardData, useDashboardStats } from "@/hooks/useDashboardData";
 
-function buildEventSeries(events: { type: string; count: number }[]) {
+export function buildEventSeries(events: { type: string; count: number }[]) {
   return events.slice(0, 6).map((event) => ({
     name: event.type.replace("Event", ""),
     count: event.count,
