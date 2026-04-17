@@ -147,7 +147,7 @@ describe("fetchActivity", () => {
 
     it("100件未満のイベントがある場合、breakする", async () => {
       // Provide 99 events. So the mock fetch won't be called the second time.
-      const events = Array.from({ length: 99 }, (_, i) => ({ type: "PushEvent", created_at: "2024-01-15T10:30:00Z" }));
+      const events = Array.from({ length: 99 }, () => ({ type: "PushEvent", created_at: "2024-01-15T10:30:00Z" }));
       mockFetch
         .mockResolvedValueOnce(jsonResponse(events))
         .mockResolvedValueOnce(jsonResponse([]))
@@ -162,7 +162,7 @@ describe("fetchActivity", () => {
   });
 
     it("100件以上のイベントがある場合、次のページも取得する", async () => {
-      const hundredEvents = Array.from({ length: 100 }, (_, i) => ({ type: "PushEvent", created_at: "2024-01-15T10:30:00Z" }));
+      const hundredEvents = Array.from({ length: 100 }, () => ({ type: "PushEvent", created_at: "2024-01-15T10:30:00Z" }));
       mockFetch
         .mockResolvedValueOnce(jsonResponse(hundredEvents))
         .mockResolvedValueOnce(jsonResponse(MOCK_EVENTS))
