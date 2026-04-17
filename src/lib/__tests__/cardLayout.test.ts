@@ -6,7 +6,7 @@ import {
   normalizeCardLayout,
   toggleBlockVisibility,
 } from "../cardLayout";
-import { DEFAULT_CARD_LAYOUT } from "../types";
+import { CardBlockId, DEFAULT_CARD_LAYOUT } from "../types";
 
 describe("cardLayout utilities", () => {
   describe("cloneDefaultCardLayout", () => {
@@ -78,7 +78,7 @@ describe("toggleBlockVisibility", () => {
       const layout = cloneDefaultCardLayout();
       // Use unknown block ID
       // We have to cast to unknown -> CardBlockId here because TS would complain
-      const next = toggleBlockVisibility(layout, "nonExistent" as unknown as import("../types").CardBlockId);
+      const next = toggleBlockVisibility(layout, "nonExistent" as unknown as CardBlockId);
 
       expect(next.blocks).toEqual(layout.blocks);
     });
@@ -105,8 +105,7 @@ describe("toggleBlockVisibility", () => {
 
   it("moveBlock returns original layout when moving non-existent block", () => {
     const layout = cloneDefaultCardLayout();
-    // @ts-expect-error Testing invalid block ID
-    const moved = moveBlock(layout, "nonExistentBlock", "left", 0);
+    const moved = moveBlock(layout, "nonExistentBlock" as unknown as CardBlockId, "left", 0);
 
     expect(moved).toBe(layout);
   });
