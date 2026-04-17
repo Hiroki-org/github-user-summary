@@ -12,8 +12,8 @@ vi.mock("@/lib/logger", () => ({
 }));
 
 describe("useCopyToClipboard", () => {
-  let originalClipboard: any;
-  let originalExecCommand: any;
+  let originalClipboard: unknown;
+  let originalExecCommand: unknown;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -45,7 +45,7 @@ describe("useCopyToClipboard", () => {
         configurable: true,
       });
     }
-    document.execCommand = originalExecCommand;
+    document.execCommand = originalExecCommand as typeof document.execCommand;
   });
 
   it("should successfully copy using navigator.clipboard", async () => {
@@ -200,6 +200,7 @@ describe("useCopyToClipboard", () => {
 
   it("should clear timeout on unmount", async () => {
     vi.mocked(navigator.clipboard.writeText).mockResolvedValue(undefined);
+    const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
 
     const { result, unmount } = renderHook(() => useCopyToClipboard());
 
@@ -209,12 +210,9 @@ describe("useCopyToClipboard", () => {
 
     expect(result.current.copied).toBe(true);
 
+    clearTimeoutSpy.mockClear();
     unmount();
 
-    act(() => {
-      vi.advanceTimersByTime(2000);
-    });
-
-    expect(result.current.copied).toBe(true);
+    expect(clearTimeoutSpy).toHaveBeenCalledTimes(1);
   });
 });
