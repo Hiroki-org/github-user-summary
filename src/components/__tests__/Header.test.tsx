@@ -71,15 +71,32 @@ describe("Header", () => {
     vi.mocked(usePathname).mockReturnValue("/dashboard/stats");
     render(<Header />);
 
-    // Since isActive logic uses pathname.startsWith(`${href}/`), /dashboard should be active
+    // /dashboard is active via startsWith(`${href}/`) and /dashboard/stats is active via exact match.
     const dashboardLink = screen.getByRole("link", { name: "Dashboard" });
     expect(dashboardLink).toHaveClass("bg-accent/15");
 
     const statsLink = screen.getByRole("link", { name: "Stats" });
     expect(statsLink).toHaveClass("bg-accent/15");
 
+    const yearInReviewLink = screen.getByRole("link", { name: "Year in Review" });
+    expect(yearInReviewLink).not.toHaveClass("bg-accent/15");
+
     const settingsLink = screen.getByRole("link", { name: "Settings" });
     expect(settingsLink).not.toHaveClass("bg-accent/15");
+  });
+
+  it("applies active styles to Year in Review link when pathname is '/dashboard/year'", () => {
+    vi.mocked(usePathname).mockReturnValue("/dashboard/year");
+    render(<Header />);
+
+    const yearInReviewLink = screen.getByRole("link", { name: "Year in Review" });
+    expect(yearInReviewLink).toHaveClass("bg-accent/15");
+
+    const dashboardLink = screen.getByRole("link", { name: "Dashboard" });
+    expect(dashboardLink).toHaveClass("bg-accent/15");
+
+    const homeLink = screen.getByRole("link", { name: "Home" });
+    expect(homeLink).not.toHaveClass("bg-accent/15");
   });
 
   it("renders the LoginButton component", () => {
