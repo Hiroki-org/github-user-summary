@@ -386,7 +386,6 @@ export default function CardGeneratorModal({
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
