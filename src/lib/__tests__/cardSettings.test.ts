@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getDefaultCardSettings, loadCardSettings, saveCardSettings } from "../cardSettings";
-import { DEFAULT_CARD_LAYOUT, CardBlockId, CardLayout, CardDisplayOptions } from "../types";
+import { DEFAULT_CARD_LAYOUT, CardLayout, CardDisplayOptions } from "../types";
+import { CardBlockType } from "../cardOptions";
 import { normalizeCardLayout } from "../cardLayout";
 
 describe("cardSettings", () => {
@@ -145,7 +146,7 @@ describe("cardSettings", () => {
             expect(["left", "right", "full"]).toContain(bioBlock?.column);
 
             // The invalid block should be removed
-            const invalidBlock = settings.layout.blocks.find(b => b.id === "invalidBlockType" as unknown as CardBlockId);
+            const invalidBlock = settings.layout.blocks.find(b => b.id === "invalidBlockType" as unknown as CardBlockType);
             expect(invalidBlock).toBeUndefined();
 
             // Missing blocks should be added
