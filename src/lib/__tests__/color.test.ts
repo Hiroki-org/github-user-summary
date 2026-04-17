@@ -81,6 +81,17 @@ describe("adjustAccentColor", () => {
     expect(resultEmpty.accent).toBe(resultInvalid.accent);
   });
 
+  const defaultColorResult = adjustAccentColor("#58a6ff");
+
+  it.each([
+    "#zzz",
+    "invalid-hex",
+    "#00",
+  ])("無効な16進数文字列 (%s) はデフォルトカラーにフォールバックする", (invalidHex) => {
+    const resultInvalid = adjustAccentColor(invalidHex);
+    expect(resultInvalid).toEqual(defaultColorResult);
+  });
+
   // ---------- 彩度調整 ----------
   it("彩度の非常に低い色 (グレー) が彩度を補正される", () => {
     const result = adjustAccentColor("#808080"); // 純粋なグレー s=0
