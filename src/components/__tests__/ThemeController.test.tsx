@@ -25,7 +25,7 @@ describe("ThemeController", () => {
     expect(vi.mocked(useThemeColor)).toHaveBeenCalledWith(props);
   });
 
-  it("renders null and calls useThemeColor with undefined props", () => {
+  it("renders null and handles missing props correctly", () => {
     const { container } = render(<ThemeController />);
 
     expect(container.firstChild).toBeNull();
