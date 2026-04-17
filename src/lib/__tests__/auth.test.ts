@@ -8,43 +8,57 @@ describe('authOptions', () => {
     describe('jwt', () => {
       type JwtParams = Parameters<NonNullable<NonNullable<typeof authOptions.callbacks>['jwt']>>[0];
 
-      it('should add account.access_token to token.accessToken if account is provided', async () => {
+      it('account が提供された場合、token.accessToken に account.access_token を追加する', async () => {
         const token = { name: 'Test', email: 'test@example.com' };
         const account = { access_token: 'token123', provider: 'github', type: 'oauth' as const, providerAccountId: '123' };
-        const result = await authOptions.callbacks?.jwt?.({ token, account, user: { id: '1' } } as unknown as JwtParams);
+        expect(authOptions.callbacks?.jwt).toBeDefined();
+        const result = await authOptions.callbacks!.jwt!({ token, account, user: { id: '1' } } as unknown as JwtParams);
         expect((result as JWT)?.accessToken).toBe('token123');
       });
 
-      it('should not add accessToken if account is not provided', async () => {
+      it('account が提供されない場合は accessToken を追加しない', async () => {
         const token = { name: 'Test', email: 'test@example.com' };
-        const result = await authOptions.callbacks?.jwt?.({ token, user: { id: '1' } } as unknown as JwtParams);
+        expect(authOptions.callbacks?.jwt).toBeDefined();
+        const result = await authOptions.callbacks!.jwt!({ token, user: { id: '1' } } as unknown as JwtParams);
         expect((result as JWT)?.accessToken).toBeUndefined();
       });
 
-      it('should add profile.login to token.login if profile is provided and login is a string', async () => {
+      it('profile が提供され、login が文字列の場合、token.login に profile.login を追加する', async () => {
         const token = { name: 'Test', email: 'test@example.com' };
         const profile = { login: 'testuser', id: 1 };
-        const result = await authOptions.callbacks?.jwt?.({ token, profile, user: { id: '1' } } as unknown as JwtParams);
+        expect(authOptions.callbacks?.jwt).toBeDefined();
+        const result = await authOptions.callbacks!.jwt!({ token, profile, user: { id: '1' } } as unknown as JwtParams);
         expect((result as JWT)?.login).toBe('testuser');
       });
 
-      it('should not add login if profile is missing', async () => {
+      it('profile が提供されない場合は login を追加しない', async () => {
         const token = { name: 'Test', email: 'test@example.com' };
-        const result = await authOptions.callbacks?.jwt?.({ token, user: { id: '1' } } as unknown as JwtParams);
+        expect(authOptions.callbacks?.jwt).toBeDefined();
+        const result = await authOptions.callbacks!.jwt!({ token, user: { id: '1' } } as unknown as JwtParams);
         expect((result as JWT)?.login).toBeUndefined();
       });
 
-      it('should not add login if profile is not an object', async () => {
+      it('profile がオブジェクトではない場合は login を追加しない', async () => {
         const token = { name: 'Test', email: 'test@example.com' };
         const profile = "not an object";
-        const result = await authOptions.callbacks?.jwt?.({ token, profile, user: { id: '1' } } as unknown as JwtParams);
+        expect(authOptions.callbacks?.jwt).toBeDefined();
+        const result = await authOptions.callbacks!.jwt!({ token, profile, user: { id: '1' } } as unknown as JwtParams);
         expect((result as JWT)?.login).toBeUndefined();
       });
 
-      it('should set login to undefined if profile.login is not a string', async () => {
+      it('profile.login が文字列ではない場合は login を undefined に設定する', async () => {
         const token = { name: 'Test', email: 'test@example.com' };
         const profile = { login: 12345, id: 1 };
-        const result = await authOptions.callbacks?.jwt?.({ token, profile, user: { id: '1' } } as unknown as JwtParams);
+        expect(authOptions.callbacks?.jwt).toBeDefined();
+        const result = await authOptions.callbacks!.jwt!({ token, profile, user: { id: '1' } } as unknown as JwtParams);
+        expect((result as JWT)?.login).toBeUndefined();
+      });
+
+      it('profile に login キーがない場合は login を設定しない', async () => {
+        const token = { name: 'Test', email: 'test@example.com' };
+        const profile = { id: 1 };
+        expect(authOptions.callbacks?.jwt).toBeDefined();
+        const result = await authOptions.callbacks!.jwt!({ token, profile, user: { id: '1' } } as unknown as JwtParams);
         expect((result as JWT)?.login).toBeUndefined();
       });
     });
@@ -52,24 +66,27 @@ describe('authOptions', () => {
     describe('session', () => {
       type SessionParams = Parameters<NonNullable<NonNullable<typeof authOptions.callbacks>['session']>>[0];
 
-      it('should add token.accessToken to session.accessToken', async () => {
+      it('session.accessToken に token.accessToken を追加する', async () => {
         const session = { expires: '123' };
         const token = { accessToken: 'token123' };
-        const result = await authOptions.callbacks?.session?.({ session, token, user: { id: '1' } } as unknown as SessionParams);
+        expect(authOptions.callbacks?.session).toBeDefined();
+        const result = await authOptions.callbacks!.session!({ session, token, user: { id: '1' } } as unknown as SessionParams);
         expect((result as Session)?.accessToken).toBe('token123');
       });
 
-      it('should add token.login to session.user.login if session.user is present', async () => {
+      it('session.user が存在する場合、session.user.login に token.login を追加する', async () => {
         const session = { expires: '123', user: { name: 'Test' } };
         const token = { login: 'testuser' };
-        const result = await authOptions.callbacks?.session?.({ session, token, user: { id: '1' } } as unknown as SessionParams);
+        expect(authOptions.callbacks?.session).toBeDefined();
+        const result = await authOptions.callbacks!.session!({ session, token, user: { id: '1' } } as unknown as SessionParams);
         expect((result as Session)?.user?.login).toBe('testuser');
       });
 
-      it('should not add login if session.user is missing', async () => {
+      it('session.user が存在しない場合は login を追加しない', async () => {
         const session = { expires: '123' };
         const token = { login: 'testuser' };
-        const result = await authOptions.callbacks?.session?.({ session, token, user: { id: '1' } } as unknown as SessionParams);
+        expect(authOptions.callbacks?.session).toBeDefined();
+        const result = await authOptions.callbacks!.session!({ session, token, user: { id: '1' } } as unknown as SessionParams);
         expect((result as Session)?.user?.login).toBeUndefined();
       });
     });
