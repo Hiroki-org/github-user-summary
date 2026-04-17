@@ -1,15 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getDefaultCardSettings, loadCardSettings, saveCardSettings } from "../cardSettings";
 import { DEFAULT_CARD_LAYOUT, CardLayout, CardDisplayOptions } from "../types";
-import { CardBlockType } from "../cardOptions";
 import { normalizeCardLayout } from "../cardLayout";
 
 describe("cardSettings", () => {
-            let getItemMock: ReturnType<typeof vi.fn>;
+        let getItemMock: ReturnType<typeof vi.fn>;
     let setItemMock: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
-                        getItemMock = vi.fn();
+                getItemMock = vi.fn();
         setItemMock = vi.fn();
 
         vi.stubGlobal("window", {
@@ -121,6 +120,9 @@ describe("cardSettings", () => {
             expect(getItemMock).toHaveBeenCalledWith("card-layout");
             expect(getItemMock).toHaveBeenCalledWith("card-display-options");
         });
+    });
+
+
         it("normalizes semantically invalid layout structure that is valid JSON", () => {
             // Valid JSON, but semantically invalid layout (missing blocks, wrong column type)
             const invalidLayout = {
@@ -150,7 +152,6 @@ describe("cardSettings", () => {
             const profileBlock = settings.layout.blocks.find(b => b.id === "profile");
             expect(profileBlock).toBeDefined();
         });
-    });
 
     describe("saveCardSettings", () => {
         it("does nothing when window is undefined", () => {
