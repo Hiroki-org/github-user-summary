@@ -118,5 +118,69 @@ describe("fetchActivity", () => {
       expect(result.totalEvents).toBe(MOCK_EVENTS.length);
       expect(result.eventBreakdown[0].type).toBe("PushEvent");
     });
+
+    it("1ページ目で500エラーの場合、空の結果を返す(早期終了)", async () => {
+      mockFetch
+        .mockResolvedValueOnce(jsonResponse(null, 500))
+        .mockResolvedValueOnce(jsonResponse([]))
+        .mockResolvedValueOnce(jsonResponse([]));
+
+      const { fetchActivity } = await import("../../github");
+      const result = await fetchActivity("testuser", "fake-token");
+
+      expect(result.totalEvents).toBe(0);
+      expect(result.eventBreakdown.length).toBe(0);
+    });
+
+    it("1ページ目で例外がスローされた場合(エラーインスタンス以外)、breakして処理を継続する", async () => {
+      mockFetch
+        .mockRejectedValueOnce(new Error("Unexpected error"))
+        .mockResolvedValueOnce(jsonResponse([]))
+        .mockResolvedValueOnce(jsonResponse([]));
+
+      const { fetchActivity } = await import("../../github");
+      const result = await fetchActivity("testuser", "fake-token");
+
+      expect(result.totalEvents).toBe(0);
+      expect(result.eventBreakdown.length).toBe(0);
+    });
+
+    it("100件未満のイベントがある場合、breakする", async () => {
+      // Provide 99 events. So the mock fetch won't be called the second time.
+      const events = Array.from({ length: 99 }, (_, i) => ({ type: "PushEvent", created_at: "2024-01-15T10:30:00Z" }));
+      mockFetch
+        .mockResolvedValueOnce(jsonResponse(events))
+        .mockResolvedValueOnce(jsonResponse([]))
+        .mockResolvedValueOnce(jsonResponse([]));
+
+      const { fetchActivity } = await import("../../github");
+      const result = await fetchActivity("testuser", "fake-token");
+
+      expect(result.totalEvents).toBe(99);
+      // Since events.length < 100, we break. Next promises aren't awaited.
+    });
   });
+
+    it("100件以上のイベントがある場合、次のページも取得する", async () => {
+      const hundredEvents = Array.from({ length: 100 }, (_, i) => ({ type: "PushEvent", created_at: "2024-01-15T10:30:00Z" }));
+      mockFetch
+        .mockResolvedValueOnce(jsonResponse(hundredEvents))
+        .mockResolvedValueOnce(jsonResponse(MOCK_EVENTS))
+        .mockResolvedValueOnce(jsonResponse([]));
+
+      const { fetchActivity } = await import("../../github");
+      const result = await fetchActivity("testuser", "fake-token");
+
+      expect(result.totalEvents).toBe(100 + MOCK_EVENTS.length);
+    });
+
+    it("エラーが UserNotFoundError や RateLimitError 以外の場合、ループを抜ける", async () => {
+      mockFetch
+        .mockRejectedValueOnce(new Error("Generic error"))
+        .mockResolvedValueOnce(jsonResponse([]))
+        .mockResolvedValueOnce(jsonResponse([]));
+      const { fetchActivity } = await import("../../github");
+      const result = await fetchActivity("testuser", "fake-token");
+      expect(result.totalEvents).toBe(0);
+    });
 });
