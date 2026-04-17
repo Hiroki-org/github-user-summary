@@ -41,9 +41,9 @@ describe("ProfileCard", () => {
     expect(screen.getByText("@octocat")).toBeInTheDocument();
 
     // Stats
-    expect(screen.getByText("1,000")).toBeInTheDocument();
-    expect(screen.getByText("50")).toBeInTheDocument();
-    expect(screen.getByText("100")).toBeInTheDocument();
+    expect(screen.getByText(mockProfile.followers.toLocaleString())).toBeInTheDocument();
+    expect(screen.getByText(mockProfile.following.toLocaleString())).toBeInTheDocument();
+    expect(screen.getByText(mockProfile.public_repos.toLocaleString())).toBeInTheDocument();
 
     // Join date - "Joined January 2011"
     expect(screen.getByText(/Joined January 2011/)).toBeInTheDocument();
@@ -53,9 +53,8 @@ describe("ProfileCard", () => {
     const profileWithoutName = { ...mockProfile, name: null };
     render(<ProfileCard profile={profileWithoutName} />);
 
-    // First heading is the fallback name, and then the paragraph is @login
-    const headings = screen.getAllByText("octocat");
-    expect(headings.length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { level: 2, name: "octocat" })).toBeInTheDocument();
+    expect(screen.getByText("@octocat")).toBeInTheDocument();
   });
 
   it("renders optional fields when provided", () => {
@@ -89,10 +88,8 @@ describe("ProfileCard", () => {
 
   it("renders organizations correctly", () => {
     render(<ProfileCard profile={mockProfile} />);
-    expect(screen.getByText("Organizations")).toBeInTheDocument();
-    // Org name should be a span or text
-    const orgElement = screen.getByText("github");
-    expect(orgElement).toBeInTheDocument();
+    screen.getByText("Organizations");
+    screen.getByText("github");
   });
 
   it("renders pinned repositories correctly", () => {
@@ -101,7 +98,7 @@ describe("ProfileCard", () => {
     expect(screen.getByText("Spoon-Knife")).toBeInTheDocument();
     expect(screen.getByText("This repo is for demonstration purposes only.")).toBeInTheDocument();
     expect(screen.getByText("HTML")).toBeInTheDocument();
-    expect(screen.getByText("15,000")).toBeInTheDocument();
+    expect(screen.getByText(mockProfile.pinnedRepos[0].stargazerCount.toLocaleString())).toBeInTheDocument();
   });
 
   it("handles pinned repos without description or language", () => {
