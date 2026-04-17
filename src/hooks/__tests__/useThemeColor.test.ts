@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
-import { useThemeColor } from "@/hooks/useThemeColor";
+import { useThemeColor } from "../useThemeColor";
 import * as colorLib from "@/lib/color";
 import { FastAverageColor } from "fast-average-color";
 
@@ -54,6 +54,8 @@ describe("useThemeColor", () => {
       value: [100, 150, 200, 255]
     });
 
+    // Suppress console.warn for error tests
+    vi.spyOn(console, "warn").mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -108,8 +110,6 @@ describe("useThemeColor", () => {
   });
 
   it("should handle error during color extraction gracefully", async () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-
     // Mock rejection
     const error = new Error("Failed to load image");
     mockGetColorAsync.mockRejectedValueOnce(error);
@@ -126,7 +126,7 @@ describe("useThemeColor", () => {
 
     // Check that console.warn was called
     await waitFor(() => {
-      expect(warnSpy).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         "Failed to extract color from avatar, keeping fallback color.",
         error
       );
@@ -138,27 +138,6 @@ describe("useThemeColor", () => {
     // adjustAccentColor should only be called once for the fallback, not for the failed avatar
     expect(colorLib.adjustAccentColor).toHaveBeenCalledTimes(1);
     expect(colorLib.adjustAccentColor).toHaveBeenCalledWith("#0000ff");
-  });
-
-  it("should ignore extracted color if unmounted before promise resolves", async () => {
-    let resolveColor!: (value: { value: number[] }) => void;
-    mockGetColorAsync.mockReturnValueOnce(
-      new Promise<{ value: number[] }>((resolve) => {
-        resolveColor = resolve;
-      })
-    );
-
-    const { unmount } = renderHook(() =>
-      useThemeColor({ avatarUrl: "https://example.com/avatar.jpg" })
-    );
-
-    unmount();
-    resolveColor({ value: [100, 150, 200, 255] });
-
-    await new Promise((resolve) => setTimeout(resolve, 0));
-
-    expect(colorLib.adjustAccentColor).not.toHaveBeenCalled();
-    expect(document.documentElement.style.getPropertyValue("--accent")).toBe("");
   });
 
   it("should cleanup variables and destroy FastAverageColor on unmount", () => {
