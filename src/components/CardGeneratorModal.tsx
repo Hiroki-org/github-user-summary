@@ -386,7 +386,8 @@ export default function CardGeneratorModal({
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    setMounted(true);
+    const timer = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const {
