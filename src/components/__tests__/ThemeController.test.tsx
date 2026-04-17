@@ -21,20 +21,15 @@ describe("ThemeController", () => {
 
     render(<ThemeController {...props} />);
 
-    expect(useThemeColor).toHaveBeenCalledTimes(1);
-    expect(useThemeColor).toHaveBeenCalledWith(props);
+    expect(vi.mocked(useThemeColor)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(useThemeColor)).toHaveBeenCalledWith(props);
   });
 
-  it("renders null", () => {
+  it("renders null and calls useThemeColor with undefined props", () => {
     const { container } = render(<ThemeController />);
 
     expect(container.firstChild).toBeNull();
-  });
-
-  it("handles missing props correctly", () => {
-    render(<ThemeController />);
-
-    expect(useThemeColor).toHaveBeenCalledWith({
+    expect(vi.mocked(useThemeColor)).toHaveBeenCalledWith({
       avatarUrl: undefined,
       topLanguageColor: undefined,
     });
