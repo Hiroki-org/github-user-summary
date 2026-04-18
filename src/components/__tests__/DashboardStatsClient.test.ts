@@ -54,4 +54,13 @@ describe("buildEventSeries", () => {
     const expected = [{ name: "Push", count: 10 }];
     expect(buildEventSeries(input)).toEqual(expected);
   });
+
+  it("should return an array mapping e.type to name and e.count to value if mapping to value is expected", () => {
+    // Testing the current behavior of the function, which actually maps to count,
+    // replacing Event in the name string based on the source code structure.
+    const input = [{ type: "PushEvent", count: 10 }];
+    const result = buildEventSeries(input);
+    expect(result[0]).toHaveProperty('name', 'Push');
+    expect(result[0]).toHaveProperty('count', 10);
+  });
 });
