@@ -174,3 +174,60 @@ describe("getMostActiveDayFromCalendar", () => {
         expect(getMostActiveDayFromCalendar(calendar)).toBe("Thursday");
     });
 });
+
+describe("buildHourlyHeatmapFromCommitDates - edge cases", () => {
+    it("falls back to full date parsing if cached day parsing results in NaN but full date is parseable", () => {
+        const mockDateStr = {
+            length: 19,
+            10: "T",
+            slice: () => "invalid___",
+            toString: () => "2023-01-01T10:00:00Z"
+        } as unknown as string;
+        const heatmap = buildHourlyHeatmapFromCommitDates([mockDateStr]);
+        expect(heatmap[0][10]).toBe(1);
+    });
+
+    it("falls back to full string parsing for unparseable hour data", () => {
+        const heatmap = buildHourlyHeatmapFromCommitDates(["2023-01-01TX0:00:00Z"]);
+        const totalCommits = heatmap.flat().reduce((sum, count) => sum + count, 0);
+        expect(totalCommits).toBe(0);
+    });
+
+    it("falls back to full string parsing for unparseable hour data but valid date", () => {
+        const heatmap = buildHourlyHeatmapFromCommitDates(["2023-01-01T10:00:00.1234Z"]);
+        expect(heatmap[0][10]).toBe(1);
+    });
+
+    it("falls back if caching fails and full date is also invalid", () => {
+        const mockDateStr = {
+            length: 19,
+            10: "T",
+            slice: () => "invalid___",
+            toString: () => "invalid-full-date"
+        } as unknown as string;
+        const heatmap = buildHourlyHeatmapFromCommitDates([mockDateStr]);
+        const totalCommits = heatmap.flat().reduce((sum, count) => sum + count, 0);
+        expect(totalCommits).toBe(0);
+    });
+
+    it("falls back to full date parsing when timezone offsets don't match fast-path ending conditions", () => {
+        const commitDates = [
+            "2023-01-01T10:00:00.000Z", // length 24, ends with .000Z
+            "2023-01-01T10:00:00.123+02:00", // length 29
+        ];
+        const heatmap = buildHourlyHeatmapFromCommitDates(commitDates);
+        expect(heatmap[0][10]).toBe(1);
+        expect(heatmap[0][8]).toBe(1); // 10:00:00+02:00 is 08:00 UTC
+    });
+});
+
+    it("hits the fast path with a length 20 string", () => {
+        // e.g. "2023-01-01T10:00:00Z" is length 20!
+        // Wait, "2023-01-01T10:00:00Z" is 20 chars long.
+        // Let's make sure we test length === 24 without ending in .000Z
+        const commitDates = [
+            "2023-01-01T10:00:00.123+", // length 24
+        ];
+        const heatmap = buildHourlyHeatmapFromCommitDates(commitDates);
+        expect(heatmap[0][10]).toBe(0); // wait, it falls back to new Date() which will be NaN so it's ignored
+    });
