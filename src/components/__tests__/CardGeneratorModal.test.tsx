@@ -194,7 +194,7 @@ describe("CardGeneratorModal", () => {
     const { toBlob, toPng } = await import("html-to-image");
 
     // Ensure image generation succeeds so we get an enabled copy button
-    vi.mocked(toPng).mockResolvedValue({ width: 100, height: 100, dataUrl: "data:image/png;base64,fake-preview-url" });
+    vi.mocked(toPng).mockResolvedValue("data:image/png;base64,fake-preview-url");
 
     Object.defineProperty(document, 'fonts', {
       value: { ready: Promise.resolve() },
