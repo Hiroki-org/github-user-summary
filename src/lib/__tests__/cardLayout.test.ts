@@ -54,22 +54,22 @@ describe("toggleBlockVisibility", () => {
       const mockLayout = {
         extraProp: "preserved",
         blocks: [
-          { id: "profile" as const, isVisible: true, column: "full" as const },
-          { id: "stats" as const, isVisible: false, column: "left" as const }
+          { id: "profile" as const, visible: true, column: "full" as const },
+          { id: "stats" as const, visible: false, column: "left" as const }
         ]
       } as unknown as import("../types").CardLayout;
 
       const next = toggleBlockVisibility(mockLayout, "profile");
 
       expect(next).toHaveProperty("extraProp", "preserved");
-      expect(next.blocks.find(b => b.id === "profile")).toHaveProperty("isVisible", false);
-      expect(next.blocks.find(b => b.id === "stats")).toHaveProperty("isVisible", false);
+      expect(next.blocks.find(b => b.id === "profile")?.visible).toBe(false);
+      expect(next.blocks.find(b => b.id === "stats")?.visible).toBe(false);
     });
     it("toggles block visibility to false", () => {
       const layout = cloneDefaultCardLayout(); // 'bio' is visible by default
       const next = toggleBlockVisibility(layout, "bio");
 
-      expect(next.blocks.find((b) => b.id === "bio")).toHaveProperty("isVisible", false);
+      expect(next.blocks.find((b) => b.id === "bio")?.visible).toBe(false);
     });
 
     it("toggles block visibility to true", () => {
@@ -77,17 +77,17 @@ describe("toggleBlockVisibility", () => {
       const firstToggle = toggleBlockVisibility(layout, "bio");
       const next = toggleBlockVisibility(firstToggle, "bio");
 
-      expect(next.blocks.find((b) => b.id === "bio")).toHaveProperty("isVisible", true);
+      expect(next.blocks.find((b) => b.id === "bio")?.visible).toBe(true);
     });
 
     it("does not affect other blocks", () => {
       const layout = cloneDefaultCardLayout();
       const next = toggleBlockVisibility(layout, "bio");
 
-      expect(next.blocks.find((b) => b.id === "avatar")).toHaveProperty("isVisible", true);
-      expect(next.blocks.find((b) => b.id === "stats")).toHaveProperty("isVisible", true);
-      expect(next.blocks.find((b) => b.id === "topLanguages")).toHaveProperty("isVisible", true);
-      expect(next.blocks.find((b) => b.id === "topRepos")).toHaveProperty("isVisible", true);
+      expect(next.blocks.find((b) => b.id === "avatar")?.visible).toBe(true);
+      expect(next.blocks.find((b) => b.id === "stats")?.visible).toBe(true);
+      expect(next.blocks.find((b) => b.id === "topLanguages")?.visible).toBe(true);
+      expect(next.blocks.find((b) => b.id === "topRepos")?.visible).toBe(true);
     });
 
     it("returns unmodified layout blocks if blockId is not found", () => {
