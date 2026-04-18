@@ -70,6 +70,7 @@ export function normalizeCardLayout(input: unknown): CardLayout {
 
 export function toggleBlockVisibility(layout: CardLayout, blockId: CardBlockId): CardLayout {
     return {
+        ...layout,
         blocks: layout.blocks.map((block) =>
             block.id === blockId ? { ...block, visible: !block.visible } : block
         ),
