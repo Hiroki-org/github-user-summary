@@ -176,6 +176,10 @@ describe("getMostActiveDayFromCalendar", () => {
 });
 
 describe("buildHourlyHeatmapFromCommitDates - edge cases", () => {
+    // Note: The following tests use mock objects cast to string to intentionally trigger specific
+    // internal parsing failures and verify the fallback logic without relying on invalid JS Date quirks
+    // that differ between environments.
+
     it("falls back to full date parsing if cached day parsing results in NaN but full date is parseable", () => {
         const mockDateStr = {
             length: 19,
@@ -219,15 +223,12 @@ describe("buildHourlyHeatmapFromCommitDates - edge cases", () => {
         expect(heatmap[0][10]).toBe(1);
         expect(heatmap[0][8]).toBe(1); // 10:00:00+02:00 is 08:00 UTC
     });
-});
 
-    it("hits the fast path with a length 20 string", () => {
-        // e.g. "2023-01-01T10:00:00Z" is length 20!
-        // Wait, "2023-01-01T10:00:00Z" is 20 chars long.
-        // Let's make sure we test length === 24 without ending in .000Z
+    it("falls back to full date parsing when length is 24 but does not end with .000Z", () => {
         const commitDates = [
-            "2023-01-01T10:00:00.123+", // length 24
+            "2023-01-01T10:00:00.123+", // length 24, invalid ending
         ];
         const heatmap = buildHourlyHeatmapFromCommitDates(commitDates);
-        expect(heatmap[0][10]).toBe(0); // wait, it falls back to new Date() which will be NaN so it's ignored
+        expect(heatmap[0][10]).toBe(0);
     });
+});
