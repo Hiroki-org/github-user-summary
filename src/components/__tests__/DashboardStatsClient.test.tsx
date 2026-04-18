@@ -90,12 +90,12 @@ describe("DashboardStatsClient", () => {
       summary: null,
       isLoading: true,
       error: null,
-    } as any);
+    } as unknown as ReturnType<typeof useDashboardData>);
     vi.mocked(useDashboardStats).mockReturnValue({
       heatmap: null,
       isLoading: false,
       error: null,
-    } as any);
+    } as unknown as ReturnType<typeof useDashboardStats>);
 
     render(<DashboardStatsClient />);
     expect(screen.getByText("Loading stats...")).toBeInTheDocument();
@@ -106,12 +106,12 @@ describe("DashboardStatsClient", () => {
       summary: null,
       isLoading: false,
       error: new Error("Failed to load"),
-    } as any);
+    } as unknown as ReturnType<typeof useDashboardData>);
     vi.mocked(useDashboardStats).mockReturnValue({
       heatmap: null,
       isLoading: false,
       error: null,
-    } as any);
+    } as unknown as ReturnType<typeof useDashboardStats>);
 
     render(<DashboardStatsClient />);
     expect(screen.getByText("Failed to load stats.")).toBeInTheDocument();
@@ -135,12 +135,12 @@ describe("DashboardStatsClient", () => {
       summary: mockSummary,
       isLoading: false,
       error: null,
-    } as any);
+    } as unknown as ReturnType<typeof useDashboardData>);
     vi.mocked(useDashboardStats).mockReturnValue({
       heatmap: [[1, 2, 3]],
       isLoading: false,
       error: null,
-    } as any);
+    } as unknown as ReturnType<typeof useDashboardStats>);
 
     render(<DashboardStatsClient />);
 
