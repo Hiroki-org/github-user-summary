@@ -112,8 +112,8 @@ describe("CardGeneratorModal", () => {
         summary={mockSummary}
       />
     );
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
-    expect(screen.getByText("Profile Card")).toBeInTheDocument();
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    expect(await screen.findByText("Profile Card")).toBeInTheDocument();
   });
 
   it("switches tabs between Settings and Layout", async () => {
@@ -127,7 +127,7 @@ describe("CardGeneratorModal", () => {
     );
 
     // Default tab is Settings
-    expect(screen.getByText("Avatar")).toBeInTheDocument(); // part of Detail Options
+    expect(await screen.findByText("Avatar")).toBeInTheDocument(); // part of Detail Options
     expect(screen.queryByTestId("layout-editor")).not.toBeInTheDocument();
 
     // Click Edit Layout tab
@@ -151,6 +151,9 @@ describe("CardGeneratorModal", () => {
         summary={mockSummary}
       />
     );
+
+    // Wait for the modal to be fully mounted
+    await screen.findByRole("dialog");
 
     await user.keyboard("{Escape}");
     expect(handleClose).toHaveBeenCalledTimes(1);
