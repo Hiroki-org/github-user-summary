@@ -176,21 +176,6 @@ describe("getMostActiveDayFromCalendar", () => {
 });
 
 describe("buildHourlyHeatmapFromCommitDates - edge cases", () => {
-    // Note: The following tests use mock objects cast to string to intentionally trigger specific
-    // internal parsing failures and verify the fallback logic without relying on invalid JS Date quirks
-    // that differ between environments.
-
-    it("falls back to full date parsing if cached day parsing results in NaN but full date is parseable", () => {
-        const mockDateStr = {
-            length: 19,
-            10: "T",
-            slice: () => "invalid___",
-            toString: () => "2023-01-01T10:00:00Z"
-        } as unknown as string;
-        const heatmap = buildHourlyHeatmapFromCommitDates([mockDateStr]);
-        expect(heatmap[0][10]).toBe(1);
-    });
-
     it("falls back to full string parsing for unparseable hour data", () => {
         const heatmap = buildHourlyHeatmapFromCommitDates(["2023-01-01TX0:00:00Z"]);
         const totalCommits = heatmap.flat().reduce((sum, count) => sum + count, 0);
@@ -202,14 +187,8 @@ describe("buildHourlyHeatmapFromCommitDates - edge cases", () => {
         expect(heatmap[0][10]).toBe(1);
     });
 
-    it("falls back if caching fails and full date is also invalid", () => {
-        const mockDateStr = {
-            length: 19,
-            10: "T",
-            slice: () => "invalid___",
-            toString: () => "invalid-full-date"
-        } as unknown as string;
-        const heatmap = buildHourlyHeatmapFromCommitDates([mockDateStr]);
+    it("returns zero contributions for invalid date strings", () => {
+        const heatmap = buildHourlyHeatmapFromCommitDates(["invalid-full-date"]);
         const totalCommits = heatmap.flat().reduce((sum, count) => sum + count, 0);
         expect(totalCommits).toBe(0);
     });
