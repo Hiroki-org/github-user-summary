@@ -32,20 +32,87 @@ describe("cardLayout utilities", () => {
     });
   });
 
-  it("normalizeCardLayout fills missing blocks and removes invalid ones", () => {
-    const normalized = normalizeCardLayout({
-      blocks: [
-        { id: "avatar", visible: false, column: "full" },
-        { id: "unknown", visible: true, column: "left" },
-      ],
+  describe("normalizeCardLayout", () => {
+    it("fills missing blocks and removes invalid ones", () => {
+      const normalized = normalizeCardLayout({
+        blocks: [
+          { id: "avatar", visible: false, column: "full" },
+          { id: "unknown", visible: true, column: "left" },
+        ],
+      });
+
+      expect(normalized.blocks.find((b) => b.id === "avatar")).toMatchObject({
+        visible: false,
+        column: "full",
+      });
+      expect(normalized.blocks.some((b) => (b as { id: string }).id === "unknown")).toBe(false);
+      expect(normalized.blocks).toHaveLength(DEFAULT_CARD_LAYOUT.blocks.length);
     });
 
-    expect(normalized.blocks.find((b) => b.id === "avatar")).toMatchObject({
-      visible: false,
-      column: "full",
+    it.each([
+      null,
+      undefined,
+      {},
+      "string",
+      123,
+      { blocks: null },
+      { blocks: {} },
+      { blocks: "string" },
+    ])("returns cloned default layout for invalid input: %j", (input) => {
+      const result = normalizeCardLayout(input);
+      expect(result).toEqual(DEFAULT_CARD_LAYOUT);
+      expect(result.blocks).not.toBe(DEFAULT_CARD_LAYOUT.blocks); // check clone
     });
-    expect(normalized.blocks.some((b) => (b as { id: string }).id === "unknown")).toBe(false);
-    expect(normalized.blocks).toHaveLength(DEFAULT_CARD_LAYOUT.blocks.length);
+
+    it("ignores non-object items in blocks array", () => {
+      const normalized = normalizeCardLayout({
+        blocks: [
+          null,
+          "string",
+          123,
+          { id: "avatar", visible: false, column: "full" },
+        ],
+      });
+
+      expect(normalized.blocks.find((b) => b.id === "avatar")).toMatchObject({
+        visible: false,
+        column: "full",
+      });
+      expect(normalized.blocks).toHaveLength(DEFAULT_CARD_LAYOUT.blocks.length);
+    });
+
+    it("ignores duplicate block IDs, using the first one encountered", () => {
+      const normalized = normalizeCardLayout({
+        blocks: [
+          { id: "avatar", visible: false, column: "full" },
+          { id: "avatar", visible: true, column: "left" },
+        ],
+      });
+
+      expect(normalized.blocks.find((b) => b.id === "avatar")).toMatchObject({
+        visible: false,
+        column: "full",
+      });
+      expect(normalized.blocks.filter((b) => b.id === "avatar")).toHaveLength(1);
+    });
+
+    it("falls back to default column and visible if provided are invalid", () => {
+      // Find a block in defaults to check fallbacks
+      const defaultAvatar = DEFAULT_CARD_LAYOUT.blocks.find((b) => b.id === "avatar");
+      expect(defaultAvatar).toBeDefined();
+
+      const normalized = normalizeCardLayout({
+        blocks: [
+          { id: "avatar", visible: "not-a-boolean", column: "invalid-column" },
+        ],
+      });
+
+      const avatar = normalized.blocks.find((b) => b.id === "avatar");
+      expect(avatar).toMatchObject({
+        visible: defaultAvatar?.visible,
+        column: defaultAvatar?.column,
+      });
+    });
   });
 
 describe("toggleBlockVisibility", () => {
