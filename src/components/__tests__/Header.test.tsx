@@ -1,65 +1,107 @@
 // @vitest-environment jsdom
 import { render, screen } from "@testing-library/react";
-import "@testing-library/jest-dom";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
 import Header from "../Header";
+import "@testing-library/jest-dom";
 
-const mockUsePathname = vi.fn();
-
+// Mock next/navigation
 vi.mock("next/navigation", () => ({
-  usePathname: () => mockUsePathname(),
+  usePathname: vi.fn(),
 }));
 
+// Mock the LoginButton component to isolate Header tests
 vi.mock("@/components/LoginButton", () => ({
-  default: () => <div data-testid="login-button">Login</div>,
+  default: () => <div data-testid="login-button-mock">LoginButton Mock</div>,
 }));
+
+// Import the mocked hook to change its return value in tests
+import { usePathname } from "next/navigation";
 
 describe("Header", () => {
-  it("renders correctly", () => {
-    mockUsePathname.mockReturnValue("/");
-    render(<Header />);
-    expect(screen.getByText("GitHub User Summary")).toBeInTheDocument();
-    expect(screen.getByTestId("login-button")).toBeInTheDocument();
+  beforeEach(() => {
+    vi.resetAllMocks();
   });
 
-  it("renders navigation links", () => {
-    mockUsePathname.mockReturnValue("/");
+  it("renders the logo/title correctly", () => {
+    vi.mocked(usePathname).mockReturnValue("/");
     render(<Header />);
-    expect(screen.getByRole("link", { name: "Home" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Dashboard" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Year in Review" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Stats" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Settings" })).toBeInTheDocument();
+
+    const logoLink = screen.getByRole("link", { name: /GitHub User Summary/i });
+    expect(logoLink).toBeInTheDocument();
+    expect(logoLink).toHaveAttribute("href", "/");
   });
 
-  it("highlights the active link correctly (exact match)", () => {
-    mockUsePathname.mockReturnValue("/dashboard");
+  it("renders all navigation links", () => {
+    vi.mocked(usePathname).mockReturnValue("/");
+    render(<Header />);
+
+    const links = ["Home", "Dashboard", "Year in Review", "Stats", "Settings"];
+    links.forEach((label) => {
+      const link = screen.getByRole("link", { name: label });
+      expect(link).toBeInTheDocument();
+    });
+  });
+
+  it("applies active styles to Home link when pathname is '/'", () => {
+    vi.mocked(usePathname).mockReturnValue("/");
+    render(<Header />);
+
+    const homeLink = screen.getByRole("link", { name: "Home" });
+    expect(homeLink).toHaveClass("bg-accent/15");
+    expect(homeLink).toHaveClass("text-accent");
+
+    // Other links should not be active
+    const dashboardLink = screen.getByRole("link", { name: "Dashboard" });
+    expect(dashboardLink).not.toHaveClass("bg-accent/15");
+    expect(dashboardLink).toHaveClass("text-muted");
+  });
+
+  it("applies active styles to Dashboard link when pathname is '/dashboard'", () => {
+    vi.mocked(usePathname).mockReturnValue("/dashboard");
     render(<Header />);
 
     const dashboardLink = screen.getByRole("link", { name: "Dashboard" });
-    const homeLink = screen.getByRole("link", { name: "Home" });
+    expect(dashboardLink).toHaveClass("bg-accent/15");
 
-    expect(dashboardLink).toHaveClass("text-accent");
-    expect(homeLink).toHaveClass("text-muted");
+    const homeLink = screen.getByRole("link", { name: "Home" });
+    expect(homeLink).not.toHaveClass("bg-accent/15");
   });
 
-  it("highlights the active link correctly (subpath match)", () => {
-    mockUsePathname.mockReturnValue("/dashboard/year");
-    render(<Header />);
+  it("applies active styles to parent Dashboard and exact child links when pathname is a sub-route", () => {
+    // Testing /dashboard/year
+    vi.mocked(usePathname).mockReturnValue("/dashboard/year");
+    const { unmount } = render(<Header />);
+
+    let dashboardLink = screen.getByRole("link", { name: "Dashboard" });
+    expect(dashboardLink).toHaveClass("bg-accent/15");
 
     const yearLink = screen.getByRole("link", { name: "Year in Review" });
-    const dashboardLink = screen.getByRole("link", { name: "Dashboard" });
+    expect(yearLink).toHaveClass("bg-accent/15");
 
-    expect(yearLink).toHaveClass("text-accent");
-    expect(dashboardLink).toHaveClass("text-accent"); // isActive returns true for startWith match
-  });
+    let statsLink = screen.getByRole("link", { name: "Stats" });
+    expect(statsLink).not.toHaveClass("bg-accent/15");
 
-  it("handles root path active logic correctly", () => {
-    mockUsePathname.mockReturnValue("/some-other-path");
+    unmount();
+
+    // Testing /dashboard/stats
+    vi.mocked(usePathname).mockReturnValue("/dashboard/stats");
     render(<Header />);
 
-    const homeLink = screen.getByRole("link", { name: "Home" });
-    expect(homeLink).toHaveClass("text-muted");
-    expect(homeLink).not.toHaveClass("text-accent");
+    // Since isActive logic uses pathname.startsWith(`${href}/`), /dashboard should be active
+    dashboardLink = screen.getByRole("link", { name: "Dashboard" });
+    expect(dashboardLink).toHaveClass("bg-accent/15");
+
+    statsLink = screen.getByRole("link", { name: "Stats" });
+    expect(statsLink).toHaveClass("bg-accent/15");
+
+    const settingsLink = screen.getByRole("link", { name: "Settings" });
+    expect(settingsLink).not.toHaveClass("bg-accent/15");
+  });
+
+  it("renders the LoginButton component", () => {
+    vi.mocked(usePathname).mockReturnValue("/");
+    render(<Header />);
+
+    expect(screen.getByTestId("login-button-mock")).toBeInTheDocument();
   });
 });

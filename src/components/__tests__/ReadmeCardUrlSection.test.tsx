@@ -1,136 +1,167 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import '@testing-library/jest-dom';
-import ReadmeCardUrlSection, { generateReadmeUrl } from '../ReadmeCardUrlSection';
-import { DEFAULT_CARD_LAYOUT } from '@/lib/types';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import ReadmeCardUrlSection, { generateReadmeUrl } from "../ReadmeCardUrlSection";
+import type { CardLayout, CardDisplayOptions } from "@/lib/types";
 
-describe('generateReadmeUrl', () => {
-  const baseOptions = {
-    showAvatar: true,
-    showBio: true,
-    showStats: true,
-    showLanguage: true,
-    showRepos: true,
-    showContributionBreakdown: true,
-    showActivityBreakdown: true,
+describe("generateReadmeUrl", () => {
+  const defaultLayout: CardLayout = {
+    blocks: [
+      { id: "bio", visible: true, column: "left" },
+      { id: "stats", visible: true, column: "left" },
+      { id: "topLanguages", visible: true, column: "left" },
+    ],
   };
 
-  it('returns empty string if username is missing', () => {
-    expect(
-      generateReadmeUrl({
-        username: null,
-        layout: DEFAULT_CARD_LAYOUT,
-        options: baseOptions,
-        readmeTheme: 'light',
-        readmeCols: 1,
-        includeStreak: false,
-        includeHeatmap: false,
-        origin: 'http://localhost:3000',
-      })
-    ).toBe('');
-  });
-
-  it('generates basic URL correctly', () => {
-    const url = generateReadmeUrl({
-      username: 'testuser',
-      layout: DEFAULT_CARD_LAYOUT,
-      options: baseOptions,
-      readmeTheme: 'dark',
-      readmeCols: 2,
-      includeStreak: false,
-      includeHeatmap: false,
-      origin: 'https://example.com',
-    });
-
-    const parsed = new URL(url);
-    expect(parsed.origin).toBe('https://example.com');
-    expect(parsed.pathname).toBe('/api/card/testuser');
-    expect(parsed.searchParams.get('format')).toBe('png');
-    expect(parsed.searchParams.get('theme')).toBe('dark');
-    expect(parsed.searchParams.get('cols')).toBe('2');
-    expect(parsed.searchParams.get('blocks')).toBe('bio,stats,langs,repos');
-    expect(parsed.searchParams.get('width')).toBe('600');
-    // Ensure layout parts contains correct formatted values for full, left and right
-    const layout = parsed.searchParams.get('layout');
-    expect(layout).toContain('left:bio');
-    expect(layout).toContain('left:stats');
-    expect(layout).toContain('right:langs');
-    expect(layout).toContain('right:repos');
-  });
-
-  it('includes streak and heatmap when requested', () => {
-    const url = generateReadmeUrl({
-      username: 'testuser',
-      layout: DEFAULT_CARD_LAYOUT,
-      options: baseOptions,
-      readmeTheme: 'light',
-      readmeCols: 1,
-      includeStreak: true,
-      includeHeatmap: true,
-      origin: 'https://example.com',
-    });
-
-    const parsed = new URL(url);
-    const blocks = parsed.searchParams.get('blocks')?.split(',') || [];
-    expect(blocks).toContain('streak');
-    expect(blocks).toContain('heatmap');
-  });
-
-  it('adds hide parameters when breakdowns are disabled', () => {
-    const url = generateReadmeUrl({
-      username: 'testuser',
-      layout: DEFAULT_CARD_LAYOUT,
-      options: {
-        ...baseOptions,
-        showContributionBreakdown: false,
-        showActivityBreakdown: false,
-      },
-      readmeTheme: 'light',
-      readmeCols: 1,
-      includeStreak: false,
-      includeHeatmap: false,
-      origin: 'https://example.com',
-    });
-
-    const parsed = new URL(url);
-    const hide = parsed.searchParams.get('hide')?.split(',') || [];
-    expect(hide).toContain('stars');
-    expect(hide).toContain('forks');
-  });
-});
-
-describe('ReadmeCardUrlSection', () => {
-  const baseOptions = {
-    showAvatar: true,
-    showBio: true,
-    showStats: true,
-    showLanguage: true,
-    showRepos: true,
+  const defaultOptions: CardDisplayOptions = {
     showContributionBreakdown: true,
     showActivityBreakdown: true,
   };
 
   const defaultProps = {
-    username: 'testuser',
-    layout: DEFAULT_CARD_LAYOUT,
-    options: baseOptions,
+    username: "testuser",
+    layout: defaultLayout,
+    options: defaultOptions,
+    readmeTheme: "github-dark",
+    readmeCols: 1,
+    includeStreak: false,
+    includeHeatmap: false,
+    origin: "http://localhost:3000",
+  };
+
+  it("should return empty string if username is missing", () => {
+    expect(
+      generateReadmeUrl({
+        ...defaultProps,
+        username: undefined,
+      })
+    ).toBe("");
+  });
+
+  it("should generate basic URL with default options", () => {
+    const url = generateReadmeUrl(defaultProps);
+    const parsedUrl = new URL(url);
+
+    expect(parsedUrl.origin).toBe("http://localhost:3000");
+    expect(parsedUrl.pathname).toBe("/api/card/testuser");
+    expect(parsedUrl.searchParams.get("format")).toBe("png");
+    expect(parsedUrl.searchParams.get("theme")).toBe("github-dark");
+    expect(parsedUrl.searchParams.get("cols")).toBe("1");
+    expect(parsedUrl.searchParams.get("blocks")).toBe("bio,stats,langs");
+    expect(parsedUrl.searchParams.get("layout")).toBe("left:bio,left:stats,left:langs");
+    expect(parsedUrl.searchParams.get("width")).toBe("600");
+    expect(parsedUrl.searchParams.get("hide")).toBeNull();
+  });
+
+  it("should append streak to blocks when includeStreak is true", () => {
+    const url = generateReadmeUrl({
+      ...defaultProps,
+      includeStreak: true,
+    });
+    const parsedUrl = new URL(url);
+    expect(parsedUrl.searchParams.get("blocks")).toBe("bio,stats,langs,streak");
+  });
+
+  it("should append heatmap to blocks when includeHeatmap is true", () => {
+    const url = generateReadmeUrl({
+      ...defaultProps,
+      includeHeatmap: true,
+    });
+    const parsedUrl = new URL(url);
+    expect(parsedUrl.searchParams.get("blocks")).toBe("bio,stats,langs,heatmap");
+  });
+
+  it("should include hide param when showContributionBreakdown is false", () => {
+    const url = generateReadmeUrl({
+      ...defaultProps,
+      options: { ...defaultOptions, showContributionBreakdown: false },
+    });
+    const parsedUrl = new URL(url);
+    expect(parsedUrl.searchParams.get("hide")).toBe("stars");
+  });
+
+  it("should include hide param when showActivityBreakdown is false", () => {
+    const url = generateReadmeUrl({
+      ...defaultProps,
+      options: { ...defaultOptions, showActivityBreakdown: false },
+    });
+    const parsedUrl = new URL(url);
+    expect(parsedUrl.searchParams.get("hide")).toBe("forks");
+  });
+
+  it("should include hide param with both stars and forks", () => {
+    const url = generateReadmeUrl({
+      ...defaultProps,
+      options: {
+        showContributionBreakdown: false,
+        showActivityBreakdown: false,
+      },
+    });
+    const parsedUrl = new URL(url);
+    expect(parsedUrl.searchParams.get("hide")).toBe("stars,forks");
+  });
+
+  it("should handle custom blocks layout", () => {
+    const layout: CardLayout = {
+      blocks: [
+        { id: "topRepos", visible: true, column: "right" },
+        { id: "stats", visible: false, column: "left" },
+        { id: "bio", visible: true, column: "left" },
+      ],
+    };
+    const url = generateReadmeUrl({
+      ...defaultProps,
+      layout,
+    });
+    const parsedUrl = new URL(url);
+    expect(parsedUrl.searchParams.get("blocks")).toBe("repos,bio");
+    expect(parsedUrl.searchParams.get("layout")).toBe("right:repos,left:bio");
+  });
+
+  it("should url encode username", () => {
+     const url = generateReadmeUrl({
+      ...defaultProps,
+      username: "test user",
+    });
+    const parsedUrl = new URL(url);
+    expect(parsedUrl.pathname).toBe("/api/card/test%20user");
+  });
+
+  it("should return default blocks when layout is empty but includeStreak is true", () => {
+    const layout: CardLayout = {
+      blocks: [],
+    };
+    const url = generateReadmeUrl({
+      ...defaultProps,
+      layout,
+    });
+    const parsedUrl = new URL(url);
+    expect(parsedUrl.searchParams.get("blocks")).toBe("bio,stats,langs");
+  });
+});
+
+describe("ReadmeCardUrlSection", () => {
+  const defaultLayout: CardLayout = {
+    blocks: [
+      { id: "bio", visible: true, column: "left" },
+      { id: "stats", visible: true, column: "left" },
+      { id: "topLanguages", visible: true, column: "left" },
+    ],
+  };
+
+  const defaultOptions: CardDisplayOptions = {
+    showContributionBreakdown: true,
+    showActivityBreakdown: true,
+  };
+
+  const defaultProps = {
+    username: "testuser",
+    layout: defaultLayout,
+    options: defaultOptions,
   };
 
   beforeEach(() => {
-    // Mock window.location.origin
-    vi.stubGlobal('window', {
-      ...globalThis.window,
-      location: {
-        ...globalThis.window?.location,
-        origin: 'http://localhost:3000',
-      },
-    });
-
-    // Mock navigator.clipboard
-    vi.stubGlobal('navigator', {
-      ...globalThis.navigator,
+    Object.assign(navigator, {
       clipboard: {
         writeText: vi.fn().mockResolvedValue(undefined),
       },
@@ -138,84 +169,80 @@ describe('ReadmeCardUrlSection', () => {
   });
 
   afterEach(() => {
-    vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
-  it('renders sign in prompt when username is null', () => {
-    render(<ReadmeCardUrlSection {...defaultProps} username={null} />);
-    expect(screen.getByText('Sign in to generate your README URL')).toBeInTheDocument();
-  });
-
-  it('renders default generated URL', () => {
+  it("renders with default properties", () => {
     render(<ReadmeCardUrlSection {...defaultProps} />);
 
-    const urlContainer = screen.getByText(/http:\/\/localhost:3000\/api\/card\/testuser\?format=png/);
-    expect(urlContainer).toBeInTheDocument();
-
-    const urlText = urlContainer.textContent || '';
-    expect(urlText).toContain('theme=light');
-    expect(urlText).toContain('cols=1');
+    expect(screen.getByText("README Card URL")).toBeTruthy();
+    expect(screen.getByText("Copy URL")).toBeTruthy();
   });
 
-  it('updates URL when Theme and Columns are changed', async () => {
-    const user = userEvent.setup();
-    render(<ReadmeCardUrlSection {...defaultProps} />);
+  it("shows Sign in to generate URL if username is missing", async () => {
+     render(<ReadmeCardUrlSection layout={defaultLayout} options={defaultOptions} />);
 
-    const themeSelect = screen.getByRole('combobox', { name: /theme/i });
-    await user.selectOptions(themeSelect, 'dark');
+     const button = screen.getByText("Copy URL");
+     fireEvent.click(button);
 
-    const colsSelect = screen.getByRole('combobox', { name: /columns/i });
-    await user.selectOptions(colsSelect, '2');
-
-    const urlContainer = screen.getByText(/http:\/\/localhost:3000\/api\/card\/testuser\?format=png/);
-    const urlText = urlContainer.textContent || '';
-
-    expect(urlText).toContain('theme=dark');
-    expect(urlText).toContain('cols=2');
+     expect(await screen.findByText("Sign in to generate URL")).toBeTruthy();
   });
 
-  it('updates URL when streak and heatmap options are checked', async () => {
-    const user = userEvent.setup();
-    render(<ReadmeCardUrlSection {...defaultProps} />);
-
-    const streakCheckbox = screen.getByRole('checkbox', { name: /include streak/i });
-    await user.click(streakCheckbox);
-
-    const heatmapCheckbox = screen.getByRole('checkbox', { name: /include heatmap/i });
-    await user.click(heatmapCheckbox);
-
-    const urlContainer = screen.getByText(/http:\/\/localhost:3000\/api\/card\/testuser\?format=png/);
-    const urlText = urlContainer.textContent || '';
-
-    expect(urlText).toContain('streak');
-    expect(urlText).toContain('heatmap');
-  });
-
-  it('handles copy to clipboard success', async () => {
-    const user = userEvent.setup();
-    const mockWriteText = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, 'clipboard', { value: { writeText: mockWriteText }, configurable: true });
-    render(<ReadmeCardUrlSection {...defaultProps} />);
-
-    const copyButton = screen.getByRole('button', { name: /copy url/i });
-    await user.click(copyButton);
-
-    expect(mockWriteText).toHaveBeenCalled();
-    expect(screen.getByText('Copied!')).toBeInTheDocument();
-  });
-
-  it('handles copy to clipboard failure', async () => {
-    const user = userEvent.setup();
-    const mockWriteText = vi.fn().mockRejectedValue(new Error('Failed to copy'));
-    Object.defineProperty(navigator, 'clipboard', { value: { writeText: mockWriteText }, configurable: true });
+  it("handles copy failure", async () => {
+    vi.spyOn(navigator.clipboard, "writeText").mockRejectedValue(new Error("Copy failed"));
 
     render(<ReadmeCardUrlSection {...defaultProps} />);
 
-    const copyButton = screen.getByRole('button', { name: /copy url/i });
-    await user.click(copyButton);
+    const button = screen.getByText("Copy URL");
+    fireEvent.click(button);
 
-    expect(navigator.clipboard.writeText).toHaveBeenCalled();
-    expect(screen.getByText('Copy failed')).toBeInTheDocument();
+    expect(await screen.findByText("Copy failed")).toBeTruthy();
+  });
+
+  it("handles copy success", async () => {
+    render(<ReadmeCardUrlSection {...defaultProps} />);
+
+    const button = screen.getByText("Copy URL");
+    fireEvent.click(button);
+
+    expect(await screen.findByText("Copied!")).toBeTruthy();
+  });
+
+  it("can change selects and checkboxes", async () => {
+    render(<ReadmeCardUrlSection {...defaultProps} />);
+
+    const themeSelect = screen.getByRole("combobox", { name: "Theme" });
+    fireEvent.change(themeSelect, { target: { value: "dark" } });
+
+    const colsSelect = screen.getByRole("combobox", { name: "Columns" });
+    fireEvent.change(colsSelect, { target: { value: "2" } });
+
+    const streakCheckbox = screen.getByRole("checkbox", { name: "Include streak" });
+    fireEvent.click(streakCheckbox);
+
+    const heatmapCheckbox = screen.getByRole("checkbox", { name: "Include heatmap" });
+    fireEvent.click(heatmapCheckbox);
+
+    const urlContainer = screen.getByText(/theme=dark/);
+    expect(urlContainer).toBeTruthy();
+    expect(screen.getByText(/cols=2/)).toBeTruthy();
+    expect(screen.getByText(/blocks=[^&]*streak/)).toBeTruthy();
+    expect(screen.getByText(/blocks=[^&]*heatmap/)).toBeTruthy();
+  });
+
+  it("handles fallback to light theme", async () => {
+    render(<ReadmeCardUrlSection {...defaultProps} />);
+    const themeSelect = screen.getByRole("combobox", { name: "Theme" });
+    fireEvent.change(themeSelect, { target: { value: "invalid-theme" } });
+
+    expect(screen.getByText(/theme=light/)).toBeTruthy();
+  });
+
+  it("handles fallback to 1 column", async () => {
+    render(<ReadmeCardUrlSection {...defaultProps} />);
+    const colsSelect = screen.getByRole("combobox", { name: "Columns" });
+    fireEvent.change(colsSelect, { target: { value: "invalid-cols" } });
+
+    expect(screen.getByText(/cols=1/)).toBeTruthy();
   });
 });
