@@ -11,7 +11,7 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "lcov"],
-      include: ["src/lib/**/*.ts", "src/hooks/**/*.ts", "src/components/DashboardStatsClient.tsx"],
+      include: ["src/lib/**/*.ts", "src/hooks/**/*.ts", "src/components/ReadmeCardUrlSection.tsx"],
       thresholds: {
         lines: 80,
         functions: 80,
