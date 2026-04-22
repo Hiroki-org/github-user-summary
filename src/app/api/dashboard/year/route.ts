@@ -1,31 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
+import { getAuthenticatedUser, handleErrorResponse } from "@/lib/apiUtils";
 
-import { authOptions } from "@/lib/auth";
-import { fetchViewerLogin } from "@/lib/githubViewer";
 import { fetchYearInReviewData } from "@/lib/githubYearInReview";
 
 export async function GET(request: NextRequest) {
-    const session = await getServerSession(authOptions);
-    const token = session?.accessToken;
-
-    if (!session || !token) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const yearParam = request.nextUrl.searchParams.get("year");
-    const year = yearParam ? Number.parseInt(yearParam, 10) : new Date().getUTCFullYear();
-
-    if (!Number.isFinite(year) || year < 2008 || year > new Date().getUTCFullYear()) {
-        return NextResponse.json({ error: "Invalid year" }, { status: 400 });
-    }
-
     try {
-        const username = session.user?.login ?? (await fetchViewerLogin(token));
-        const data = await fetchYearInReviewData(username, year, token);
+        const user = await getAuthenticatedUser();
+        if (!user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const yearParam = request.nextUrl.searchParams.get("year");
+        const year = yearParam ? Number.parseInt(yearParam, 10) : new Date().getUTCFullYear();
+
+        if (!Number.isFinite(year) || year < 2008 || year > new Date().getUTCFullYear()) {
+            return NextResponse.json({ error: "Invalid year" }, { status: 400 });
+        }
+
+        const data = await fetchYearInReviewData(user.username, year, user.token);
         return NextResponse.json(data);
     } catch (error) {
-        const message = error instanceof Error ? error.message : "Unknown error";
-        return NextResponse.json({ error: message }, { status: 500 });
+        return handleErrorResponse(error);
     }
 }
