@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getDefaultCardSettings, loadCardSettings, saveCardSettings } from "../cardSettings";
 import { DEFAULT_CARD_LAYOUT, CardLayout, CardDisplayOptions } from "../types";
+import { CardBlockType } from "../cardOptions";
+import { normalizeCardLayout } from "../cardLayout";
 
 describe("cardSettings", () => {
     // let originalWindow: typeof window | undefined;
@@ -55,7 +57,7 @@ describe("cardSettings", () => {
         });
 
         it("safely handles partially invalid JSON across multiple localStorage keys (safeParse fallback)", () => {
-            const mockLayout: CardLayout = { blocks: [{ id: "bio", visible: true, column: "full" }] };
+            const mockLayout: CardLayout = normalizeCardLayout({ blocks: [{ id: "bio", visible: true, column: "full" }] });
 
             // Return valid JSON for layout, but completely invalid JSON for options
             getItemMock.mockImplementation((key: string) => {
@@ -92,7 +94,7 @@ describe("cardSettings", () => {
         });
 
         it("safely handles valid JSON for layout but null for options", () => {
-            const mockLayout: CardLayout = { blocks: [{ id: "bio", visible: true, column: "left" }] };
+            const mockLayout: CardLayout = normalizeCardLayout({ blocks: [{ id: "bio", visible: true, column: "left" }] });
             getItemMock.mockReturnValueOnce(JSON.stringify(mockLayout));
             getItemMock.mockReturnValueOnce(null);
 
@@ -103,7 +105,7 @@ describe("cardSettings", () => {
         });
 
         it("returns parsed settings from localStorage when window is defined", () => {
-            const mockLayout: CardLayout = { blocks: [{ id: "bio", visible: true, column: "left" }] };
+            const mockLayout: CardLayout = normalizeCardLayout({ blocks: [{ id: "bio", visible: true, column: "left" }] });
             const mockOptions: Partial<CardDisplayOptions> = { showTwitter: false, showLocation: false };
 
             getItemMock.mockImplementation((key: string) => {
@@ -122,6 +124,37 @@ describe("cardSettings", () => {
             expect(getItemMock).toHaveBeenCalledWith("card-display-options");
         });
     });
+
+
+        it("normalizes semantically invalid layout structure that is valid JSON", () => {
+            // Valid JSON, but semantically invalid layout (missing blocks, wrong column type)
+            const invalidLayout = {
+                blocks: [
+                    { id: "invalidBlockType", visible: true, column: "left" },
+                    { id: "bio", visible: true, column: "wrongColumn" }
+                ]
+            };
+
+            getItemMock.mockImplementation((key: string) => {
+                if (key === "card-layout") return JSON.stringify(invalidLayout);
+                return null;
+            });
+
+            const settings = loadCardSettings();
+
+            // The bio block should be fixed to 'left' (or full depending on normalization, but valid)
+            const bioBlock = settings.layout.blocks.find(b => b.id === "bio");
+            expect(bioBlock).toBeDefined();
+            expect(["left", "right", "full"]).toContain(bioBlock?.column);
+
+            // The invalid block should be removed
+            const invalidBlock = settings.layout.blocks.find(b => b.id === "invalidBlockType" as unknown as CardBlockType);
+            expect(invalidBlock).toBeUndefined();
+
+            // Missing blocks should be added
+            const profileBlock = settings.layout.blocks.find(b => b.id === "profile");
+            expect(profileBlock).toBeDefined();
+        });
 
     describe("saveCardSettings", () => {
         it("does nothing when window is undefined", () => {

@@ -1,6 +1,7 @@
 import type { CardDisplayOptions, CardLayout } from "@/lib/types";
 export type { CardDisplayOptions, CardLayout };
 import { DEFAULT_CARD_LAYOUT } from "@/lib/types";
+import { normalizeCardLayout } from "@/lib/cardLayout";
 
 const LAYOUT_KEY = "card-layout";
 const OPTIONS_KEY = "card-display-options";
@@ -47,7 +48,7 @@ export function loadCardSettings(): { layout: CardLayout; options: CardDisplayOp
     const parsedOptions = safeParse<CardDisplayOptions>(window.localStorage.getItem(OPTIONS_KEY));
 
     return {
-        layout: parsedLayout ?? DEFAULT_CARD_LAYOUT,
+        layout: parsedLayout ? normalizeCardLayout(parsedLayout) : DEFAULT_CARD_LAYOUT,
         options: { ...DEFAULT_DISPLAY_OPTIONS, ...(parsedOptions ?? {}) },
     };
 }
