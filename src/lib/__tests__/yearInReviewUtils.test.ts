@@ -174,3 +174,40 @@ describe("getMostActiveDayFromCalendar", () => {
         expect(getMostActiveDayFromCalendar(calendar)).toBe("Thursday");
     });
 });
+
+describe("buildHourlyHeatmapFromCommitDates - edge cases", () => {
+    it("falls back to full string parsing for unparseable hour data", () => {
+        const heatmap = buildHourlyHeatmapFromCommitDates(["2023-01-01TX0:00:00Z"]);
+        const totalCommits = heatmap.flat().reduce((sum, count) => sum + count, 0);
+        expect(totalCommits).toBe(0);
+    });
+
+    it("falls back to full string parsing for unparseable hour data but valid date", () => {
+        const heatmap = buildHourlyHeatmapFromCommitDates(["2023-01-01T10:00:00.1234Z"]);
+        expect(heatmap[0][10]).toBe(1);
+    });
+
+    it("returns zero contributions for invalid date strings", () => {
+        const heatmap = buildHourlyHeatmapFromCommitDates(["invalid-full-date"]);
+        const totalCommits = heatmap.flat().reduce((sum, count) => sum + count, 0);
+        expect(totalCommits).toBe(0);
+    });
+
+    it("falls back to full date parsing when timezone offsets don't match fast-path ending conditions", () => {
+        const commitDates = [
+            "2023-01-01T10:00:00.000Z", // length 24, ends with .000Z
+            "2023-01-01T10:00:00.123+02:00", // length 29
+        ];
+        const heatmap = buildHourlyHeatmapFromCommitDates(commitDates);
+        expect(heatmap[0][10]).toBe(1);
+        expect(heatmap[0][8]).toBe(1); // 10:00:00+02:00 is 08:00 UTC
+    });
+
+    it("falls back to full date parsing when length is 24 but does not end with .000Z", () => {
+        const commitDates = [
+            "2023-01-01T10:00:00.123+", // length 24, invalid ending
+        ];
+        const heatmap = buildHourlyHeatmapFromCommitDates(commitDates);
+        expect(heatmap[0][10]).toBe(0);
+    });
+});
