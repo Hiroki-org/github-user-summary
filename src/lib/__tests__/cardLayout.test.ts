@@ -116,6 +116,22 @@ describe("cardLayout utilities", () => {
   });
 
 describe("toggleBlockVisibility", () => {
+
+    it("toggles block visibility correctly for a custom mock layout and preserves extra properties", () => {
+      const mockLayout: import("../types").CardLayout & { extraProp: string } = {
+        extraProp: "preserved",
+        blocks: [
+          { id: "profile" as const, visible: true, column: "full" as const },
+          { id: "stats" as const, visible: false, column: "left" as const }
+        ]
+      };
+
+      const next = toggleBlockVisibility(mockLayout, "profile");
+
+      expect(next).toHaveProperty("extraProp", "preserved");
+      expect(next.blocks.find(b => b.id === "profile")?.visible).toBe(false);
+      expect(next.blocks.find(b => b.id === "stats")?.visible).toBe(false);
+    });
     it("toggles block visibility to false", () => {
       const layout = cloneDefaultCardLayout(); // 'bio' is visible by default
       const next = toggleBlockVisibility(layout, "bio");
