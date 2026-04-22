@@ -5,11 +5,13 @@ import { CardBlockType } from "../cardOptions";
 import { normalizeCardLayout } from "../cardLayout";
 
 describe("cardSettings", () => {
-        let getItemMock: ReturnType<typeof vi.fn>;
+    // let originalWindow: typeof window | undefined;
+    let getItemMock: ReturnType<typeof vi.fn>;
     let setItemMock: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
-                getItemMock = vi.fn();
+        // originalWindow = globalThis.window;
+        getItemMock = vi.fn();
         setItemMock = vi.fn();
 
         vi.stubGlobal("window", {
