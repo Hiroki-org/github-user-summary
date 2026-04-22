@@ -70,6 +70,55 @@ function processCalendarData(calendar: ContributionData["calendar"]) {
   return { weeks, monthLabels, maxCount };
 }
 
+
+function getIntensityColor(count: number, maxCount: number): string {
+  if (count === 0) return "rgba(var(--card-border-rgb), 0.4)"; // card-border equivalent
+  const level = Math.ceil((count / maxCount) * 4);
+  const colors: Record<number, string> = {
+    1: "rgba(var(--accent-rgb), 0.4)",
+    2: "rgba(var(--accent-rgb), 0.6)",
+    3: "rgba(var(--accent-rgb), 0.8)",
+    4: "rgba(var(--accent-rgb), 1)",
+  };
+  return colors[level] ?? "rgba(var(--card-border-rgb), 0.4)";
+}
+
+function SvgMonthLabels({ monthLabels }: { monthLabels: { label: string; x: number }[] }) {
+  return (
+    <>
+      {monthLabels.map((m, i) => (
+        <text
+          key={`${m.label}-${i}`}
+          x={m.x}
+          y={10}
+          className="fill-muted text-[10px] font-medium"
+        >
+          {m.label}
+        </text>
+      ))}
+    </>
+  );
+}
+
+function SvgDayLabels({ dayLabels }: { dayLabels: string[] }) {
+  return (
+    <>
+      {dayLabels.map((label, idx) =>
+        label ? (
+          <text
+            key={idx}
+            x={0}
+            y={18 + idx * STEP + CELL_SIZE / 2 + 3}
+            className="fill-muted text-[10px]"
+          >
+            {label}
+          </text>
+        ) : null,
+      )}
+    </>
+  );
+}
+
 export default function ContributionGraph({ contributions }: Props) {
   const { calendar } = contributions;
   if (calendar.length === 0) return null;
@@ -81,18 +130,6 @@ export default function ContributionGraph({ contributions }: Props) {
 
   const dayLabels = ["", "Mon", "", "Wed", "", "Fri", ""];
 
-  function getIntensityColor(count: number): string {
-    if (count === 0) return "rgba(var(--card-border-rgb), 0.4)"; // card-border equivalent
-    const level = Math.ceil((count / maxCount) * 4);
-    const colors: Record<number, string> = {
-      1: "rgba(var(--accent-rgb), 0.4)",
-      2: "rgba(var(--accent-rgb), 0.6)",
-      3: "rgba(var(--accent-rgb), 0.8)",
-      4: "rgba(var(--accent-rgb), 1)",
-    };
-    return colors[level] ?? "rgba(var(--card-border-rgb), 0.4)";
-  }
-
   return (
     <div className="overflow-x-auto pb-2 scrollbar-hide">
       <svg
@@ -103,29 +140,9 @@ export default function ContributionGraph({ contributions }: Props) {
         aria-label="Contribution calendar"
         className="min-w-full"
       >
-        {monthLabels.map((m, i) => (
-          <text
-            key={`${m.label}-${i}`}
-            x={m.x}
-            y={10}
-            className="fill-muted text-[10px] font-medium"
-          >
-            {m.label}
-          </text>
-        ))}
+        <SvgMonthLabels monthLabels={monthLabels} />
 
-        {dayLabels.map((label, idx) =>
-          label ? (
-            <text
-              key={idx}
-              x={0}
-              y={18 + idx * STEP + CELL_SIZE / 2 + 3}
-              className="fill-muted text-[10px]"
-            >
-              {label}
-            </text>
-          ) : null,
-        )}
+        <SvgDayLabels dayLabels={dayLabels} />
 
         {weeks.map((week, wIdx) =>
           week.map((entry) => (
@@ -136,7 +153,7 @@ export default function ContributionGraph({ contributions }: Props) {
               width={CELL_SIZE}
               height={CELL_SIZE}
               rx={2}
-              fill={getIntensityColor(entry.count)}
+              fill={getIntensityColor(entry.count, maxCount)}
               className="transition-all duration-200 hover:opacity-70 hover:stroke-foreground/20"
               style={{ strokeWidth: 1 }}
             >

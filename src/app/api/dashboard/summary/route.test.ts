@@ -1,6 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { getServerSession } from "next-auth";
-import { NextRequest } from "next/server";
 import { fetchUserSummary } from "@/lib/github";
 import { fetchViewerLogin } from "@/lib/githubViewer";
 
@@ -19,18 +18,15 @@ vi.mock("@/lib/githubViewer", () => ({
 }));
 
 describe("GET /api/dashboard/summary", () => {
-  let mockRequest: NextRequest;
-
   beforeEach(() => {
     vi.clearAllMocks();
-    mockRequest = new NextRequest("http://localhost:3000/api/dashboard/summary");
   });
 
   it("returns 401 if no session exists", async () => {
     vi.mocked(getServerSession).mockResolvedValueOnce(null);
 
     const { GET } = await import("./route");
-    const response = await GET(mockRequest);
+    const response = await GET();
     const data = await response.json();
 
     expect(response.status).toBe(401);
@@ -41,7 +37,7 @@ describe("GET /api/dashboard/summary", () => {
     vi.mocked(getServerSession).mockResolvedValueOnce({ user: { login: "testuser" } });
 
     const { GET } = await import("./route");
-    const response = await GET(mockRequest);
+    const response = await GET();
     const data = await response.json();
 
     expect(response.status).toBe(401);
@@ -59,7 +55,7 @@ describe("GET /api/dashboard/summary", () => {
     vi.mocked(fetchUserSummary).mockResolvedValueOnce(mockSummary as unknown as UserSummary);
 
     const { GET } = await import("./route");
-    const response = await GET(mockRequest);
+    const response = await GET();
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -81,7 +77,7 @@ describe("GET /api/dashboard/summary", () => {
     vi.mocked(fetchUserSummary).mockResolvedValueOnce(mockSummary as unknown as UserSummary);
 
     const { GET } = await import("./route");
-    const response = await GET(mockRequest);
+    const response = await GET();
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -101,7 +97,7 @@ describe("GET /api/dashboard/summary", () => {
     vi.mocked(fetchViewerLogin).mockRejectedValueOnce(new Error("Viewer login failed"));
 
     const { GET } = await import("./route");
-    const response = await GET(mockRequest);
+    const response = await GET();
     const data = await response.json();
 
     expect(response.status).toBe(500);
@@ -118,7 +114,7 @@ describe("GET /api/dashboard/summary", () => {
     vi.mocked(fetchUserSummary).mockRejectedValueOnce(new Error("Summary fetch failed"));
 
     const { GET } = await import("./route");
-    const response = await GET(mockRequest);
+    const response = await GET();
     const data = await response.json();
 
     expect(response.status).toBe(500);
@@ -135,7 +131,7 @@ describe("GET /api/dashboard/summary", () => {
     vi.mocked(fetchUserSummary).mockRejectedValueOnce("Something went wrong");
 
     const { GET } = await import("./route");
-    const response = await GET(mockRequest);
+    const response = await GET();
     const data = await response.json();
 
     expect(response.status).toBe(500);
@@ -159,7 +155,7 @@ describe("GET /api/dashboard/summary", () => {
     vi.mocked(fetchUserSummary).mockRejectedValueOnce(new UserNotFoundError("testuser"));
 
     const { GET } = await import("./route");
-    const response = await GET(mockRequest);
+    const response = await GET();
     const data = await response.json();
 
     expect(response.status).toBe(500);
@@ -187,22 +183,10 @@ describe("GET /api/dashboard/summary", () => {
     vi.mocked(fetchUserSummary).mockRejectedValueOnce(mockRateLimitError);
 
     const { GET } = await import("./route");
-    const response = await GET(mockRequest);
+    const response = await GET();
     const data = await response.json();
 
     expect(response.status).toBe(500);
     expect(data.error).toBe(mockRateLimitError.message);
-  });
-
-
-  it("returns 400 if request URL is missing", async () => {
-    const invalidRequest = { url: "" } as NextRequest;
-
-    const { GET } = await import("./route");
-    const response = await GET(invalidRequest);
-    const data = await response.json();
-
-    expect(response.status).toBe(400);
-    expect(data.error).toBe("Invalid Request");
   });
 });

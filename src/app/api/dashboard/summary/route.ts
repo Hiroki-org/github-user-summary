@@ -1,30 +1,18 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
+import { getAuthenticatedUser, handleErrorResponse } from "@/lib/apiUtils";
 
-import { authOptions } from "@/lib/auth";
 import { fetchUserSummary } from "@/lib/github";
-import { fetchViewerLogin } from "@/lib/githubViewer";
 
-export async function GET(req: NextRequest) {
-    // Validate request URL to satisfy lint/usage requirements implicitly
-    if (!req.url) {
-        return NextResponse.json({ error: "Invalid Request" }, { status: 400 });
-    }
-
-    const session = await getServerSession(authOptions);
-    const token = session?.accessToken;
-
-    if (!session || !token) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+export async function GET() {
     try {
-        const username = session.user?.login ?? (await fetchViewerLogin(token));
-        const summary = await fetchUserSummary(username, token);
-        return NextResponse.json({ username, summary });
+        const user = await getAuthenticatedUser();
+        if (!user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const summary = await fetchUserSummary(user.username, user.token);
+        return NextResponse.json({ username: user.username, summary });
     } catch (error) {
-        const message = error instanceof Error ? error.message : "Unknown error";
-        return NextResponse.json({ error: message }, { status: 500 });
+        return handleErrorResponse(error);
     }
 }
