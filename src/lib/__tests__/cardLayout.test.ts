@@ -118,13 +118,13 @@ describe("cardLayout utilities", () => {
 describe("toggleBlockVisibility", () => {
 
     it("toggles block visibility correctly for a custom mock layout and preserves extra properties", () => {
-      const mockLayout = {
+      const mockLayout: import("../types").CardLayout & { extraProp: string } = {
         extraProp: "preserved",
         blocks: [
           { id: "profile" as const, visible: true, column: "full" as const },
           { id: "stats" as const, visible: false, column: "left" as const }
         ]
-      } as unknown as import("../types").CardLayout;
+      };
 
       const next = toggleBlockVisibility(mockLayout, "profile");
 
