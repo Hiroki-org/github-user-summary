@@ -6,6 +6,7 @@ import { buildHourlyHeatmapFromCommitDates, getMostActiveDayFromCalendar, getMos
 
 const YEAR_IN_REVIEW_STATS_QUERY = `query($login: String!, $from: DateTime!, $to: DateTime!) {
     user(login: $login) {
+      id
       contributionsCollection(from: $from, to: $to) {
         totalCommitContributions
         totalPullRequestContributions
@@ -26,6 +27,7 @@ const YEAR_IN_REVIEW_STATS_QUERY = `query($login: String!, $from: DateTime!, $to
 
 const YEAR_IN_REVIEW_REPOS_QUERY = `query($login: String!, $from: DateTime!, $to: DateTime!, $maxRepositories: Int!) {
     user(login: $login) {
+      id
       contributionsCollection(from: $from, to: $to) {
         commitContributionsByRepository(maxRepositories: $maxRepositories) {
           repository {
@@ -72,6 +74,7 @@ type ContributionsByRepoNode = {
 
 type YearInReviewResponse = {
     user: {
+        id: string;
         contributionsCollection: {
             totalCommitContributions: number;
             totalPullRequestContributions: number;
@@ -166,7 +169,7 @@ function mergeTopRepository(data: NonNullable<YearInReviewResponse["user"]>["con
 }
 
 async function fetchCommitDatesForTopRepos(
-    username: string,
+    authorId: string,
     token: string,
     fromIso: string,
     toIso: string,
@@ -177,30 +180,71 @@ async function fetchCommitDatesForTopRepos(
         .sort((a, b) => b.contributions.totalCount - a.contributions.totalCount)
         .slice(0, 4);
 
-    const promises = candidates.map(async (repo) => {
-        const path = `/repos/${repo.repository.owner.login}/${repo.repository.name}/commits`;
-        const url = new URL(`${GITHUB_API}${path}`);
-        url.searchParams.set("author", username);
-        url.searchParams.set("since", fromIso);
-        url.searchParams.set("until", toIso);
-        url.searchParams.set("per_page", "100");
+    if (candidates.length === 0) {
+        return [];
+    }
 
-        const res = await fetch(url.toString(), { headers: headers(token), cache: "no-store" });
-        if (res.status === 403) {
-            handleRateLimit(res);
-        }
-        if (!res.ok) {
-            return [];
-        }
+    const fragments: string[] = [];
+    const variables: Record<string, unknown> = {
+        authorId,
+        since: fromIso,
+        until: toIso,
+    };
 
-        const commits = (await res.json()) as GitHubCommit[];
-        return commits
-            .map((commit) => commit.commit.author?.date)
-            .filter((value): value is string => Boolean(value));
+    candidates.forEach((repo, index) => {
+        fragments.push(`
+            repo${index}: repository(owner: $owner${index}, name: $name${index}) {
+                defaultBranchRef {
+                    target {
+                        ... on Commit {
+                            history(author: { id: $authorId }, since: $since, until: $until, first: 100) {
+                                nodes {
+                                    author {
+                                        date
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        `);
+        variables[`owner${index}`] = repo.repository.owner.login;
+        variables[`name${index}`] = repo.repository.name;
     });
 
-    const results = await Promise.all(promises);
-    return results.flat();
+    const variableDefs = candidates
+        .map((_, index) => `$owner${index}: String!, $name${index}: String!`)
+        .join(", ");
+
+    const query = `query($authorId: ID!, $since: GitTimestamp!, $until: GitTimestamp!, ${variableDefs}) {
+        ${fragments.join("\n")}
+    }`;
+
+    try {
+        const response = await graphql<Record<string, unknown>>(query, token, variables);
+        const dates: string[] = [];
+
+        for (let i = 0; i < candidates.length; i++) {
+            const repoData = response[`repo${i}`] as Record<string, unknown> | undefined;
+            const defaultBranchRef = repoData?.defaultBranchRef as Record<string, unknown> | undefined;
+            const target = defaultBranchRef?.target as Record<string, unknown> | undefined;
+            const history = target?.history as Record<string, unknown> | undefined;
+            const historyNodes = (history?.nodes as Array<Record<string, unknown>> | undefined) || [];
+            for (const node of historyNodes) {
+                const author = node?.author as Record<string, unknown> | undefined;
+                if (typeof author?.date === 'string') {
+                    dates.push(author.date);
+                }
+            }
+        }
+
+        return dates;
+    } catch (error) {
+        // Fallback to empty array on failure, matching original behavior somewhat
+        console.error("Failed to fetch commit dates via GraphQL:", error);
+        return [];
+    }
 }
 
 function buildYearInReviewData(
@@ -257,7 +301,7 @@ export async function fetchYearInReviewData(username: string, year: number, toke
         const reposCollection = reposResponse.user.contributionsCollection;
 
         const commitDatesPromise = fetchCommitDatesForTopRepos(
-            username,
+            reposResponse.user.id,
             token,
             from.toISOString(),
             to.toISOString(),

@@ -76,6 +76,7 @@ describe("fetchYearInReviewData error paths", () => {
                     return Promise.resolve(jsonResponse({
                         data: {
                             user: {
+                                id: "MDQ6VXNlcjEyMzQ1",
                                 contributionsCollection: {
                                     commitContributionsByRepository: []
                                 }
@@ -97,7 +98,7 @@ describe("fetchYearInReviewData error paths", () => {
             if (urlStr.includes("/graphql")) {
                 callCount++;
                 if (callCount === 1) {
-                    return Promise.resolve(jsonResponse({ data: { user: { contributionsCollection: {} } } }));
+                    return Promise.resolve(jsonResponse({ data: { user: { id: "MDQ6VXNlcjEyMzQ1", contributionsCollection: {} } } }));
                 }
                 if (callCount === 2) {
                     return Promise.resolve(jsonResponse({ data: { user: null } }));
@@ -117,7 +118,7 @@ describe("fetchYearInReviewData error paths", () => {
                 callCount++;
                 // Let statsPromise succeed so it doesn't cause unhandled rejection
                 if (callCount === 1) {
-                    return Promise.resolve(jsonResponse({ data: { user: { contributionsCollection: {} } } }));
+                    return Promise.resolve(jsonResponse({ data: { user: { id: "MDQ6VXNlcjEyMzQ1", contributionsCollection: {} } } }));
                 }
                 // Let reposResponse fail
                 if (callCount === 2) {
@@ -137,7 +138,7 @@ describe("fetchYearInReviewData error paths", () => {
             if (urlStr.includes("/graphql")) {
                 callCount++;
                 if (callCount === 1) {
-                    return Promise.resolve(jsonResponse({ data: { user: { contributionsCollection: {} } } }));
+                    return Promise.resolve(jsonResponse({ data: { user: { id: "MDQ6VXNlcjEyMzQ1", contributionsCollection: {} } } }));
                 }
                 if (callCount === 2) {
                     return Promise.resolve(jsonResponse(null, 500));
