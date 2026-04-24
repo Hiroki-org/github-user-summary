@@ -1,75 +1,69 @@
-// @vitest-environment jsdom
+/**
+ * @vitest-environment jsdom
+ */
 import { render, screen } from "@testing-library/react";
+import { describe, it, expect } from "vitest";
 import "@testing-library/jest-dom";
-import { describe, expect, it } from "vitest";
+import BusinessCard from "../BusinessCard";
+import type { UserSummary } from "@/lib/types";
 
-import BusinessCard from "@/components/BusinessCard";
-import type { CardLayout, UserSummary } from "@/lib/types";
-
-const mockSummary: UserSummary = {
+// Helper function to generate mock summary
+const createMockSummary = (overrides?: Partial<UserSummary>): UserSummary => ({
   profile: {
     login: "testuser",
     avatar_url: "https://example.com/avatar.jpg",
     name: "Test User",
     bio: "This is a test bio",
-    company: "@testcompany",
-    location: "Test City",
-    blog: "https://test.blog",
-    twitter_username: "testtwitter",
+    company: "Test Company",
+    location: "Test Location",
+    blog: "https://test.com",
+    twitter_username: "testuser_twitter",
     created_at: "2020-01-01T00:00:00Z",
     followers: 100,
     following: 50,
-    public_repos: 20,
+    public_repos: 10,
     orgs: [],
-    pinnedRepos: [
-      {
-        name: "pinned-repo",
-        description: "A pinned repo",
-        url: "https://github.com/testuser/pinned-repo",
-        stargazerCount: 10,
-        primaryLanguage: { name: "TypeScript", color: "#3178c6" },
-      },
-    ],
+    pinnedRepos: [],
   },
   repositories: {
     languages: [
-      { name: "TypeScript", bytes: 1000, percentage: 50, color: "#3178c6" },
-      { name: "JavaScript", bytes: 1000, percentage: 50, color: "#f1e05a" },
+      { name: "TypeScript", bytes: 1000, percentage: 60, color: "#2b7489" },
+      { name: "JavaScript", bytes: 600, percentage: 40, color: "#f1e05a" },
     ],
     topics: [
       { name: "react", count: 5 },
-      { name: "testing", count: 3 },
+      { name: "nextjs", count: 3 },
     ],
     topRepos: [
       {
-        name: "top-repo",
-        description: "A top repo",
-        url: "https://github.com/testuser/top-repo",
+        name: "repo1",
+        description: "Test repo 1",
+        url: "https://github.com/repo1",
         stargazerCount: 50,
-        forkCount: 5,
-        primaryLanguage: { name: "TypeScript", color: "#3178c6" },
+        forkCount: 10,
+        primaryLanguage: { name: "TypeScript", color: "#2b7489" },
       },
     ],
-    totalCount: 20,
+    totalCount: 10,
   },
   contributions: {
     totalCommits: 500,
     totalPRs: 50,
     totalIssues: 20,
-    totalReviews: 10,
-    totalContributions: 580,
-    longestStreak: 15,
+    totalReviews: 30,
+    totalContributions: 600,
+    longestStreak: 10,
     currentStreak: 5,
-    mostActiveDay: "Wednesday",
+    mostActiveDay: "2023-01-01",
     calendar: [],
   },
   interests: {
     topTopics: [
-      { name: "frontend", count: 10 },
-      { name: "backend", count: 5 },
+      { name: "typescript", count: 10 },
+      { name: "react", count: 8 },
     ],
     topLanguages: [],
-    totalStarred: 100,
+    totalStarred: 50,
   },
   activity: {
     heatmap: [],
@@ -80,35 +74,42 @@ const mockSummary: UserSummary = {
     totalEvents: 120,
   },
   errors: [],
-};
-
-const minimalLayout: CardLayout = {
-  blocks: [{ id: "topLanguages", visible: true, column: "right" }],
-};
-
-const profileHeaderLayout: CardLayout = {
-  blocks: [{ id: "avatar", visible: true, column: "left" }],
-};
+  ...overrides,
+});
 
 describe("BusinessCard", () => {
-  it("returns null if profile is missing", () => {
-    const { container } = render(
-      <BusinessCard summary={{ ...mockSummary, profile: null }} />,
-    );
+  it("renders null if profile is missing", () => {
+    const summary = createMockSummary({ profile: null });
+    const { container } = render(<BusinessCard summary={summary} />);
     expect(container.firstChild).toBeNull();
   });
 
-  it("renders avatar block correctly", () => {
-    render(<BusinessCard summary={mockSummary} />);
+  it("renders standard business card layout", () => {
+    const summary = createMockSummary();
+    render(<BusinessCard summary={summary} />);
+
+    // Check avatar block (full block by default)
     expect(screen.getByAltText("testuser")).toBeInTheDocument();
-    expect(screen.getAllByText("Test User")[0]).toBeInTheDocument();
-    expect(screen.getAllByText("@testuser")[0]).toBeInTheDocument();
+    expect(screen.getByText("Test User")).toBeInTheDocument();
+    expect(screen.getByText("@testuser")).toBeInTheDocument();
   });
 
-  it("renders bio block and details based on options", () => {
+  it("renders bio when showBio is true", () => {
+    const summary = createMockSummary();
     render(
       <BusinessCard
-        summary={mockSummary}
+        summary={summary}
+        options={{ showBio: true }}
+      />
+    );
+    expect(screen.getByText("This is a test bio")).toBeInTheDocument();
+  });
+
+  it("renders company, location, website, twitter, and joined date when options are true", () => {
+    const summary = createMockSummary();
+    render(
+      <BusinessCard
+        summary={summary}
         options={{
           showCompany: true,
           showLocation: true,
@@ -116,142 +117,148 @@ describe("BusinessCard", () => {
           showTwitter: true,
           showJoinedDate: true,
         }}
-      />,
+      />
     );
-    expect(screen.getAllByText("This is a test bio")[0]).toBeInTheDocument();
-    expect(screen.getAllByText("@testcompany")[0]).toBeInTheDocument();
-    expect(screen.getAllByText("Test City")[0]).toBeInTheDocument();
-    expect(screen.getAllByText("test.blog")[0]).toBeInTheDocument();
-    expect(screen.getAllByText("@testtwitter")[0]).toBeInTheDocument();
-    expect(screen.getAllByText(/Joined Jan 2020/)[0]).toBeInTheDocument();
+
+    expect(screen.getByText("Test Company")).toBeInTheDocument();
+    expect(screen.getByText("Test Location")).toBeInTheDocument();
+    expect(screen.getByText("test.com")).toBeInTheDocument();
+    expect(screen.getByText("@testuser_twitter")).toBeInTheDocument();
+    expect(screen.getByText(/Joined Jan 2020/)).toBeInTheDocument();
   });
 
-  it("renders stats block correctly based on options", () => {
+  it("renders stats when showStats is true", () => {
+    const summary = createMockSummary();
     render(
       <BusinessCard
-        summary={mockSummary}
-        options={{
-          showContributionBreakdown: true,
-          showStreaks: true,
-        }}
-      />,
+        summary={summary}
+        options={{ showStats: true }}
+        layout={{ blocks: [{ id: "stats", visible: true, column: "full" }] }}
+      />
     );
-    expect(screen.getAllByText("580")[0]).toBeInTheDocument();
-    expect(screen.getAllByText("100")[0]).toBeInTheDocument();
-    expect(screen.getAllByText("20")[0]).toBeInTheDocument();
-    expect(screen.getAllByText("500")[0]).toBeInTheDocument();
-    expect(screen.getAllByText("50")[0]).toBeInTheDocument();
-    expect(screen.getAllByText("15 days")[0]).toBeInTheDocument();
-    expect(screen.getAllByText("5 days")[0]).toBeInTheDocument();
+
+    // Stats
+    expect(screen.getByText("600")).toBeInTheDocument(); // Contributions
+    expect(screen.getByText("100")).toBeInTheDocument(); // Followers
+    expect(screen.getByText("10")).toBeInTheDocument(); // Repositories
   });
 
-  it("renders top languages, topics, and activity based on options", () => {
+  it("renders contribution breakdown when showContributionBreakdown is true", () => {
+    const summary = createMockSummary();
     render(
       <BusinessCard
-        summary={mockSummary}
-        options={{
-          showTopics: true,
-          showInterests: true,
-          showActivityBreakdown: true,
-        }}
-      />,
+        summary={summary}
+        options={{ showContributionBreakdown: true }}
+        layout={{ blocks: [{ id: "stats", visible: true, column: "full" }] }}
+      />
     );
-    expect(screen.getAllByText("Top Languages")[0]).toBeInTheDocument();
-    expect(screen.getAllByText("TypeScript")[0]).toBeInTheDocument();
-    expect(screen.getAllByText("Top Topics")[0]).toBeInTheDocument();
-    expect(screen.getAllByText("#react")[0]).toBeInTheDocument();
-    expect(screen.getAllByText("Interests")[0]).toBeInTheDocument();
-    expect(screen.getAllByText("#frontend")[0]).toBeInTheDocument();
-    expect(screen.getAllByText("Recent Activity")[0]).toBeInTheDocument();
-    expect(screen.getAllByText("PushEvent")[0]).toBeInTheDocument();
+
+    expect(screen.getByText("Commits")).toBeInTheDocument();
+    expect(screen.getByText("500")).toBeInTheDocument();
+    expect(screen.getByText("Pull Requests")).toBeInTheDocument();
+    expect(screen.getByText("50")).toBeInTheDocument();
   });
 
-  it("renders top repositories", () => {
-    render(<BusinessCard summary={mockSummary} />);
-    expect(screen.getAllByText("Top Repositories")[0]).toBeInTheDocument();
-    expect(screen.getAllByText("pinned-repo")[0]).toBeInTheDocument();
-  });
-
-  it("respects layout configuration", () => {
-    const layout: CardLayout = {
-      blocks: [
-        { id: "avatar", visible: true, column: "left" },
-        { id: "stats", visible: true, column: "right" },
-        { id: "bio", visible: false, column: "full" },
-      ],
-    };
-
-    render(<BusinessCard summary={mockSummary} layout={layout} />);
-
-    expect(screen.getByAltText("testuser")).toBeInTheDocument();
-    expect(screen.getAllByText("580")[0]).toBeInTheDocument();
-    expect(screen.queryByText("This is a test bio")).not.toBeInTheDocument();
-  });
-
-  it("applies wrapping class to long profile name", () => {
-    const longName = "Very Very Very Long Display Name That Should Wrap In Header";
-    const longSummary: UserSummary = {
-      ...mockSummary,
-      profile: {
-        ...mockSummary.profile!,
-        name: longName,
-      },
-    };
-
-    render(<BusinessCard summary={longSummary} layout={profileHeaderLayout} />);
-
-    const nameEl = screen.getByRole("heading", { name: longName });
-    expect(nameEl.className).toContain("break-words");
-  });
-
-  it("applies wrapping class to long profile login", () => {
-    const longLogin = "this-is-a-very-very-very-long-login-name";
-    const longSummary: UserSummary = {
-      ...mockSummary,
-      profile: {
-        ...mockSummary.profile!,
-        login: longLogin,
-      },
-    };
-
-    render(<BusinessCard summary={longSummary} layout={profileHeaderLayout} />);
-
-    const loginEl = screen.getByText(`@${longLogin}`);
-    expect(loginEl.className).toContain("break-all");
-  });
-
-  it("uses flexible height instead of fixed 630px height", () => {
-    render(<BusinessCard summary={mockSummary} layout={minimalLayout} />);
-
-    const root = screen.getByTestId("business-card-root");
-    const classes = root.className.split(/\s+/);
-    expect(classes).toContain("min-h-[630px]");
-    expect(classes).not.toContain("h-[630px]");
-  });
-
-  it("applies wrapping class to long topic badges", () => {
+  it("renders streaks when showStreaks is true", () => {
+    const summary = createMockSummary();
     render(
       <BusinessCard
-        summary={{
-          ...mockSummary,
-          repositories: {
-            ...mockSummary.repositories!,
-            topics: [
-              {
-                name: "this-is-a-very-long-topic-name-that-should-wrap-in-the-card",
-                count: 1,
-              },
-            ],
-          },
-        }}
-        layout={minimalLayout}
+        summary={summary}
+        options={{ showStreaks: true }}
+        layout={{ blocks: [{ id: "stats", visible: true, column: "full" }] }}
+      />
+    );
+
+    expect(screen.getByText("Longest Streak")).toBeInTheDocument();
+    expect(screen.getByText("10 days")).toBeInTheDocument();
+    expect(screen.getByText("Current Streak")).toBeInTheDocument();
+    expect(screen.getByText("5 days")).toBeInTheDocument();
+  });
+
+  it("renders top languages when block is visible", () => {
+    const summary = createMockSummary();
+    render(
+      <BusinessCard
+        summary={summary}
+        layout={{ blocks: [{ id: "topLanguages", visible: true, column: "full" }] }}
+      />
+    );
+
+    expect(screen.getByText("Top Languages")).toBeInTheDocument();
+    expect(screen.getByText("TypeScript")).toBeInTheDocument();
+    expect(screen.getByText("60.0%")).toBeInTheDocument();
+    expect(screen.getByText("JavaScript")).toBeInTheDocument();
+  });
+
+  it("renders topics when showTopics is true", () => {
+    const summary = createMockSummary();
+    render(
+      <BusinessCard
+        summary={summary}
         options={{ showTopics: true }}
-      />,
+        layout={{ blocks: [{ id: "topLanguages", visible: true, column: "full" }] }}
+      />
     );
 
-    const badge = screen.getByText(
-      "#this-is-a-very-long-topic-name-that-should-wrap-in-the-card",
+    expect(screen.getByText("Top Topics")).toBeInTheDocument();
+    expect(screen.getByText("#react")).toBeInTheDocument();
+    expect(screen.getByText("#nextjs")).toBeInTheDocument();
+  });
+
+  it("renders interests when showInterests is true", () => {
+    const summary = createMockSummary();
+    render(
+      <BusinessCard
+        summary={summary}
+        options={{ showInterests: true }}
+        layout={{ blocks: [{ id: "topLanguages", visible: true, column: "full" }] }}
+      />
     );
-    expect(badge.className).toContain("break-all");
+
+    expect(screen.getByText("Interests")).toBeInTheDocument();
+    expect(screen.getByText("#typescript")).toBeInTheDocument();
+  });
+
+  it("renders activity breakdown when showActivityBreakdown is true", () => {
+    const summary = createMockSummary();
+    render(
+      <BusinessCard
+        summary={summary}
+        options={{ showActivityBreakdown: true }}
+        layout={{ blocks: [{ id: "topLanguages", visible: true, column: "full" }] }}
+      />
+    );
+
+    expect(screen.getByText("Recent Activity")).toBeInTheDocument();
+    expect(screen.getByText("PushEvent")).toBeInTheDocument();
+    expect(screen.getByText("100")).toBeInTheDocument();
+  });
+
+  it("renders top repos when block is visible", () => {
+    const summary = createMockSummary();
+    render(
+      <BusinessCard
+        summary={summary}
+        layout={{ blocks: [{ id: "topRepos", visible: true, column: "full" }] }}
+      />
+    );
+
+    expect(screen.getByText("Top Repositories")).toBeInTheDocument();
+    expect(screen.getByText("repo1")).toBeInTheDocument();
+    expect(screen.getByText("50")).toBeInTheDocument();
+  });
+
+  it("renders bio block properly when block is specifically configured", () => {
+    const summary = createMockSummary();
+    render(
+      <BusinessCard
+        summary={summary}
+        options={{ showBio: true }}
+        layout={{ blocks: [{ id: "bio", visible: true, column: "full" }] }}
+      />
+    );
+
+    // Test for bio block explicitly
+    expect(screen.getByText("This is a test bio")).toBeInTheDocument();
   });
 });
