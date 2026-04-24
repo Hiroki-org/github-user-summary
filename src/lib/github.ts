@@ -135,6 +135,44 @@ type PinnedItemsResponse = {
   } | null;
 };
 
+const PINNED_REPOS_QUERY = `query($login: String!) {
+  user(login: $login) {
+    pinnedItems(first: 6, types: REPOSITORY) {
+      nodes {
+        ... on Repository {
+          name
+          description
+          url
+          stargazerCount
+          primaryLanguage { name color }
+        }
+      }
+    }
+  }
+}`;
+
+async function fetchBasicProfile(username: string, token?: string): Promise<GitHubUser> {
+  return restGet<GitHubUser>(`/users/${encodeURIComponent(username)}`, token);
+}
+
+async function fetchOrganizations(username: string, token?: string): Promise<GitHubOrg[]> {
+  return restGet<GitHubOrg[]>(`/users/${encodeURIComponent(username)}/orgs`, token);
+}
+
+async function fetchPinnedRepos(username: string, token?: string): Promise<PinnedRepo[]> {
+  if (!token) return [];
+
+  const pinned = await graphql<PinnedItemsResponse>(PINNED_REPOS_QUERY, token, { login: username }).catch(() => null);
+
+  return pinned?.user?.pinnedItems?.nodes?.map((n) => ({
+    name: n.name,
+    description: n.description,
+    url: n.url,
+    stargazerCount: n.stargazerCount,
+    primaryLanguage: n.primaryLanguage,
+  })) ?? [];
+}
+
 /**
  * Task④: ユーザープロフィール・組織・ピン留めリポジトリを取得
  * REST /users/:username + /users/:username/orgs + GraphQL pinnedItems
@@ -145,42 +183,11 @@ export async function fetchUserProfile(
   username: string,
   token?: string
 ): Promise<UserProfile> {
-  const pinnedQuery = `query($login: String!) {
-    user(login: $login) {
-      pinnedItems(first: 6, types: REPOSITORY) {
-        nodes {
-          ... on Repository {
-            name
-            description
-            url
-            stargazerCount
-            primaryLanguage { name color }
-          }
-        }
-      }
-    }
-  }`;
-
-  // REST は認証なしでも可，GraphQL は token 必須
-  const profilePromise = restGet<GitHubUser>(`/users/${encodeURIComponent(username)}`, token);
-  const orgsPromise = restGet<GitHubOrg[]>(`/users/${encodeURIComponent(username)}/orgs`, token);
-  const pinnedPromise = token
-    ? graphql<PinnedItemsResponse>(pinnedQuery, token, { login: username }).catch(() => null)
-    : Promise.resolve(null);
-
-  const [profile, orgs, pinned] = await Promise.all([
-    profilePromise,
-    orgsPromise,
-    pinnedPromise,
+  const [profile, orgs, pinnedRepos] = await Promise.all([
+    fetchBasicProfile(username, token),
+    fetchOrganizations(username, token),
+    fetchPinnedRepos(username, token),
   ]);
-
-  const pinnedRepos: PinnedRepo[] = pinned?.user?.pinnedItems?.nodes?.map((n) => ({
-    name: n.name,
-    description: n.description,
-    url: n.url,
-    stargazerCount: n.stargazerCount,
-    primaryLanguage: n.primaryLanguage,
-  })) ?? [];
 
   return {
     login: profile.login,
