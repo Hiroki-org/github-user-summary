@@ -57,6 +57,54 @@ async function handleResponse<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+
+function calculateStreaks(calendar: { count: number }[]): { longestStreak: number; currentStreak: number } {
+  let longestStreak = 0;
+  let currentStreak = 0;
+  let streak = 0;
+
+  for (const day of calendar) {
+    if (day.count > 0) {
+      streak += 1;
+      longestStreak = Math.max(longestStreak, streak);
+    } else {
+      streak = 0;
+    }
+  }
+
+  let startIdx = calendar.length - 1;
+  if (startIdx >= 0 && calendar[startIdx].count === 0) {
+    startIdx -= 1;
+  }
+  for (let i = startIdx; i >= 0; i -= 1) {
+    if (calendar[i].count > 0) {
+      currentStreak += 1;
+    } else {
+      break;
+    }
+  }
+
+  return { longestStreak, currentStreak };
+}
+
+function calculateMostActiveDay(calendar: { date: string; count: number }[]): string {
+  const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const weekdayTotals = Array.from({ length: 7 }, () => 0);
+
+  for (const day of calendar) {
+    if (day.count === 0) {
+      continue;
+    }
+    const weekday = new Date(`${day.date}T00:00:00Z`).getUTCDay();
+    weekdayTotals[weekday] += day.count;
+  }
+
+  const maxWeekdayTotal = Math.max(...weekdayTotals);
+  return maxWeekdayTotal > 0
+    ? weekdayNames[weekdayTotals.findIndex((count) => count === maxWeekdayTotal)]
+    : "";
+}
+
 async function graphql<T>(query: string, token?: string, variables?: Record<string, unknown>): Promise<T> {
   if (!token) {
     throw new GitHubApiError("GraphQL API requires authentication token", 401);
@@ -489,46 +537,8 @@ export async function fetchContributions(
 
   calendar.sort((a, b) => a.date.localeCompare(b.date));
 
-  let longestStreak = 0;
-  let currentStreak = 0;
-  let streak = 0;
-
-  for (const day of calendar) {
-    if (day.count > 0) {
-      streak += 1;
-      longestStreak = Math.max(longestStreak, streak);
-    } else {
-      streak = 0;
-    }
-  }
-
-  let startIdx = calendar.length - 1;
-  if (startIdx >= 0 && calendar[startIdx].count === 0) {
-    startIdx -= 1;
-  }
-  for (let i = startIdx; i >= 0; i -= 1) {
-    if (calendar[i].count > 0) {
-      currentStreak += 1;
-    } else {
-      break;
-    }
-  }
-
-  const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const weekdayTotals = Array.from({ length: 7 }, () => 0);
-
-  for (const day of calendar) {
-    if (day.count === 0) {
-      continue;
-    }
-    const weekday = new Date(`${day.date}T00:00:00Z`).getUTCDay();
-    weekdayTotals[weekday] += day.count;
-  }
-
-  const maxWeekdayTotal = Math.max(...weekdayTotals);
-  const mostActiveDay = maxWeekdayTotal > 0
-    ? weekdayNames[weekdayTotals.findIndex((count) => count === maxWeekdayTotal)]
-    : "";
+  const { longestStreak, currentStreak } = calculateStreaks(calendar);
+  const mostActiveDay = calculateMostActiveDay(calendar);
 
   return {
     totalCommits: cc.totalCommitContributions,
