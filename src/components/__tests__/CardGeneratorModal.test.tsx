@@ -325,11 +325,11 @@ describe("CardGeneratorModal", () => {
     const { toPng } = await import("html-to-image");
 
     // Create a slow promise that allows the component to unmount before it resolves
-    let resolveImage: (value: unknown) => void;
-    const slowPromise = new Promise((resolve) => {
+    let resolveImage: (value: string) => void;
+    const slowPromise = new Promise<string>((resolve) => {
       resolveImage = resolve;
     });
-    vi.mocked(toPng).mockReturnValue(slowPromise as unknown as string);
+    vi.mocked(toPng).mockReturnValue(slowPromise as unknown as Promise<string>);
 
     Object.defineProperty(document, 'fonts', {
       value: { ready: Promise.resolve() },
