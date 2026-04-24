@@ -7,8 +7,6 @@ import CardGeneratorModal from "../CardGeneratorModal";
 import type { UserSummary } from "@/lib/types";
 import { logger } from "@/lib/logger";
 
-
-
 vi.mock("@/lib/logger", () => ({
   logger: {
     error: vi.fn(),
@@ -245,5 +243,146 @@ describe("CardGeneratorModal", () => {
     });
 
     vi.unstubAllGlobals();
+  });
+
+  it("handles localStorage.getItem error safely", async () => {
+    const getItemSpy = vi.spyOn(Storage.prototype, "getItem").mockImplementationOnce(() => {
+      throw new Error("localStorage error");
+    });
+
+    render(
+      <CardGeneratorModal
+        isOpen={true}
+        onClose={vi.fn()}
+        summary={mockSummary}
+      />
+    );
+
+    expect(await screen.findByText("Profile Card")).toBeInTheDocument();
+    getItemSpy.mockRestore();
+  });
+
+  it("handles localStorage.setItem error safely", async () => {
+    const setItemSpy = vi.spyOn(Storage.prototype, "setItem").mockImplementationOnce(() => {
+      throw new Error("localStorage error");
+    });
+    const user = userEvent.setup();
+
+    render(
+      <CardGeneratorModal
+        isOpen={true}
+        onClose={vi.fn()}
+        summary={mockSummary}
+      />
+    );
+
+    // Toggle a setting to trigger layout update and localStorage.setItem
+    const avatarCheckbox = await screen.findByLabelText("Avatar");
+    await user.click(avatarCheckbox);
+
+    expect(setItemSpy).toHaveBeenCalled();
+    setItemSpy.mockRestore();
+  });
+
+  it("calls handleClose when Enter or Space is pressed on backdrop", async () => {
+    const user = userEvent.setup();
+    const handleClose = vi.fn();
+    render(
+      <CardGeneratorModal
+        isOpen={true}
+        onClose={handleClose}
+        summary={mockSummary}
+      />
+    );
+
+    // Get the backdrop which has role="button"
+    const backdrop = (await screen.findByRole("dialog")).parentElement!;
+
+    backdrop.focus();
+    await user.keyboard("{Enter}");
+    expect(handleClose).toHaveBeenCalledTimes(1);
+
+    await user.keyboard(" ");
+    expect(handleClose).toHaveBeenCalledTimes(2);
+  });
+
+  it("calls handleClose when Close button is clicked", async () => {
+    const user = userEvent.setup();
+    const handleClose = vi.fn();
+    render(
+      <CardGeneratorModal
+        isOpen={true}
+        onClose={handleClose}
+        summary={mockSummary}
+      />
+    );
+
+    const closeButton = await screen.findByRole("button", { name: "Close" });
+    await user.click(closeButton);
+    expect(handleClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("handles unmount correctly while generating image", async () => {
+    const { toPng } = await import("html-to-image");
+
+    // Create a slow promise that allows the component to unmount before it resolves
+    let resolveImage: (value: any) => void;
+    const slowPromise = new Promise((resolve) => {
+      resolveImage = resolve;
+    });
+    vi.mocked(toPng).mockReturnValue(slowPromise as any);
+
+    Object.defineProperty(document, 'fonts', {
+      value: { ready: Promise.resolve() },
+      configurable: true
+    });
+
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+        cb(0);
+        return 1;
+    });
+
+    const { unmount } = render(
+      <CardGeneratorModal
+        isOpen={true}
+        onClose={vi.fn()}
+        summary={mockSummary}
+      />
+    );
+
+    // Ensure it started generating
+    expect(await screen.findByText("Generating preview...")).toBeInTheDocument();
+
+    // Unmount before image generation completes
+    unmount();
+
+    // Now resolve image to trigger the `if (!isCancelled)` branches
+    resolveImage!("data:image/png;base64,slow-preview-url");
+
+    vi.unstubAllGlobals();
+  });
+
+  it("handles unmount cleanup and focus restoration", async () => {
+    const user = userEvent.setup();
+    const handleClose = vi.fn();
+
+    // Create a dummy element to steal focus
+    const dummyInput = document.createElement('input');
+    document.body.appendChild(dummyInput);
+    dummyInput.focus();
+
+    const { unmount } = render(
+      <CardGeneratorModal
+        isOpen={true}
+        onClose={handleClose}
+        summary={mockSummary}
+      />
+    );
+
+    // Modal should have grabbed focus. Now unmount to restore focus
+    unmount();
+
+    expect(document.activeElement).toBe(dummyInput);
+    document.body.removeChild(dummyInput);
   });
 });
