@@ -191,7 +191,6 @@ describe("CardGeneratorModal", () => {
   });
 
   it("handles image copy failure correctly", async () => {
-    const user = userEvent.setup();
     const { toBlob, toPng } = await import("html-to-image");
 
     // Ensure image generation succeeds so we get an enabled copy button
@@ -326,11 +325,11 @@ describe("CardGeneratorModal", () => {
     const { toPng } = await import("html-to-image");
 
     // Create a slow promise that allows the component to unmount before it resolves
-    let resolveImage: (value: any) => void;
+    let resolveImage: (value: unknown) => void;
     const slowPromise = new Promise((resolve) => {
       resolveImage = resolve;
     });
-    vi.mocked(toPng).mockReturnValue(slowPromise as any);
+    vi.mocked(toPng).mockReturnValue(slowPromise as unknown as string);
 
     Object.defineProperty(document, 'fonts', {
       value: { ready: Promise.resolve() },
@@ -363,7 +362,6 @@ describe("CardGeneratorModal", () => {
   });
 
   it("handles unmount cleanup and focus restoration", async () => {
-    const user = userEvent.setup();
     const handleClose = vi.fn();
 
     // Create a dummy element to steal focus
