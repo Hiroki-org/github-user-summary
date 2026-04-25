@@ -193,7 +193,6 @@ describe("CardGeneratorModal", () => {
   });
 
   it("handles image copy failure correctly", async () => {
-    const user = userEvent.setup();
     const { toBlob, toPng } = await import("html-to-image");
 
     // Ensure image generation succeeds so we get an enabled copy button
