@@ -17,15 +17,11 @@ describe("fetchUserSummary", () => {
    * fetch の呼び出し順は非決定的。URL ベースでモックを返す。
    */
   function setupUrlBasedMock() {
-    // GraphQL 呼び出しカウンター (pinned → repos → contributions の順で異なるデータを返す)
-    // let graphqlCallCount = 0;
-
     mockFetch.mockImplementation((url: string | URL | Request, options?: RequestInit) => {
       const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
 
       // GraphQL エンドポイント
       if (urlStr.includes("/graphql")) {
-        // graphqlCallCount++;
         const body = options?.body ? JSON.parse(options.body as string) : {};
         const query = body.query || "";
 
