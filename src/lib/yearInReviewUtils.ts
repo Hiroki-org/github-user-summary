@@ -1,3 +1,9 @@
+/**
+ * Builds a 7x24 hourly heatmap (7 days x 24 hours) from an array of commit date strings.
+ *
+ * @param commitDates Array of ISO 8601 date strings.
+ * @returns A 2D array representing the heatmap [day][hour].
+ */
 export function buildHourlyHeatmapFromCommitDates(commitDates: string[]): number[][] {
     const heatmap = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
 
@@ -5,8 +11,7 @@ export function buildHourlyHeatmapFromCommitDates(commitDates: string[]): number
     const dayCache = new Map<string, number>();
 
     for (const dateString of commitDates) {
-        // Fast path for standard ISO 8601 strings ending in Z or with timezone offset
-        // Matches typical format like "2023-01-01T10:00:00Z"
+        // Fast path for standard ISO 8601 strings (e.g., "2023-01-01T10:00:00Z")
         if (dateString.length >= 19 && dateString[10] === 'T') {
             const datePart = dateString.slice(0, 10);
 
@@ -17,7 +22,7 @@ export function buildHourlyHeatmapFromCommitDates(commitDates: string[]): number
             if (day === undefined) {
                 const date = new Date(datePart + "T00:00:00Z");
                 if (Number.isNaN(date.getTime())) {
-                    // Fall back to original method if something goes wrong with parsing this substring
+                    // Fall back to full date parsing if something goes wrong with parsing this substring
                     const fullDate = new Date(dateString);
                     if (!Number.isNaN(fullDate.getTime())) {
                         heatmap[fullDate.getUTCDay()][fullDate.getUTCHours()] += 1;
@@ -35,8 +40,8 @@ export function buildHourlyHeatmapFromCommitDates(commitDates: string[]): number
             if (h1 >= 0 && h1 <= 9 && h2 >= 0 && h2 <= 9) {
                 const hour = h1 * 10 + h2;
 
-                // if there is a timezone offset (+09:00 or -05:00) we can't just use the cached day and raw hour
-                // we have to adjust for it, which means we might as well use standard date parsing
+                // If there is a timezone offset (e.g., +09:00 or -05:00), we cannot simply use the cached day and raw hour.
+                // We must adjust for the offset to get the correct UTC time, so we fall back to standard date parsing.
                 if (dateString.endsWith('Z') || dateString.length === 20 || (dateString.length === 24 && dateString.endsWith('.000Z'))) {
                     heatmap[day][hour] += 1;
                     continue;
@@ -54,6 +59,12 @@ export function buildHourlyHeatmapFromCommitDates(commitDates: string[]): number
     return heatmap;
 }
 
+/**
+ * Returns the most active hour from the heatmap (the hour with the highest total commits across all days).
+ *
+ * @param heatmap The 7x24 heatmap array.
+ * @returns The hour (0-23).
+ */
 export function getMostActiveHour(heatmap: number[][]): number {
     const isValidHeatmap =
         Array.isArray(heatmap) &&
@@ -78,6 +89,12 @@ export function getMostActiveHour(heatmap: number[][]): number {
     return mostActiveHour;
 }
 
+/**
+ * Returns the most active day of the week from the contribution calendar data.
+ *
+ * @param calendar Array of objects containing date and contribution count.
+ * @returns The name of the most active day (e.g., "Monday").
+ */
 export function getMostActiveDayFromCalendar(calendar: { date: string; count: number }[]): string {
     const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     const totals = Array.from({ length: 7 }, () => 0);
