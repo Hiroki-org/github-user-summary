@@ -2,7 +2,7 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
-import ContributionGraph from "../ContributionGraph";
+import ContributionGraph from "@/components/ContributionGraph";
 
 describe("ContributionGraph", () => {
   it("returns null when calendar is empty", () => {
