@@ -275,7 +275,7 @@ describe("CardGeneratorModal", () => {
       />
     );
 
-    // Toggle a setting to trigger layout update and localStorage.setItem
+    // Toggle a display setting to trigger localStorage.setItem
     const avatarCheckbox = await screen.findByLabelText("Avatar");
     await user.click(avatarCheckbox);
 
@@ -294,10 +294,12 @@ describe("CardGeneratorModal", () => {
       />
     );
 
-    // Get the backdrop which has role="button"
-    const backdrop = (await screen.findByRole("dialog")).parentElement!;
+    const backdrop = (await screen.findAllByRole("button")).find(
+      (element) => element.getAttribute("tabindex") === "0",
+    );
+    expect(backdrop).toBeTruthy();
 
-    backdrop.focus();
+    backdrop!.focus();
     await user.keyboard("{Enter}");
     expect(handleClose).toHaveBeenCalledTimes(1);
 
@@ -357,6 +359,7 @@ describe("CardGeneratorModal", () => {
 
     // Now resolve image to trigger the `if (!isCancelled)` branches
     resolveImage!("data:image/png;base64,slow-preview-url");
+    await Promise.resolve();
 
     vi.unstubAllGlobals();
   });
