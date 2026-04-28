@@ -11,7 +11,13 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "lcov"],
-      include: ["src/lib/**/*.ts", "src/hooks/**/*.ts", "src/components/ReadmeCardUrlSection.tsx", "src/components/LanguageChart.tsx"],
+      include: [
+        "src/lib/**/*.ts",
+        "src/hooks/**/*.ts",
+        "src/components/ReadmeCardUrlSection.tsx",
+        "src/components/BusinessCard.tsx",
+        "src/components/LanguageChart.tsx",
+      ],
       thresholds: {
         lines: 80,
         functions: 80,

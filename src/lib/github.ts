@@ -57,6 +57,54 @@ async function handleResponse<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+
+function calculateStreaks(calendar: { count: number }[]): { longestStreak: number; currentStreak: number } {
+  let longestStreak = 0;
+  let currentStreak = 0;
+  let streak = 0;
+
+  for (const day of calendar) {
+    if (day.count > 0) {
+      streak += 1;
+      longestStreak = Math.max(longestStreak, streak);
+    } else {
+      streak = 0;
+    }
+  }
+
+  let startIdx = calendar.length - 1;
+  if (startIdx >= 0 && calendar[startIdx].count === 0) {
+    startIdx -= 1;
+  }
+  for (let i = startIdx; i >= 0; i -= 1) {
+    if (calendar[i].count > 0) {
+      currentStreak += 1;
+    } else {
+      break;
+    }
+  }
+
+  return { longestStreak, currentStreak };
+}
+
+function calculateMostActiveDay(calendar: { date: string; count: number }[]): string {
+  const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const weekdayTotals = Array.from({ length: 7 }, () => 0);
+
+  for (const day of calendar) {
+    if (day.count === 0) {
+      continue;
+    }
+    const weekday = new Date(`${day.date}T00:00:00Z`).getUTCDay();
+    weekdayTotals[weekday] += day.count;
+  }
+
+  const maxWeekdayTotal = Math.max(...weekdayTotals);
+  return maxWeekdayTotal > 0
+    ? weekdayNames[weekdayTotals.findIndex((count) => count === maxWeekdayTotal)]
+    : "";
+}
+
 async function graphql<T>(query: string, token?: string, variables?: Record<string, unknown>): Promise<T> {
   if (!token) {
     throw new GitHubApiError("GraphQL API requires authentication token", 401);
@@ -135,6 +183,44 @@ type PinnedItemsResponse = {
   } | null;
 };
 
+const PINNED_REPOS_QUERY = `query($login: String!) {
+  user(login: $login) {
+    pinnedItems(first: 6, types: REPOSITORY) {
+      nodes {
+        ... on Repository {
+          name
+          description
+          url
+          stargazerCount
+          primaryLanguage { name color }
+        }
+      }
+    }
+  }
+}`;
+
+async function fetchBasicProfile(username: string, token?: string): Promise<GitHubUser> {
+  return restGet<GitHubUser>(`/users/${encodeURIComponent(username)}`, token);
+}
+
+async function fetchOrganizations(username: string, token?: string): Promise<GitHubOrg[]> {
+  return restGet<GitHubOrg[]>(`/users/${encodeURIComponent(username)}/orgs`, token);
+}
+
+async function fetchPinnedRepos(username: string, token?: string): Promise<PinnedRepo[]> {
+  if (!token) return [];
+
+  const pinned = await graphql<PinnedItemsResponse>(PINNED_REPOS_QUERY, token, { login: username }).catch(() => null);
+
+  return pinned?.user?.pinnedItems?.nodes?.map((n) => ({
+    name: n.name,
+    description: n.description,
+    url: n.url,
+    stargazerCount: n.stargazerCount,
+    primaryLanguage: n.primaryLanguage,
+  })) ?? [];
+}
+
 /**
  * Task④: ユーザープロフィール・組織・ピン留めリポジトリを取得
  * REST /users/:username + /users/:username/orgs + GraphQL pinnedItems
@@ -145,42 +231,11 @@ export async function fetchUserProfile(
   username: string,
   token?: string
 ): Promise<UserProfile> {
-  const pinnedQuery = `query($login: String!) {
-    user(login: $login) {
-      pinnedItems(first: 6, types: REPOSITORY) {
-        nodes {
-          ... on Repository {
-            name
-            description
-            url
-            stargazerCount
-            primaryLanguage { name color }
-          }
-        }
-      }
-    }
-  }`;
-
-  // REST は認証なしでも可，GraphQL は token 必須
-  const profilePromise = restGet<GitHubUser>(`/users/${encodeURIComponent(username)}`, token);
-  const orgsPromise = restGet<GitHubOrg[]>(`/users/${encodeURIComponent(username)}/orgs`, token);
-  const pinnedPromise = token
-    ? graphql<PinnedItemsResponse>(pinnedQuery, token, { login: username }).catch(() => null)
-    : Promise.resolve(null);
-
-  const [profile, orgs, pinned] = await Promise.all([
-    profilePromise,
-    orgsPromise,
-    pinnedPromise,
+  const [profile, orgs, pinnedRepos] = await Promise.all([
+    fetchBasicProfile(username, token),
+    fetchOrganizations(username, token),
+    fetchPinnedRepos(username, token),
   ]);
-
-  const pinnedRepos: PinnedRepo[] = pinned?.user?.pinnedItems?.nodes?.map((n) => ({
-    name: n.name,
-    description: n.description,
-    url: n.url,
-    stargazerCount: n.stargazerCount,
-    primaryLanguage: n.primaryLanguage,
-  })) ?? [];
 
   return {
     login: profile.login,
@@ -489,46 +544,8 @@ export async function fetchContributions(
 
   calendar.sort((a, b) => a.date.localeCompare(b.date));
 
-  let longestStreak = 0;
-  let currentStreak = 0;
-  let streak = 0;
-
-  for (const day of calendar) {
-    if (day.count > 0) {
-      streak += 1;
-      longestStreak = Math.max(longestStreak, streak);
-    } else {
-      streak = 0;
-    }
-  }
-
-  let startIdx = calendar.length - 1;
-  if (startIdx >= 0 && calendar[startIdx].count === 0) {
-    startIdx -= 1;
-  }
-  for (let i = startIdx; i >= 0; i -= 1) {
-    if (calendar[i].count > 0) {
-      currentStreak += 1;
-    } else {
-      break;
-    }
-  }
-
-  const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const weekdayTotals = Array.from({ length: 7 }, () => 0);
-
-  for (const day of calendar) {
-    if (day.count === 0) {
-      continue;
-    }
-    const weekday = new Date(`${day.date}T00:00:00Z`).getUTCDay();
-    weekdayTotals[weekday] += day.count;
-  }
-
-  const maxWeekdayTotal = Math.max(...weekdayTotals);
-  const mostActiveDay = maxWeekdayTotal > 0
-    ? weekdayNames[weekdayTotals.findIndex((count) => count === maxWeekdayTotal)]
-    : "";
+  const { longestStreak, currentStreak } = calculateStreaks(calendar);
+  const mostActiveDay = calculateMostActiveDay(calendar);
 
   return {
     totalCommits: cc.totalCommitContributions,

@@ -157,10 +157,7 @@ export default function ContributionGraph({ contributions }: Props) {
               className="transition-all duration-200 hover:opacity-70 hover:stroke-foreground/20"
               style={{ strokeWidth: 1 }}
             >
-              <title>
-                {entry.date}: {entry.count} contribution
-                {entry.count !== 1 ? "s" : ""}
-              </title>
+              <title>{`${entry.date}: ${entry.count} contribution${entry.count !== 1 ? "s" : ""}`}</title>
             </rect>
           )),
         )}
