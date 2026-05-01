@@ -5,7 +5,7 @@ import { NextRequest } from "next/server";
 vi.mock("next/og", () => {
   return {
     ImageResponse: class {
-      constructor(element: any, options: any) {
+      constructor() {
         return new Response("Mock ImageResponse");
       }
     }
