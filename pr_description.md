@@ -1,9 +1,5 @@
-🎯 **What:**
-Added unit tests for the `generateReadmeUrl` function in `src/components/ReadmeCardUrlSection.tsx`, which was completely untested. This is a pure function that generates README URL strings based on inputs like username, themes, layouts, and display options. Also included UI tests for the `ReadmeCardUrlSection` component.
+🔒 APIカードエンドポイントのレート制限実装
 
-📊 **Coverage:**
-* `generateReadmeUrl`: Tested base cases, edge cases (like `username = undefined`), proper serialization of the `hide` parameter (`stars`, `forks`, or both), dynamic inclusions (`streak`, `heatmap`), and custom layout processing.
-* `ReadmeCardUrlSection`: Covered UI interactions including state updates (changing checkboxes/selects and ensuring URL updates correctly), clipboard interactions (`navigator.clipboard.writeText`) handling both success and failure cases, and fallback rendering behavior.
-
-✨ **Result:**
-100% statement, branch, function, and line coverage achieved for `src/components/ReadmeCardUrlSection.tsx`. Improved confidence in formatting rules when refactoring layout and display options logic.
+🎯 **What:** パブリックエンドポイントである `GET /api/card/[username]` において、リクエスト数の制限（レート制限）が実装されていなかった脆弱性を修正しました。
+⚠️ **Risk:** レート制限がない場合、悪意のあるユーザーやボットによる大量のリクエスト（DoS攻撃）が発生し、外部API（GitHub API）へのリクエスト上限超過や、サーバーリソースの枯渇を引き起こすリスクがありました。
+🛡️ **Solution:** `src/lib/rateLimit.ts` にメモリベースの簡易な `RateLimiter` クラスを実装し、エンドポイントに統合しました。`x-forwarded-for` ヘッダーを用いてIPアドレスごとにリクエストを追跡し、1分間に50回の上限を超えるリクエストに対しては `429 Too Many Requests` エラーを返すようにしています。エッジランタイムでのクラッシュを防ぐため、遅延評価（Lazy cleanup）によるキャッシュクリーンアップを採用しています。
