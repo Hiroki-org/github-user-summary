@@ -289,6 +289,10 @@ describe("ReadmeCardUrlSection", () => {
   it("handles undefined window during SSR", () => {
     const url = generateReadmeUrl({
       ...defaultProps,
+      readmeTheme: "github-dark",
+      readmeCols: 1,
+      includeStreak: false,
+      includeHeatmap: false,
       origin: "",
     });
     const parsedUrl = new URL(url, "http://localhost");
