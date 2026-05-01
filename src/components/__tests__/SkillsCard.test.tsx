@@ -1,10 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
-import SkillsCard from "../SkillsCard";
+import "@testing-library/jest-dom";
+import SkillsCard from "@/components/SkillsCard";
 import type { RepositoryData, LanguageStats } from "@/lib/types";
 
 // Mock the child component to simplify testing
-vi.mock("../LanguageChart", () => ({
+vi.mock("@/components/LanguageChart", () => ({
   default: () => <div data-testid="mock-language-chart">Mocked Language Chart</div>,
 }));
 
@@ -42,12 +43,12 @@ describe("SkillsCard", () => {
     render(<SkillsCard repositories={repositories} />);
 
     // Header should be present
-    expect(screen.getByText("Skills & Languages")).toBeDefined();
+    expect(screen.getByText("Skills & Languages")).toBeInTheDocument();
 
     // Language should be displayed
-    expect(screen.getByText("TypeScript")).toBeDefined();
-    expect(screen.getByText("100.0%")).toBeDefined();
-    expect(screen.getByTestId("mock-language-chart")).toBeDefined();
+    expect(screen.getByText("TypeScript")).toBeInTheDocument();
+    expect(screen.getByText("100.0%")).toBeInTheDocument();
+    expect(screen.getByTestId("mock-language-chart")).toBeInTheDocument();
 
     // Topics should not be displayed
     expect(screen.queryByText("Repository Topics")).toBeNull();
@@ -62,12 +63,12 @@ describe("SkillsCard", () => {
     render(<SkillsCard repositories={repositories} />);
 
     // Header should be present
-    expect(screen.getByText("Skills & Languages")).toBeDefined();
+    expect(screen.getByText("Skills & Languages")).toBeInTheDocument();
 
     // Topics should be displayed
-    expect(screen.getByText("Repository Topics")).toBeDefined();
-    expect(screen.getByText("react")).toBeDefined();
-    expect(screen.getByText("5")).toBeDefined(); // The count span
+    expect(screen.getByText("Repository Topics")).toBeInTheDocument();
+    expect(screen.getByText("react")).toBeInTheDocument();
+    expect(screen.getByText("5")).toBeInTheDocument(); // The count span
 
     // Languages should not be displayed
     expect(screen.queryByTestId("mock-language-chart")).toBeNull();
@@ -82,11 +83,11 @@ describe("SkillsCard", () => {
 
     render(<SkillsCard repositories={repositories} />);
 
-    expect(screen.getByText("Skills & Languages")).toBeDefined();
-    expect(screen.getByText("TypeScript")).toBeDefined();
-    expect(screen.getByTestId("mock-language-chart")).toBeDefined();
-    expect(screen.getByText("Repository Topics")).toBeDefined();
-    expect(screen.getByText("react")).toBeDefined();
+    expect(screen.getByText("Skills & Languages")).toBeInTheDocument();
+    expect(screen.getByText("TypeScript")).toBeInTheDocument();
+    expect(screen.getByTestId("mock-language-chart")).toBeInTheDocument();
+    expect(screen.getByText("Repository Topics")).toBeInTheDocument();
+    expect(screen.getByText("react")).toBeInTheDocument();
   });
 
   it("truncates languages to the top 10", () => {
@@ -103,15 +104,16 @@ describe("SkillsCard", () => {
       languages: manyLanguages,
     };
 
-    const { container } = render(<SkillsCard repositories={repositories} />);
+    render(<SkillsCard repositories={repositories} />);
 
-    // The language bars at the top (topLanguages.map)
-    const languageBars = container.querySelectorAll('.bg-card-bg\\/50.ring-1 > div');
+    // Check that we only render 10 language bars overall
+    const languageBars = screen.getAllByTestId("language-bar");
     expect(languageBars.length).toBe(10);
 
-    // The detailed list below it only shows top 5 according to the component logic
-    // We check that Lang-0 is there, but Lang-10 is not in the detailed list
-    expect(screen.getByText("Lang-0")).toBeDefined();
+    // Check detailed list limit (5 items)
+    expect(screen.getByText("Lang-0")).toBeInTheDocument();
+    expect(screen.getByText("Lang-4")).toBeInTheDocument();
+    expect(screen.queryByText("Lang-5")).toBeNull();
     expect(screen.queryByText("Lang-10")).toBeNull();
   });
 
@@ -129,8 +131,8 @@ describe("SkillsCard", () => {
 
     render(<SkillsCard repositories={repositories} />);
 
-    expect(screen.getByText("topic-0")).toBeDefined();
-    expect(screen.getByText("topic-9")).toBeDefined();
+    expect(screen.getByText("topic-0")).toBeInTheDocument();
+    expect(screen.getByText("topic-9")).toBeInTheDocument();
 
     // Since it's truncated to 10, topic-10 shouldn't be there
     expect(screen.queryByText("topic-10")).toBeNull();
