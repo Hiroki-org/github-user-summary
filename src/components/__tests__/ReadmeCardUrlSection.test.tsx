@@ -138,6 +138,46 @@ describe("generateReadmeUrl", () => {
     const parsedUrl = new URL(url);
     expect(parsedUrl.searchParams.get("blocks")).toBe("bio,stats,langs");
   });
+
+  it("should filter out blocks that map to null in blockMap", () => {
+    const layout: CardLayout = {
+      blocks: [
+        { id: "avatar", visible: true, column: "left" },
+        { id: "profile", visible: true, column: "left" },
+        { id: "contributions", visible: true, column: "right" },
+        { id: "heatmap", visible: true, column: "right" },
+        { id: "interests", visible: true, column: "left" },
+        { id: "skills", visible: true, column: "right" },
+        { id: "bio", visible: true, column: "left" },
+      ],
+    };
+    const url = generateReadmeUrl({
+      ...defaultProps,
+      layout,
+    });
+    const parsedUrl = new URL(url);
+
+    expect(parsedUrl.searchParams.get("blocks")).toBe("bio");
+    expect(parsedUrl.searchParams.get("layout")).toBe("left:bio");
+  });
+  it("should remove duplicate block targets in the blocks parameter", () => {
+    const layout: CardLayout = {
+      blocks: [
+        { id: "bio", visible: true, column: "left" },
+        { id: "bio", visible: true, column: "right" },
+        { id: "topRepos", visible: true, column: "left" },
+        { id: "repos", visible: true, column: "right" },
+      ],
+    };
+    const url = generateReadmeUrl({
+      ...defaultProps,
+      layout,
+    });
+    const parsedUrl = new URL(url);
+    expect(parsedUrl.searchParams.get("blocks")).toBe("bio,repos");
+    expect(parsedUrl.searchParams.get("layout")).toBe("left:bio,right:bio,left:repos,right:repos");
+  });
+
 });
 
 describe("ReadmeCardUrlSection", () => {
@@ -244,5 +284,20 @@ describe("ReadmeCardUrlSection", () => {
     fireEvent.change(colsSelect, { target: { value: "invalid-cols" } });
 
     expect(screen.getByText(/cols=1/)).toBeTruthy();
+  });
+
+  it("handles undefined window during SSR", () => {
+    const url = generateReadmeUrl({
+      ...defaultProps,
+      readmeTheme: "github-dark",
+      readmeCols: 1,
+      includeStreak: false,
+      includeHeatmap: false,
+      origin: "",
+    });
+    const parsedUrl = new URL(url, "http://localhost");
+    expect(parsedUrl.pathname).toBe("/api/card/testuser");
+
+
   });
 });

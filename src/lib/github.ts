@@ -1,6 +1,5 @@
 import "server-only";
 import { logger } from "@/lib/logger";
-import { handleRateLimit } from "@/lib/apiUtils";
 
 import type {
   UserProfile,
@@ -24,7 +23,7 @@ import {
 const GITHUB_API = "https://api.github.com";
 const GITHUB_GRAPHQL = "https://api.github.com/graphql";
 
-function headers(token?: string): HeadersInit {
+export function headers(token?: string): HeadersInit {
   const h: HeadersInit = {
     Accept: "application/vnd.github+json",
     "User-Agent": "github-user-summary",
@@ -36,6 +35,12 @@ function headers(token?: string): HeadersInit {
     h.Authorization = `Bearer ${token}`;
   }
   return h;
+}
+
+export function handleRateLimit(res: Response): never {
+  const resetHeader = res.headers.get("X-RateLimit-Reset");
+  const resetTimestamp = resetHeader ? Number.parseInt(resetHeader, 10) : Math.floor(Date.now() / 1000) + 3600;
+  throw new RateLimitError(Number.isFinite(resetTimestamp) ? resetTimestamp : Math.floor(Date.now() / 1000) + 3600);
 }
 
 async function handleResponse<T>(res: Response): Promise<T> {

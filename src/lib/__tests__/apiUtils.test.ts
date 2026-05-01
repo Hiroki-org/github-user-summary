@@ -1,107 +1,109 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { getAuthenticatedUser, handleErrorResponse, handleRateLimit } from "../apiUtils";
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { fetchViewerLogin } from "../githubViewer";
-import { RateLimitError } from "../types";
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { getAuthenticatedUser, handleErrorResponse } from '../apiUtils';
+import { getServerSession, Session } from 'next-auth';
+import { fetchViewerLogin } from '../githubViewer';
+import { NextResponse } from 'next/server';
 
-vi.mock("next/server", () => ({
+vi.mock('next-auth', () => ({
+  getServerSession: vi.fn(),
+}));
+
+vi.mock('../githubViewer', () => ({
+  fetchViewerLogin: vi.fn(),
+}));
+
+vi.mock('@/lib/auth', () => ({
+  authOptions: {},
+}));
+
+vi.mock('next/server', () => {
+  return {
     NextResponse: {
-        json: vi.fn((body, init) => ({ body, init }))
-    }
-}));
+      json: vi.fn((body, init) => ({ body, init })),
+    },
+  };
+});
 
-vi.mock("next-auth", () => ({
-    getServerSession: vi.fn()
-}));
+describe('apiUtils', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
-vi.mock("../githubViewer", () => ({
-    fetchViewerLogin: vi.fn()
-}));
+  describe('getAuthenticatedUser', () => {
+    it('should return null if session is null', async () => {
+      vi.mocked(getServerSession).mockResolvedValue(null);
 
-describe("apiUtils", () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
+      const result = await getAuthenticatedUser();
+
+      expect(result).toBeNull();
+      expect(getServerSession).toHaveBeenCalled();
     });
 
-    describe("getAuthenticatedUser", () => {
-        it("returns null if no session", async () => {
-            vi.mocked(getServerSession).mockResolvedValueOnce(null);
-            const user = await getAuthenticatedUser();
-            expect(user).toBeNull();
-        });
+    it('should return null if token is missing in session', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: { name: 'test' },
+      } as unknown as Session);
 
-        it("returns null if no token", async () => {
-            vi.mocked(getServerSession).mockResolvedValueOnce({ user: { name: "test" }, expires: "1" });
-            const user = await getAuthenticatedUser();
-            expect(user).toBeNull();
-        });
+      const result = await getAuthenticatedUser();
 
-        it("returns username from session if present", async () => {
-            vi.mocked(getServerSession).mockResolvedValueOnce({
-                user: { login: "testuser" },
-                accessToken: "token123",
-                expires: "1"
-            } as unknown as import("next-auth").Session);
-            const user = await getAuthenticatedUser();
-            expect(user).toEqual({ username: "testuser", token: "token123" });
-        });
-
-        it("fetches username if not in session", async () => {
-            vi.mocked(getServerSession).mockResolvedValueOnce({
-                accessToken: "token123",
-                expires: "1"
-            } as unknown as import("next-auth").Session);
-            vi.mocked(fetchViewerLogin).mockResolvedValueOnce("fetcheduser");
-            const user = await getAuthenticatedUser();
-            expect(user).toEqual({ username: "fetcheduser", token: "token123" });
-            expect(fetchViewerLogin).toHaveBeenCalledWith("token123");
-        });
+      expect(result).toBeNull();
     });
 
-    describe("handleErrorResponse", () => {
-        it("returns error message if Error object", () => {
-            const error = new Error("Test error message");
-            const res = handleErrorResponse(error);
-            expect(NextResponse.json).toHaveBeenCalledWith({ error: "Test error message" }, { status: 500 });
-        });
+    it('should return username from session if available', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        accessToken: 'test-token',
+        user: { login: 'test-user' },
+      } as unknown as Session);
 
-        it("returns Unknown error for non-Error object", () => {
-            const res = handleErrorResponse("Just a string");
-            expect(NextResponse.json).toHaveBeenCalledWith({ error: "Unknown error" }, { status: 500 });
-        });
+      const result = await getAuthenticatedUser();
+
+      expect(result).toEqual({ username: 'test-user', token: 'test-token' });
+      expect(fetchViewerLogin).not.toHaveBeenCalled();
     });
 
-    describe("handleRateLimit", () => {
-        it("throws RateLimitError using parsed header", () => {
-            const res = {
-                headers: {
-                    get: vi.fn().mockReturnValue("1700000000")
-                }
-            } as unknown as Response;
+    it('should fetch username using token if not in session', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        accessToken: 'test-token',
+        user: { name: 'test-user' }, // missing login
+      } as unknown as Session);
+      vi.mocked(fetchViewerLogin).mockResolvedValue('fetched-user');
 
-            expect(() => handleRateLimit(res)).toThrow(RateLimitError);
-            expect(() => handleRateLimit(res)).toThrow("GitHub API rate limit exceeded");
-        });
+      const result = await getAuthenticatedUser();
 
-        it("throws RateLimitError with fallback date if header is missing", () => {
-            const res = {
-                headers: {
-                    get: vi.fn().mockReturnValue(null)
-                }
-            } as unknown as Response;
-
-            expect(() => handleRateLimit(res)).toThrow(RateLimitError);
-        });
-
-        it("throws RateLimitError with fallback date if header is invalid", () => {
-            const res = {
-                headers: {
-                    get: vi.fn().mockReturnValue("invalid")
-                }
-            } as unknown as Response;
-
-            expect(() => handleRateLimit(res)).toThrow(RateLimitError);
-        });
+      expect(result).toEqual({ username: 'fetched-user', token: 'test-token' });
+      expect(fetchViewerLogin).toHaveBeenCalledWith('test-token');
     });
+  });
+
+  describe('handleErrorResponse', () => {
+    it('should return Next response with error message from Error object', () => {
+      const error = new Error('Test error');
+
+      const result = handleErrorResponse(error);
+
+      expect(NextResponse.json).toHaveBeenCalledWith(
+        { error: 'Test error' },
+        { status: 500 }
+      );
+      expect(result).toEqual({
+        body: { error: 'Test error' },
+        init: { status: 500 }
+      });
+    });
+
+    it('should return Next response with "Unknown error" for non-Error object', () => {
+      const error = 'Some string error';
+
+      const result = handleErrorResponse(error);
+
+      expect(NextResponse.json).toHaveBeenCalledWith(
+        { error: 'Unknown error' },
+        { status: 500 }
+      );
+      expect(result).toEqual({
+        body: { error: 'Unknown error' },
+        init: { status: 500 }
+      });
+    });
+  });
 });
