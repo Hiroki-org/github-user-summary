@@ -14,8 +14,10 @@ export async function GET(
     { params }: { params: Promise<{ username: string }> }
 ): Promise<Response> {
     const { username } = await params;
-    const options = parseCardQueryParams(new URL(request.url).searchParams);
-    const fontUrl = `${new URL(request.url).origin}/fonts/NotoSans-Regular.ttf`;
+    const url = new URL(request.url);
+    const options = parseCardQueryParams(url.searchParams);
+    const allowedOrigin = process.env.APP_URL || "http://localhost:3000";
+    const fontUrl = `${allowedOrigin}/fonts/NotoSans-Regular.ttf`;
 
     const ip = request.headers.get("x-forwarded-for") ?? "unknown";
     const rateLimitResult = rateLimiter.check(ip);
@@ -41,6 +43,7 @@ export async function GET(
                 status: 404,
                 cacheControl: ERROR_CACHE,
                 fontUrl,
+                allowedOrigin,
             });
         }
 
@@ -49,6 +52,7 @@ export async function GET(
             options,
             cacheControl: SUCCESS_CACHE,
             fontUrl,
+            allowedOrigin,
         });
     } catch {
         return renderErrorCardResponse({
@@ -57,6 +61,7 @@ export async function GET(
             status: 503,
             cacheControl: ERROR_CACHE,
             fontUrl,
+            allowedOrigin,
         });
     }
 }

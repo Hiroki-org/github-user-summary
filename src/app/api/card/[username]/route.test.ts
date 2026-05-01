@@ -73,7 +73,7 @@ describe("GET /api/card/[username] error responses", () => {
             message: expectedMessage,
             status: expectedStatus,
             cacheControl: "public, s-maxage=60, stale-while-revalidate=120",
-            fontUrl: "http://localhost/fonts/NotoSans-Regular.ttf"
+            fontUrl: "http://localhost:3000/fonts/NotoSans-Regular.ttf"
         }));
     };
 

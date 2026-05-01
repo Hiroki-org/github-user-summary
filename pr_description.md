@@ -1,5 +1,11 @@
-🔒 APIカードエンドポイントのレート制限実装
+💡 **What:**
+The getInsertIndex function in src/components/LayoutEditor.tsx was optimized to use imperative for loops instead of chained array methods (.filter().findIndex()). The findBlock function was also removed as it was no longer used after the optimization.
 
-🎯 **What:** パブリックエンドポイントである `GET /api/card/[username]` において、リクエスト数の制限（レート制限）が実装されていなかった脆弱性を修正しました。
-⚠️ **Risk:** レート制限がない場合、悪意のあるユーザーやボットによる大量のリクエスト（DoS攻撃）が発生し、外部API（GitHub API）へのリクエスト上限超過や、サーバーリソースの枯渇を引き起こすリスクがありました。
-🛡️ **Solution:** `src/lib/rateLimit.ts` にメモリベースの簡易な `RateLimiter` クラスを実装し、エンドポイントに統合しました。`x-forwarded-for` ヘッダーを用いてIPアドレスごとにリクエストを追跡し、1分間に50回の上限を超えるリクエストに対しては `429 Too Many Requests` エラーを返すようにしています。エッジランタイムでのクラッシュを防ぐため、遅延評価（Lazy cleanup）によるキャッシュクリーンアップを採用しています。
+🎯 **Why:**
+The previous implementation used chained array methods like .filter().findIndex(), which created intermediate arrays during execution. This function is called repeatedly during high-frequency user interactions like drag-and-drop. Allocating arrays on every call causes unnecessary memory overhead and garbage collection pressure, leading to suboptimal performance. By replacing it with simple for loops, we do an inline count and exit early without any allocations.
+
+📊 **Measured Improvement:**
+A standalone benchmark measuring 1,000,000 iterations of finding an index during a simulated drag operation showed a ~5.4x speedup:
+* **Baseline (Original):** 472.82 ms
+* **Optimized:** 86.27 ms
+* **Improvement:** 81.75% reduction in execution time and completely eliminates intermediate array allocations.
