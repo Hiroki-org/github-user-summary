@@ -52,7 +52,7 @@ describe("ReposCard", () => {
     // First repo
     expect(screen.getByText("test-repo")).toBeInTheDocument();
     expect(screen.getByText("A test repository")).toBeInTheDocument();
-    expect(screen.getByText("1,500")).toBeInTheDocument();
+    expect(screen.getByText((1500).toLocaleString())).toBeInTheDocument();
     expect(screen.getByText("300")).toBeInTheDocument();
     expect(screen.getByText("TypeScript")).toBeInTheDocument();
 
@@ -61,10 +61,14 @@ describe("ReposCard", () => {
     expect(screen.getByText("10")).toBeInTheDocument();
     expect(screen.getByText("2")).toBeInTheDocument();
 
-    // Ensure links are sanitized correctly
+    // Verify that links render with the correct href attributes and security properties
     const repoLinks = screen.getAllByRole("link");
     expect(repoLinks).toHaveLength(2);
-    expect(repoLinks[0]).toHaveAttribute("href", "https://github.com/test/test-repo");
+expect(repoLinks[0]).toHaveAttribute("href", "https://github.com/test/test-repo");
+    expect(repoLinks[0]).toHaveAttribute("target", "_blank");
+    expect(repoLinks[0]).toHaveAttribute("rel", "noopener noreferrer");
     expect(repoLinks[1]).toHaveAttribute("href", "https://github.com/test/no-desc");
+    expect(repoLinks[1]).toHaveAttribute("target", "_blank");
+    expect(repoLinks[1]).toHaveAttribute("rel", "noopener noreferrer");
   });
 });
