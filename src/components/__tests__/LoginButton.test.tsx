@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import LoginButton from "../LoginButton";
 import "@testing-library/jest-dom";
@@ -59,7 +60,7 @@ describe("LoginButton", () => {
     expect(signOutButton).toBeInTheDocument();
   });
 
-  it("calls signOut when the Sign out button is clicked", () => {
+  it("calls signOut when the Sign out button is clicked", async () => {
     mockUseSession.mockReturnValue({
       data: {
         user: {
@@ -73,7 +74,7 @@ describe("LoginButton", () => {
     render(<LoginButton />);
 
     const signOutButton = screen.getByRole("button", { name: /sign out/i });
-    fireEvent.click(signOutButton);
+    await userEvent.click(signOutButton);
 
     expect(mockSignOut).toHaveBeenCalledTimes(1);
   });
@@ -90,7 +91,7 @@ describe("LoginButton", () => {
     expect(signInButton).toBeInTheDocument();
   });
 
-  it("calls signIn with 'github' provider when the Sign in button is clicked", () => {
+  it("calls signIn with 'github' provider when the Sign in button is clicked", async () => {
     mockUseSession.mockReturnValue({
       data: null,
       status: "unauthenticated",
@@ -99,7 +100,7 @@ describe("LoginButton", () => {
     render(<LoginButton />);
 
     const signInButton = screen.getByRole("button", { name: /sign in with github/i });
-    fireEvent.click(signInButton);
+    await userEvent.click(signInButton);
 
     expect(mockSignIn).toHaveBeenCalledTimes(1);
     expect(mockSignIn).toHaveBeenCalledWith("github");
@@ -115,14 +116,12 @@ describe("LoginButton", () => {
 
     render(<LoginButton />);
 
-    // Check if fallback image alt is handled, src falls back to "" in the component
+    // Check if fallback image alt is handled
     const avatar = screen.getByRole("img", { name: "User" });
     expect(avatar).toBeInTheDocument();
 
-    // Some testing libraries/environments convert `src=""` to `null` or the current URL.
-    // Instead of strictly expecting `""` which fails as `null`, just assert the attribute exists
-    // or isn't a valid image URL if not set. Wait, React converts `src=""` to nothing or warns.
-    // Let's just check that it's in the document.
+    // Verify that src is not present (it should be undefined, not "")
+    expect(avatar).not.toHaveAttribute("src");
 
     // Sign out button should still be present
     expect(screen.getByRole("button", { name: /sign out/i })).toBeInTheDocument();
