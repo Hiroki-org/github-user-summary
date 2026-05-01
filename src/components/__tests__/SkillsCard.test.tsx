@@ -1,4 +1,4 @@
-// @vitest-environment jsdom
+
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import "@testing-library/jest-dom";
@@ -117,5 +117,20 @@ describe("SkillsCard", () => {
     const topicsContainer = screen.getByText("Repository Topics").parentElement;
     expect(topicsContainer).toHaveClass("pt-6");
     expect(topicsContainer).toHaveClass("border-t");
+  });
+
+  it("renders topics without border when only topics exist (no languages)", () => {
+    const data = mockRepositoryData({
+      languages: [],
+      topics: [
+        { name: "react", count: 10 },
+      ],
+    });
+
+    render(<SkillsCard repositories={data} />);
+
+    const topicsContainer = screen.getByText("Repository Topics").parentElement;
+    expect(topicsContainer).not.toHaveClass("pt-6");
+    expect(topicsContainer).not.toHaveClass("border-t");
   });
 });
