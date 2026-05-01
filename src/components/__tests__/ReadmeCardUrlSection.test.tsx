@@ -286,6 +286,22 @@ describe("ReadmeCardUrlSection", () => {
     expect(screen.getByText(/cols=1/)).toBeTruthy();
   });
 
+  it("handles missing clipboard API gracefully", async () => {
+    // navigator.clipboard is undefined in some older browsers or non-secure contexts
+    const originalClipboard = navigator.clipboard;
+    Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true });
+
+    render(<ReadmeCardUrlSection {...defaultProps} />);
+
+    const button = screen.getByText("Copy URL");
+    fireEvent.click(button);
+
+    expect(await screen.findByText("Copy failed")).toBeTruthy();
+
+    // Cleanup
+    Object.defineProperty(navigator, 'clipboard', { value: originalClipboard, configurable: true });
+  });
+
   it("handles undefined window during SSR", () => {
     const url = generateReadmeUrl({
       ...defaultProps,
@@ -297,7 +313,5 @@ describe("ReadmeCardUrlSection", () => {
     });
     const parsedUrl = new URL(url, "http://localhost");
     expect(parsedUrl.pathname).toBe("/api/card/testuser");
-
-
   });
 });
