@@ -4,6 +4,7 @@
 import {
   useState,
   useCallback,
+  useMemo,
   useRef,
   useEffect,
 } from "react";
@@ -94,11 +95,18 @@ function useCardSettings(mounted: boolean) {
     setDisplayOptions((prev) => ({ ...prev, [key]: !prev[key] }));
   }, []);
 
-  const isBlockVisible = useCallback((blockId: CardBlockId): boolean => {
-    return (
-      layout.blocks.find((block) => block.id === blockId)?.visible ?? false
-    );
+  const visibleBlocksMap = useMemo(() => {
+    const map = new Map<CardBlockId, boolean>();
+    for (let i = 0; i < layout.blocks.length; i++) {
+      const block = layout.blocks[i];
+      map.set(block.id, block.visible);
+    }
+    return map;
   }, [layout.blocks]);
+
+  const isBlockVisible = useCallback((blockId: CardBlockId): boolean => {
+    return visibleBlocksMap.get(blockId) ?? false;
+  }, [visibleBlocksMap]);
 
   return {
     layout,

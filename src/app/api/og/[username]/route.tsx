@@ -2,6 +2,7 @@ import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
 
 import { logger } from "@/lib/logger";
+import { isValidGitHubUsername, sanitizeUrl } from "@/lib/validators";
 
 export const runtime = "edge";
 const ONE_HOUR_IN_SECONDS = 60 * 60;
@@ -13,6 +14,11 @@ export async function GET(
   { params }: { params: Promise<{ username: string }> }
 ) {
   const { username } = await params;
+
+  if (!isValidGitHubUsername(username)) {
+    return new Response("Invalid username", { status: 400 });
+  }
+
 
   // Fetch minimal profile data for the OG image
   let name = username;
@@ -65,7 +71,7 @@ export async function GET(
         >
           {avatarUrl && (
             <img
-              src={avatarUrl}
+              src={sanitizeUrl(avatarUrl)}
               alt=""
               width={120}
               height={120}

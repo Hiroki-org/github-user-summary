@@ -14,20 +14,22 @@ export default function LanguageChartDonut({ top, size }: Props) {
   const circumference = 2 * Math.PI * radius;
 
   const segments = useMemo(() => {
-    const result = [];
+    const len = top.length;
+    const result = new Array(len);
     let accumulated = 0;
 
-    for (const lang of top) {
+    for (let i = 0; i < len; i++) {
+      const lang = top[i];
       const pct = lang.percentage / 100;
       const dashLength = pct * circumference;
       const offset = -accumulated * circumference + circumference * 0.25; // start at 12 o'clock
-      result.push({
+      result[i] = {
         name: lang.name,
         color: lang.color,
         percentage: lang.percentage,
         dashArray: `${dashLength} ${circumference - dashLength}`,
         dashOffset: offset,
-      });
+      };
       accumulated += pct;
     }
 

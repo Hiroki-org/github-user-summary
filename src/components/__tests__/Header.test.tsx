@@ -98,6 +98,15 @@ describe("Header", () => {
     expect(settingsLink).not.toHaveClass("bg-accent/15");
   });
 
+
+  it("does not apply active styles to partial matches like '/dashboard-something'", () => {
+    vi.mocked(usePathname).mockReturnValue("/dashboard-something");
+    render(<Header />);
+
+    const dashboardLink = screen.getByRole("link", { name: "Dashboard" });
+    expect(dashboardLink).not.toHaveClass("bg-accent/15");
+  });
+
   it("renders the LoginButton component", () => {
     vi.mocked(usePathname).mockReturnValue("/");
     render(<Header />);
