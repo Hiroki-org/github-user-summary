@@ -1,5 +1,6 @@
 import "server-only";
 import { logger } from "@/lib/logger";
+import { handleRateLimit } from "@/lib/apiUtils";
 
 import type {
   UserProfile,
@@ -35,12 +36,6 @@ function headers(token?: string): HeadersInit {
     h.Authorization = `Bearer ${token}`;
   }
   return h;
-}
-
-function handleRateLimit(res: Response): never {
-  const resetHeader = res.headers.get("X-RateLimit-Reset");
-  const resetTimestamp = resetHeader ? parseInt(resetHeader, 10) : Math.floor(Date.now() / 1000) + 3600;
-  throw new RateLimitError(resetTimestamp);
 }
 
 async function handleResponse<T>(res: Response): Promise<T> {
