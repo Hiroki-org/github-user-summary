@@ -24,6 +24,7 @@ export default defineConfig({
         branches: 70,
         statements: 80,
       },
+      exclude: ["**/node_modules/**"],
     },
   },
   resolve: {
