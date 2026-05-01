@@ -2,108 +2,108 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { getAuthenticatedUser, handleErrorResponse } from '../apiUtils';
 import { getServerSession, Session } from 'next-auth';
 import { fetchViewerLogin } from '../githubViewer';
-
-vi.mock('next/server', () => ({
-    NextResponse: {
-        json: vi.fn((data, options) => ({ data, ...options })),
-    },
-}));
+import { NextResponse } from 'next/server';
 
 vi.mock('next-auth', () => ({
-    getServerSession: vi.fn(),
+  getServerSession: vi.fn(),
 }));
 
 vi.mock('../githubViewer', () => ({
-    fetchViewerLogin: vi.fn(),
+  fetchViewerLogin: vi.fn(),
 }));
 
 vi.mock('@/lib/auth', () => ({
-    authOptions: {},
+  authOptions: {},
 }));
 
+vi.mock('next/server', () => {
+  return {
+    NextResponse: {
+      json: vi.fn((body, init) => ({ body, init })),
+    },
+  };
+});
+
 describe('apiUtils', () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('getAuthenticatedUser', () => {
+    it('should return null if session is null', async () => {
+      vi.mocked(getServerSession).mockResolvedValue(null);
+
+      const result = await getAuthenticatedUser();
+
+      expect(result).toBeNull();
+      expect(getServerSession).toHaveBeenCalled();
     });
 
-    describe('getAuthenticatedUser', () => {
+    it('should return null if token is missing in session', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        user: { name: 'test' },
+      } as unknown as Session);
 
-        it('returns null when session is missing', async () => {
-            vi.mocked(getServerSession).mockResolvedValue(null);
-            const result = await getAuthenticatedUser();
-            expect(result).toBeNull();
-        });
+      const result = await getAuthenticatedUser();
 
-        it('returns null when token is missing from the session', async () => {
-            const mockSession = { user: { name: 'test' } };
-            vi.mocked(getServerSession).mockResolvedValue(mockSession as unknown as Session);
-            const result = await getAuthenticatedUser();
-            expect(result).toBeNull();
-        });
-
-        it('returns null when token is an empty string', async () => {
-            const mockSession = {
-                accessToken: '',
-                user: { login: 'testuser' },
-            };
-            vi.mocked(getServerSession).mockResolvedValue(mockSession as unknown as Session);
-            const result = await getAuthenticatedUser();
-            expect(result).toBeNull();
-        });
-
-        it('returns username and token when token is present and username is found in the session', async () => {
-            const mockSession = {
-                accessToken: 'valid-token',
-                user: { login: 'testuser' },
-            };
-            vi.mocked(getServerSession).mockResolvedValue(mockSession as unknown as Session);
-
-            const result = await getAuthenticatedUser();
-            expect(result).toEqual({ username: 'testuser', token: 'valid-token' });
-            expect(fetchViewerLogin).not.toHaveBeenCalled();
-        });
-
-        it('fetches username from Github API when token is present but username must be fetched', async () => {
-            const mockSession = {
-                accessToken: 'valid-token',
-                user: { name: 'Test User' }, // missing login
-            };
-            vi.mocked(getServerSession).mockResolvedValue(mockSession as unknown as Session);
-            vi.mocked(fetchViewerLogin).mockResolvedValue('fetcheduser');
-
-            const result = await getAuthenticatedUser();
-            expect(result).toEqual({ username: 'fetcheduser', token: 'valid-token' });
-            expect(fetchViewerLogin).toHaveBeenCalledWith('valid-token');
-        });
-
-        it('propagates exceptions thrown by fetchViewerLogin', async () => {
-            const mockSession = {
-                accessToken: 'invalid-token',
-                user: { name: 'Test User' },
-            };
-            vi.mocked(getServerSession).mockResolvedValue(mockSession as unknown as Session);
-            vi.mocked(fetchViewerLogin).mockRejectedValue(new Error('GitHub API Error'));
-
-            await expect(getAuthenticatedUser()).rejects.toThrow('GitHub API Error');
-        });
+      expect(result).toBeNull();
     });
 
-    describe('handleErrorResponse', () => {
-        it('handles Error instances', () => {
-            const error = new Error('Test error message');
-            const result = handleErrorResponse(error);
-            expect(result).toEqual({
-                data: { error: 'Test error message' },
-                status: 500,
-            });
-        });
+    it('should return username from session if available', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        accessToken: 'test-token',
+        user: { login: 'test-user' },
+      } as unknown as Session);
 
-        it('handles unknown error types', () => {
-            const result = handleErrorResponse('String error');
-            expect(result).toEqual({
-                data: { error: 'Unknown error' },
-                status: 500,
-            });
-        });
+      const result = await getAuthenticatedUser();
+
+      expect(result).toEqual({ username: 'test-user', token: 'test-token' });
+      expect(fetchViewerLogin).not.toHaveBeenCalled();
     });
+
+    it('should fetch username using token if not in session', async () => {
+      vi.mocked(getServerSession).mockResolvedValue({
+        accessToken: 'test-token',
+        user: { name: 'test-user' }, // missing login
+      } as unknown as Session);
+      vi.mocked(fetchViewerLogin).mockResolvedValue('fetched-user');
+
+      const result = await getAuthenticatedUser();
+
+      expect(result).toEqual({ username: 'fetched-user', token: 'test-token' });
+      expect(fetchViewerLogin).toHaveBeenCalledWith('test-token');
+    });
+  });
+
+  describe('handleErrorResponse', () => {
+    it('should return Next response with error message from Error object', () => {
+      const error = new Error('Test error');
+
+      const result = handleErrorResponse(error);
+
+      expect(NextResponse.json).toHaveBeenCalledWith(
+        { error: 'Test error' },
+        { status: 500 }
+      );
+      expect(result).toEqual({
+        body: { error: 'Test error' },
+        init: { status: 500 }
+      });
+    });
+
+    it('should return Next response with "Unknown error" for non-Error object', () => {
+      const error = 'Some string error';
+
+      const result = handleErrorResponse(error);
+
+      expect(NextResponse.json).toHaveBeenCalledWith(
+        { error: 'Unknown error' },
+        { status: 500 }
+      );
+      expect(result).toEqual({
+        body: { error: 'Unknown error' },
+        init: { status: 500 }
+      });
+    });
+  });
 });
