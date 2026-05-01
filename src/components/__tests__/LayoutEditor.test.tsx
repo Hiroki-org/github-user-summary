@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import LayoutEditor from "../LayoutEditor";
-import { CardLayout, CardBlock } from "@/lib/types";
+import { CardLayout } from "@/lib/types";
 import "@testing-library/jest-dom";
 
 // Mock dnd-kit components
@@ -9,18 +9,18 @@ vi.mock("@dnd-kit/core", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@dnd-kit/core")>();
   return {
     ...actual,
-    DndContext: ({ children, onDragEnd }: any) => (
+    DndContext: ({ children, onDragEnd }: { children: React.ReactNode; onDragEnd: (event: unknown) => void }) => (
       <div data-testid="dnd-context" onClick={() => {
         // Expose a way to trigger onDragEnd via a synthetic event or global for testing
         // We'll attach it to window for easy triggering
-        (window as any).triggerDragEnd = onDragEnd;
+        (window as unknown as { triggerDragEnd: (event: unknown) => void }).triggerDragEnd = onDragEnd;
       }}>
         {children}
       </div>
     ),
     useSensors: vi.fn(() => []),
     useSensor: vi.fn(() => ({})),
-    useDroppable: ({ id }: { id: string }) => ({
+    useDroppable: () => ({
       setNodeRef: vi.fn(),
       isOver: false,
     }),
@@ -34,7 +34,7 @@ vi.mock("@dnd-kit/sortable", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@dnd-kit/sortable")>();
   return {
     ...actual,
-    SortableContext: ({ children }: any) => <div>{children}</div>,
+    SortableContext: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     useSortable: ({ id }: { id: string }) => ({
       attributes: { "data-id": id },
       listeners: {},
@@ -57,21 +57,21 @@ const defaultLayout: CardLayout = {
 };
 
 describe("LayoutEditor", () => {
-  let mockOnLayoutChange: ReturnType<typeof vi.fn>;
+  let mockOnLayoutChange: ReturnType<typeof vi.fn>; // @ts-ignore
   let mockOnToggleVisibility: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     mockOnLayoutChange = vi.fn();
     mockOnToggleVisibility = vi.fn();
-    delete (window as any).triggerDragEnd;
+    (window as unknown as { triggerDragEnd?: (event: unknown) => void }).triggerDragEnd = undefined;
   });
 
   it("renders blocks in their respective columns", () => {
     render(
       <LayoutEditor
         layout={defaultLayout}
-        onLayoutChange={mockOnLayoutChange}
-        onToggleBlockVisibility={mockOnToggleVisibility}
+        onLayoutChange={mockOnLayoutChange as unknown as (layout: CardLayout) => void}
+        onToggleBlockVisibility={mockOnToggleVisibility as unknown as (blockId: string) => void}
       />
     );
 
@@ -89,14 +89,13 @@ describe("LayoutEditor", () => {
     render(
       <LayoutEditor
         layout={defaultLayout}
-        onLayoutChange={mockOnLayoutChange}
-        onToggleBlockVisibility={mockOnToggleVisibility}
+        onLayoutChange={mockOnLayoutChange as unknown as (layout: CardLayout) => void}
+        onToggleBlockVisibility={mockOnToggleVisibility as unknown as (blockId: string) => void}
       />
     );
 
     // Get the checkbox for the avatar block
-    const checkboxes = screen.getAllByRole("checkbox");
-    // profile, avatar, topLanguages -> avatar is the 2nd one (index 1)
+
     // Find the Avatar block and click its checkbox
     const avatarBlock = screen.getByText("Avatar").closest("div[class*='rounded-md border']") as HTMLElement;
     const checkbox = avatarBlock.querySelector("input[type='checkbox']") as HTMLInputElement;
@@ -109,8 +108,8 @@ describe("LayoutEditor", () => {
     render(
       <LayoutEditor
         layout={defaultLayout}
-        onLayoutChange={mockOnLayoutChange}
-        onToggleBlockVisibility={mockOnToggleVisibility}
+        onLayoutChange={mockOnLayoutChange as unknown as (layout: CardLayout) => void}
+        onToggleBlockVisibility={mockOnToggleVisibility as unknown as (blockId: string) => void}
       />
     );
 
@@ -118,7 +117,7 @@ describe("LayoutEditor", () => {
     const dndContext = screen.getByTestId("dnd-context");
     fireEvent.click(dndContext);
 
-    const triggerDragEnd = (window as any).triggerDragEnd;
+    const triggerDragEnd = (window as unknown as { triggerDragEnd: (event: unknown) => void }).triggerDragEnd;
     expect(triggerDragEnd).toBeDefined();
 
     // Drag 'avatar' to 'right' column
@@ -139,15 +138,15 @@ describe("LayoutEditor", () => {
     render(
       <LayoutEditor
         layout={defaultLayout}
-        onLayoutChange={mockOnLayoutChange}
-        onToggleBlockVisibility={mockOnToggleVisibility}
+        onLayoutChange={mockOnLayoutChange as unknown as (layout: CardLayout) => void}
+        onToggleBlockVisibility={mockOnToggleVisibility as unknown as (blockId: string) => void}
       />
     );
 
     const dndContext = screen.getByTestId("dnd-context");
     fireEvent.click(dndContext);
 
-    const triggerDragEnd = (window as any).triggerDragEnd;
+    const triggerDragEnd = (window as unknown as { triggerDragEnd: (event: unknown) => void }).triggerDragEnd;
 
     // Drag 'avatar' over 'topLanguages'
     triggerDragEnd({
@@ -167,15 +166,15 @@ describe("LayoutEditor", () => {
     render(
       <LayoutEditor
         layout={defaultLayout}
-        onLayoutChange={mockOnLayoutChange}
-        onToggleBlockVisibility={mockOnToggleVisibility}
+        onLayoutChange={mockOnLayoutChange as unknown as (layout: CardLayout) => void}
+        onToggleBlockVisibility={mockOnToggleVisibility as unknown as (blockId: string) => void}
       />
     );
 
     const dndContext = screen.getByTestId("dnd-context");
     fireEvent.click(dndContext);
 
-    const triggerDragEnd = (window as any).triggerDragEnd;
+    const triggerDragEnd = (window as unknown as { triggerDragEnd: (event: unknown) => void }).triggerDragEnd;
     triggerDragEnd({
       active: { id: "avatar" },
       over: null,
@@ -188,15 +187,15 @@ describe("LayoutEditor", () => {
     render(
       <LayoutEditor
         layout={defaultLayout}
-        onLayoutChange={mockOnLayoutChange}
-        onToggleBlockVisibility={mockOnToggleVisibility}
+        onLayoutChange={mockOnLayoutChange as unknown as (layout: CardLayout) => void}
+        onToggleBlockVisibility={mockOnToggleVisibility as unknown as (blockId: string) => void}
       />
     );
 
     const dndContext = screen.getByTestId("dnd-context");
     fireEvent.click(dndContext);
 
-    const triggerDragEnd = (window as any).triggerDragEnd;
+    const triggerDragEnd = (window as unknown as { triggerDragEnd: (event: unknown) => void }).triggerDragEnd;
     triggerDragEnd({
       active: { id: "avatar" },
       over: { id: "avatar" },
@@ -209,15 +208,15 @@ describe("LayoutEditor", () => {
     render(
       <LayoutEditor
         layout={defaultLayout}
-        onLayoutChange={mockOnLayoutChange}
-        onToggleBlockVisibility={mockOnToggleVisibility}
+        onLayoutChange={mockOnLayoutChange as unknown as (layout: CardLayout) => void}
+        onToggleBlockVisibility={mockOnToggleVisibility as unknown as (blockId: string) => void}
       />
     );
 
     const dndContext = screen.getByTestId("dnd-context");
     fireEvent.click(dndContext);
 
-    const triggerDragEnd = (window as any).triggerDragEnd;
+    const triggerDragEnd = (window as unknown as { triggerDragEnd: (event: unknown) => void }).triggerDragEnd;
     triggerDragEnd({
       active: { id: "avatar" },
       over: { id: "non-existent-block" },
