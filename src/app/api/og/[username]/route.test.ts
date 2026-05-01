@@ -1,0 +1,48 @@
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { GET } from "./route";
+import { NextRequest } from "next/server";
+import { ReactElement } from "react";
+
+vi.mock("next/og", () => {
+  return {
+    ImageResponse: class {
+      constructor(element: ReactElement, options?: { headers?: Record<string, string>, width?: number, height?: number }) {
+        const response = new Response("Mock ImageResponse");
+        if (options?.headers) {
+          Object.entries(options.headers).forEach(([key, value]) => {
+            response.headers.set(key, value);
+          });
+        }
+        return response;
+      }
+    }
+  };
+});
+
+describe("OG Image Route", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("should return 400 for invalid username", async () => {
+    const req = new NextRequest("http://localhost/api/og/invalid%20username!");
+    const res = await GET(req, { params: Promise.resolve({ username: "invalid username!" }) });
+
+    expect(res.status).toBe(400);
+    expect(await res.text()).toBe("Invalid username");
+  });
+
+  it("should generate image for valid username", async () => {
+    const mockFetch = vi.spyOn(global, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ name: "Valid User" }), { status: 200 })
+    );
+
+    const req = new NextRequest("http://localhost/api/og/validuser");
+    const res = await GET(req, { params: Promise.resolve({ username: "validuser" }) });
+
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe("Mock ImageResponse");
+    expect(res.headers.get("Cache-Control")).toBe("public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400");
+    expect(mockFetch).toHaveBeenCalledWith("https://api.github.com/users/validuser", expect.any(Object));
+  });
+});
