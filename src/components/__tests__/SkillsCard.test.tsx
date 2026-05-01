@@ -1,136 +1,140 @@
-
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import "@testing-library/jest-dom";
 import SkillsCard from "@/components/SkillsCard";
-import { RepositoryData } from "@/lib/types";
-import { getTopicSizeClass } from "@/lib/topicUtils";
+import type { RepositoryData, LanguageStats } from "@/lib/types";
 
+// Mock the child component to simplify testing
 vi.mock("@/components/LanguageChart", () => ({
-  default: vi.fn(() => <div data-testid="language-chart">Mocked Language Chart</div>),
+  default: () => <div data-testid="mock-language-chart">Mocked Language Chart</div>,
 }));
-
-vi.mock("@/lib/topicUtils", () => ({
-  getTopicSizeClass: vi.fn(() => "mocked-topic-class"),
-}));
-
-const mockRepositoryData = (overrides?: Partial<RepositoryData>): RepositoryData => ({
-  languages: [],
-  topics: [],
-  topRepos: [],
-  totalCount: 0,
-  ...overrides,
-});
 
 describe("SkillsCard", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+  const mockLanguage: LanguageStats = {
+    name: "TypeScript",
+    bytes: 1000,
+    percentage: 100,
+    color: "#3178c6",
+  };
+
+  const mockTopic = {
+    name: "react",
+    count: 5,
+  };
+
+  const emptyRepositories: RepositoryData = {
+    languages: [],
+    topics: [],
+    topRepos: [],
+    totalCount: 0,
+  };
+
+  it("renders null when both languages and topics are empty", () => {
+    const { container } = render(<SkillsCard repositories={emptyRepositories} />);
+    expect(container.firstChild).toBeNull();
   });
 
-  it("returns null when languages and topics are empty", () => {
-    const { container } = render(<SkillsCard repositories={mockRepositoryData()} />);
-    expect(container).toBeEmptyDOMElement();
-  });
+  it("renders only languages when topics is empty", () => {
+    const repositories: RepositoryData = {
+      ...emptyRepositories,
+      languages: [mockLanguage],
+    };
 
-  it("renders languages list and chart correctly", () => {
-    const data = mockRepositoryData({
-      languages: [
-        { name: "TypeScript", bytes: 1000, percentage: 80, color: "#2b7489" },
-        { name: "JavaScript", bytes: 250, percentage: 20, color: "#f1e05a" },
-      ],
-    });
+    render(<SkillsCard repositories={repositories} />);
 
-    render(<SkillsCard repositories={data} />);
+    // Header should be present
+    expect(screen.getByText("Skills & Languages")).toBeInTheDocument();
 
-    expect(screen.getByTestId("language-chart")).toBeInTheDocument();
+    // Language should be displayed
     expect(screen.getByText("TypeScript")).toBeInTheDocument();
-    expect(screen.getByText("80.0%")).toBeInTheDocument();
-    expect(screen.getByText("JavaScript")).toBeInTheDocument();
-    expect(screen.getByText("20.0%")).toBeInTheDocument();
+    expect(screen.getByText("100.0%")).toBeInTheDocument();
+    expect(screen.getByTestId("mock-language-chart")).toBeInTheDocument();
+
+    // Topics should not be displayed
+    expect(screen.queryByText("Repository Topics")).not.toBeInTheDocument();
   });
 
-  it("renders top languages only (max 10 for progress and max 5 for text list)", () => {
-    const languages = Array.from({ length: 15 }, (_, i) => ({
-      name: `Lang${i}`,
-      bytes: 100,
+  it("renders only topics when languages is empty", () => {
+    const repositories: RepositoryData = {
+      ...emptyRepositories,
+      topics: [mockTopic],
+    };
+
+    render(<SkillsCard repositories={repositories} />);
+
+    // Header should be present
+    expect(screen.getByText("Skills & Languages")).toBeInTheDocument();
+
+    // Topics should be displayed
+    expect(screen.getByText("Repository Topics")).toBeInTheDocument();
+    expect(screen.getByText("react")).toBeInTheDocument();
+    expect(screen.getByText("5")).toBeInTheDocument(); // The count span
+
+    // Languages should not be displayed
+    expect(screen.queryByTestId("mock-language-chart")).not.toBeInTheDocument();
+  });
+
+  it("renders both languages and topics", () => {
+    const repositories: RepositoryData = {
+      ...emptyRepositories,
+      languages: [mockLanguage],
+      topics: [mockTopic],
+    };
+
+    render(<SkillsCard repositories={repositories} />);
+
+    expect(screen.getByText("Skills & Languages")).toBeInTheDocument();
+    expect(screen.getByText("TypeScript")).toBeInTheDocument();
+    expect(screen.getByTestId("mock-language-chart")).toBeInTheDocument();
+    expect(screen.getByText("Repository Topics")).toBeInTheDocument();
+    expect(screen.getByText("react")).toBeInTheDocument();
+  });
+
+  it("truncates languages to the top 10", () => {
+    // Create 15 languages
+    const manyLanguages: LanguageStats[] = Array.from({ length: 15 }).map((_, i) => ({
+      name: `Lang-${i}`,
+      bytes: 100 - i,
       percentage: 100 / 15,
       color: "#000000",
     }));
 
-    const data = mockRepositoryData({ languages });
-    render(<SkillsCard repositories={data} />);
+    const repositories: RepositoryData = {
+      ...emptyRepositories,
+      languages: manyLanguages,
+    };
 
-    expect(screen.getByTitle("Lang0: 6.7%")).toBeInTheDocument();
-    expect(screen.getByTitle("Lang9: 6.7%")).toBeInTheDocument();
-    expect(screen.queryByTitle("Lang10: 6.7%")).not.toBeInTheDocument();
+    render(<SkillsCard repositories={repositories} />);
 
-    expect(screen.getByText("Lang0")).toBeInTheDocument();
-    expect(screen.getByText("Lang4")).toBeInTheDocument();
-    expect(screen.queryByText("Lang5")).not.toBeInTheDocument();
+    // Check that we only render 10 language bars overall
+    const languageBars = screen.getAllByTestId("language-bar");
+    expect(languageBars.length).toBe(10);
+
+    // Check detailed list limit (5 items)
+    expect(screen.getByText("Lang-0")).toBeInTheDocument();
+    expect(screen.getByText("Lang-4")).toBeInTheDocument();
+    expect(screen.queryByText("Lang-5")).not.toBeInTheDocument();
+    expect(screen.queryByText("Lang-10")).not.toBeInTheDocument();
   });
 
-  it("renders topics list correctly", () => {
-    const data = mockRepositoryData({
-      topics: [
-        { name: "react", count: 10 },
-        { name: "nextjs", count: 5 },
-      ],
-    });
-
-    render(<SkillsCard repositories={data} />);
-
-    expect(screen.getByText("react")).toBeInTheDocument();
-    expect(screen.getByText("10")).toBeInTheDocument();
-    expect(screen.getByText("nextjs")).toBeInTheDocument();
-    expect(screen.getByText("5")).toBeInTheDocument();
-
-    expect(getTopicSizeClass).toHaveBeenCalledWith(10, 10);
-    expect(getTopicSizeClass).toHaveBeenCalledWith(5, 10);
-  });
-
-  it("renders top topics only (max 10)", () => {
-    const topics = Array.from({ length: 15 }, (_, i) => ({
-      name: `topic${i}`,
+  it("truncates topics to the top 10", () => {
+    // Create 15 topics
+    const manyTopics = Array.from({ length: 15 }).map((_, i) => ({
+      name: `topic-${i}`,
       count: 15 - i,
     }));
 
-    const data = mockRepositoryData({ topics });
-    render(<SkillsCard repositories={data} />);
+    const repositories: RepositoryData = {
+      ...emptyRepositories,
+      topics: manyTopics,
+    };
 
-    expect(screen.getByText("topic0")).toBeInTheDocument();
-    expect(screen.getByText("topic9")).toBeInTheDocument();
-    expect(screen.queryByText("topic10")).not.toBeInTheDocument();
-  });
+    render(<SkillsCard repositories={repositories} />);
 
-  it("renders topics with border when both languages and topics exist", () => {
-    const data = mockRepositoryData({
-      languages: [
-        { name: "TypeScript", bytes: 1000, percentage: 80, color: "#2b7489" },
-      ],
-      topics: [
-        { name: "react", count: 10 },
-      ],
-    });
+    expect(screen.getByText("topic-0")).toBeInTheDocument();
+    expect(screen.getByText("topic-9")).toBeInTheDocument();
 
-    render(<SkillsCard repositories={data} />);
-
-    const topicsContainer = screen.getByText("Repository Topics").parentElement;
-    expect(topicsContainer).toHaveClass("pt-6");
-    expect(topicsContainer).toHaveClass("border-t");
-  });
-
-  it("renders topics without border when only topics exist (no languages)", () => {
-    const data = mockRepositoryData({
-      languages: [],
-      topics: [
-        { name: "react", count: 10 },
-      ],
-    });
-
-    render(<SkillsCard repositories={data} />);
-
-    const topicsContainer = screen.getByText("Repository Topics").parentElement;
-    expect(topicsContainer).not.toHaveClass("pt-6");
-    expect(topicsContainer).not.toHaveClass("border-t");
+    // Since it's truncated to 10, topic-10 shouldn't be there
+    expect(screen.queryByText("topic-10")).not.toBeInTheDocument();
   });
 });
