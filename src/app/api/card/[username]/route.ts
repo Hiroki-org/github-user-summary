@@ -17,8 +17,7 @@ export async function GET(
     const options = parseCardQueryParams(new URL(request.url).searchParams);
     const fontUrl = `${new URL(request.url).origin}/fonts/NotoSans-Regular.ttf`;
 
-    const forwardedFor = request.headers.get("x-forwarded-for");
-    const ip = forwardedFor ? forwardedFor.split(",")[0].trim() : "unknown";
+    const ip = request.headers.get("x-forwarded-for") ?? "unknown";
     const rateLimitResult = rateLimiter.check(ip);
 
     if (!rateLimitResult.success) {
