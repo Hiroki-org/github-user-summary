@@ -12,7 +12,7 @@ vi.mock("next-auth/react", () => ({
 
 describe("MyPageBanner", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
   });
 
   it("renders nothing when status is unauthenticated", () => {
