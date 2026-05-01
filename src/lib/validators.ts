@@ -49,3 +49,30 @@ export function sanitizeUrl(url: string | null | undefined): string {
   // Default to https if no protocol is present
   return `https://${trimmedUrl}`;
 }
+
+/**
+ * Validates if a font URL is from a trusted source.
+ * Trusted sources include cdn.jsdelivr.net and the application's own origin.
+ */
+export function isTrustedFontUrl(url: string, allowedOrigin?: string): boolean {
+  try {
+    const parsedUrl = new URL(url);
+
+    // Allow JSDelivr
+    if (parsedUrl.hostname === "cdn.jsdelivr.net") {
+      return true;
+    }
+
+    // Allow the application's own origin
+    if (allowedOrigin) {
+      const originUrl = new URL(allowedOrigin);
+      if (parsedUrl.origin === originUrl.origin) {
+        return true;
+      }
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
+}

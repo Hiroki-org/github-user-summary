@@ -11,8 +11,10 @@ export async function GET(
     { params }: { params: Promise<{ username: string }> }
 ): Promise<Response> {
     const { username } = await params;
-    const options = parseCardQueryParams(new URL(request.url).searchParams);
-    const fontUrl = `${new URL(request.url).origin}/fonts/NotoSans-Regular.ttf`;
+    const url = new URL(request.url);
+    const options = parseCardQueryParams(url.searchParams);
+    const allowedOrigin = url.origin;
+    const fontUrl = `${allowedOrigin}/fonts/NotoSans-Regular.ttf`;
 
     try {
         const data = await fetchCardData(username);
@@ -24,6 +26,7 @@ export async function GET(
                 status: 404,
                 cacheControl: ERROR_CACHE,
                 fontUrl,
+                allowedOrigin,
             });
         }
 
@@ -32,6 +35,7 @@ export async function GET(
             options,
             cacheControl: SUCCESS_CACHE,
             fontUrl,
+            allowedOrigin,
         });
     } catch {
         return renderErrorCardResponse({
@@ -40,6 +44,7 @@ export async function GET(
             status: 503,
             cacheControl: ERROR_CACHE,
             fontUrl,
+            allowedOrigin,
         });
     }
 }

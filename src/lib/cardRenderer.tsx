@@ -6,6 +6,7 @@ import type { CardData } from "@/lib/cardDataFetcher";
 import type { CardRenderOptions } from "./cardOptions";
 import { resolveBlockLayout } from "./cardOptions";
 import { cardTree, errorTree, estimateHeight } from "./cardElements";
+import { isTrustedFontUrl } from "@/lib/validators";
 
 export * from "./cardOptions";
 
@@ -15,8 +16,11 @@ const FONT_FETCH_TIMEOUT_MS = 5000;
 
 const fontCache = new Map<string, Promise<ArrayBuffer>>();
 
-function getFontData(fontUrl?: string): Promise<ArrayBuffer> {
-  const targetUrl = fontUrl ?? DEFAULT_FONT_URL;
+function getFontData(fontUrl?: string, allowedOrigin?: string): Promise<ArrayBuffer> {
+  const targetUrl =
+    fontUrl && isTrustedFontUrl(fontUrl, allowedOrigin)
+      ? fontUrl
+      : DEFAULT_FONT_URL;
 
   if (!fontCache.has(targetUrl)) {
     const controller = new AbortController();
@@ -51,8 +55,9 @@ async function renderSvg(
   width: number,
   height: number,
   fontUrl?: string,
+  allowedOrigin?: string,
 ): Promise<string> {
-  const fontData = await getFontData(fontUrl);
+  const fontData = await getFontData(fontUrl, allowedOrigin);
   return satori(element, {
     width,
     height,
@@ -72,6 +77,7 @@ export async function renderCardResponse(args: {
   options: CardRenderOptions;
   cacheControl: string;
   fontUrl?: string;
+  allowedOrigin?: string;
 }): Promise<Response> {
   const layout = resolveBlockLayout(args.options);
   const height = estimateHeight(args.options, layout);
@@ -83,6 +89,7 @@ export async function renderCardResponse(args: {
       args.options.width,
       height,
       args.fontUrl,
+      args.allowedOrigin,
     );
     return new Response(svg, {
       headers: {
@@ -107,6 +114,7 @@ export async function renderErrorCardResponse(args: {
   status: number;
   cacheControl: string;
   fontUrl?: string;
+  allowedOrigin?: string;
 }): Promise<Response> {
   const height = 260;
   const element = errorTree(args.message, args.options, height);
@@ -117,6 +125,7 @@ export async function renderErrorCardResponse(args: {
       args.options.width,
       height,
       args.fontUrl,
+      args.allowedOrigin,
     );
     return new Response(svg, {
       status: args.status,
