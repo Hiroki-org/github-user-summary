@@ -99,7 +99,7 @@ describe("GET /api/card/[username] rate limiting", () => {
         });
 
         // Mock fetchCardData to resolve successfully to avoid error rendering for successful requests
-        vi.mocked(fetchCardData).mockResolvedValue({} as any);
+        vi.mocked(fetchCardData).mockResolvedValue({} as unknown as ReturnType<typeof fetchCardData>);
 
         // Fill up the rate limit (50 requests)
         for (let i = 0; i < 50; i++) {
