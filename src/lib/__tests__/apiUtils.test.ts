@@ -17,11 +17,16 @@ vi.mock('../githubViewer', () => ({
     fetchViewerLogin: vi.fn(),
 }));
 
+vi.mock('@/lib/auth', () => ({
+    authOptions: {},
+}));
+
 describe('apiUtils', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
     describe('getAuthenticatedUser', () => {
-        beforeEach(() => {
-            vi.clearAllMocks();
-        });
 
         it('returns null when session is missing', async () => {
             vi.mocked(getServerSession).mockResolvedValue(null);
@@ -69,6 +74,17 @@ describe('apiUtils', () => {
             const result = await getAuthenticatedUser();
             expect(result).toEqual({ username: 'fetcheduser', token: 'valid-token' });
             expect(fetchViewerLogin).toHaveBeenCalledWith('valid-token');
+        });
+
+        it('propagates exceptions thrown by fetchViewerLogin', async () => {
+            const mockSession = {
+                accessToken: 'invalid-token',
+                user: { name: 'Test User' },
+            };
+            vi.mocked(getServerSession).mockResolvedValue(mockSession as unknown as Session);
+            vi.mocked(fetchViewerLogin).mockRejectedValue(new Error('GitHub API Error'));
+
+            await expect(getAuthenticatedUser()).rejects.toThrow('GitHub API Error');
         });
     });
 
