@@ -19,7 +19,8 @@ describe("MyPageBanner", () => {
     vi.mocked(useSession).mockReturnValue({
       data: null,
       status: "unauthenticated",
-    } as unknown as { data: null; status: "unauthenticated" });
+      update: vi.fn(),
+    } as unknown as ReturnType<typeof useSession>);
 
     const { container } = render(<MyPageBanner username="testuser" />);
     expect(container).toBeEmptyDOMElement();
@@ -29,7 +30,8 @@ describe("MyPageBanner", () => {
     vi.mocked(useSession).mockReturnValue({
       data: null,
       status: "loading",
-    } as unknown as { data: null; status: "loading" });
+      update: vi.fn(),
+    } as unknown as ReturnType<typeof useSession>);
 
     const { container } = render(<MyPageBanner username="testuser" />);
     expect(container).toBeEmptyDOMElement();
@@ -39,7 +41,8 @@ describe("MyPageBanner", () => {
     vi.mocked(useSession).mockReturnValue({
       data: { user: {} },
       status: "authenticated",
-    } as unknown as { data: { user: object }; status: "authenticated" });
+      update: vi.fn(),
+    } as unknown as ReturnType<typeof useSession>);
 
     const { container } = render(<MyPageBanner username="testuser" />);
     expect(container).toBeEmptyDOMElement();
@@ -49,7 +52,8 @@ describe("MyPageBanner", () => {
     vi.mocked(useSession).mockReturnValue({
       data: { user: { login: "otheruser" } },
       status: "authenticated",
-    } as unknown as { data: { user: { login: string } }; status: "authenticated" });
+      update: vi.fn(),
+    } as unknown as ReturnType<typeof useSession>);
 
     const { container } = render(<MyPageBanner username="testuser" />);
     expect(container).toBeEmptyDOMElement();
@@ -59,7 +63,8 @@ describe("MyPageBanner", () => {
     vi.mocked(useSession).mockReturnValue({
       data: { user: { login: "testuser" } },
       status: "authenticated",
-    } as unknown as { data: { user: { login: string } }; status: "authenticated" });
+      update: vi.fn(),
+    } as unknown as ReturnType<typeof useSession>);
 
     render(<MyPageBanner username="testuser" />);
 
@@ -71,7 +76,8 @@ describe("MyPageBanner", () => {
     vi.mocked(useSession).mockReturnValue({
       data: { user: { login: "TestUser" } },
       status: "authenticated",
-    } as unknown as { data: { user: { login: string } }; status: "authenticated" });
+      update: vi.fn(),
+    } as unknown as ReturnType<typeof useSession>);
 
     render(<MyPageBanner username="tEsTuSeR" />);
 
