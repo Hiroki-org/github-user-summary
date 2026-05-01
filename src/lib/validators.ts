@@ -52,14 +52,23 @@ export function sanitizeUrl(url: string | null | undefined): string {
 
 /**
  * Validates if a font URL is from a trusted source.
- * Trusted sources include cdn.jsdelivr.net and the application's own origin.
+ * Trusted sources include specific paths on cdn.jsdelivr.net and the application's own origin.
+ * All URLs must use the HTTPS protocol.
  */
 export function isTrustedFontUrl(url: string, allowedOrigin?: string): boolean {
   try {
     const parsedUrl = new URL(url);
 
-    // Allow JSDelivr
-    if (parsedUrl.hostname === "cdn.jsdelivr.net") {
+    // Enforce HTTPS
+    if (parsedUrl.protocol !== "https:") {
+      return false;
+    }
+
+    // Allow JSDelivr only for trusted paths (e.g., googlefonts)
+    if (
+      parsedUrl.hostname === "cdn.jsdelivr.net" &&
+      parsedUrl.pathname.startsWith("/gh/googlefonts/noto-fonts")
+    ) {
       return true;
     }
 

@@ -13,6 +13,7 @@ export * from "./cardOptions";
 const DEFAULT_FONT_URL =
   "https://cdn.jsdelivr.net/gh/googlefonts/noto-fonts@main/hinted/ttf/NotoSans/NotoSans-Regular.ttf";
 const FONT_FETCH_TIMEOUT_MS = 5000;
+const MAX_FONT_CACHE_SIZE = 10;
 
 const fontCache = new Map<string, Promise<ArrayBuffer>>();
 
@@ -44,6 +45,12 @@ function getFontData(fontUrl?: string, allowedOrigin?: string): Promise<ArrayBuf
         clearTimeout(timeoutId);
       });
 
+    if (fontCache.size >= MAX_FONT_CACHE_SIZE) {
+      const firstKey = fontCache.keys().next().value;
+      if (firstKey) {
+        fontCache.delete(firstKey);
+      }
+    }
     fontCache.set(targetUrl, pending);
   }
 

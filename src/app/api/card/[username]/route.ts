@@ -13,7 +13,7 @@ export async function GET(
     const { username } = await params;
     const url = new URL(request.url);
     const options = parseCardQueryParams(url.searchParams);
-    const allowedOrigin = url.origin;
+    const allowedOrigin = process.env.APP_URL || "http://localhost:3000";
     const fontUrl = `${allowedOrigin}/fonts/NotoSans-Regular.ttf`;
 
     try {
