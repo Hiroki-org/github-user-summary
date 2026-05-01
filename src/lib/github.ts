@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from 'react';
 import { logger } from "@/lib/logger";
 
 import type {
@@ -626,7 +627,7 @@ type GitHubEvent = {
  * @throws {UserNotFoundError} ユーザーが見つからない場合
  * @throws {RateLimitError} APIレート制限に達した場合
  */
-export async function fetchActivity(
+export const fetchActivity = cache(async function fetchActivity(
   username: string,
   token?: string
 ): Promise<ActivityData> {
@@ -694,7 +695,7 @@ export async function fetchActivity(
     eventBreakdown,
     totalEvents: allEvents.length,
   };
-}
+});
 
 // ===== 6. fetchUserSummary =====
 
