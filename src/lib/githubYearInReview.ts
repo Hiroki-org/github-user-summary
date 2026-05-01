@@ -1,6 +1,7 @@
 import "server-only";
 
 import { GitHubApiError, RateLimitError, UserNotFoundError, type YearInReviewData } from "@/lib/types";
+import { headers } from "@/lib/github";
 import { buildHourlyHeatmapFromCommitDates, getMostActiveDayFromCalendar, getMostActiveHour } from "@/lib/yearInReviewUtils";
 
 
@@ -104,13 +105,6 @@ type GitHubCommit = {
     };
 };
 
-function headers(token: string): HeadersInit {
-    return {
-        Accept: "application/vnd.github+json",
-        Authorization: `Bearer ${token}`,
-        "User-Agent": "github-user-summary",
-    };
-}
 
 function handleRateLimit(res: Response): never {
     const resetHeader = res.headers.get("X-RateLimit-Reset");
