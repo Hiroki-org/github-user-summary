@@ -51,7 +51,7 @@ describe("SkillsCard", () => {
     expect(screen.getByTestId("mock-language-chart")).toBeInTheDocument();
 
     // Topics should not be displayed
-    expect(screen.queryByText("Repository Topics")).toBeNull();
+    expect(screen.queryByText("Repository Topics")).not.toBeInTheDocument();
   });
 
   it("renders only topics when languages is empty", () => {
@@ -71,7 +71,7 @@ describe("SkillsCard", () => {
     expect(screen.getByText("5")).toBeInTheDocument(); // The count span
 
     // Languages should not be displayed
-    expect(screen.queryByTestId("mock-language-chart")).toBeNull();
+    expect(screen.queryByTestId("mock-language-chart")).not.toBeInTheDocument();
   });
 
   it("renders both languages and topics", () => {
@@ -113,8 +113,8 @@ describe("SkillsCard", () => {
     // Check detailed list limit (5 items)
     expect(screen.getByText("Lang-0")).toBeInTheDocument();
     expect(screen.getByText("Lang-4")).toBeInTheDocument();
-    expect(screen.queryByText("Lang-5")).toBeNull();
-    expect(screen.queryByText("Lang-10")).toBeNull();
+    expect(screen.queryByText("Lang-5")).not.toBeInTheDocument();
+    expect(screen.queryByText("Lang-10")).not.toBeInTheDocument();
   });
 
   it("truncates topics to the top 10", () => {
@@ -135,6 +135,6 @@ describe("SkillsCard", () => {
     expect(screen.getByText("topic-9")).toBeInTheDocument();
 
     // Since it's truncated to 10, topic-10 shouldn't be there
-    expect(screen.queryByText("topic-10")).toBeNull();
+    expect(screen.queryByText("topic-10")).not.toBeInTheDocument();
   });
 });
