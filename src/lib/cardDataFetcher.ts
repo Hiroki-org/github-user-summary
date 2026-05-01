@@ -169,8 +169,12 @@ function buildHeatmapFromRepoPushes(repos: CardRepoData[]): { days: { date: stri
     }
 
     for (const repo of repos) {
+        if (!repo.pushedAt) {
+            continue;
+        }
+
         let key: string;
-        if (repo.pushedAt && repo.pushedAt.length >= 10 && repo.pushedAt[4] === '-' && repo.pushedAt[7] === '-') {
+        if (repo.pushedAt.length >= 10 && repo.pushedAt[4] === '-' && repo.pushedAt[7] === '-') {
             key = repo.pushedAt.slice(0, 10);
         } else {
             const pushed = new Date(repo.pushedAt);
