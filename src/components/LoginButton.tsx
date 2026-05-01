@@ -15,7 +15,7 @@ export default function LoginButton() {
     return (
       <div className="flex items-center gap-3">
         <img
-          src={session.user?.image ?? ""}
+          src={session.user?.image || undefined}
           alt={session.user?.name ?? "User"}
           className="h-8 w-8 rounded-full border border-card-border"
         />

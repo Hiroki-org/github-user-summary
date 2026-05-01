@@ -39,6 +39,7 @@ export default function SkillsCard({ repositories }: Props) {
             {topLanguages.map((lang, i) => (
               <div
                 key={lang.name}
+                data-testid="language-bar"
                 className="transition-all duration-1000 ease-out hover:brightness-110"
                 style={{
                   width: `${lang.percentage}%`,
