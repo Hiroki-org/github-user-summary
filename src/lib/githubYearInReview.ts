@@ -1,6 +1,7 @@
 import "server-only";
 
 import { GitHubApiError, RateLimitError, UserNotFoundError, type YearInReviewData } from "@/lib/types";
+import { handleRateLimit } from "@/lib/github";
 import { buildHourlyHeatmapFromCommitDates, getMostActiveDayFromCalendar, getMostActiveHour } from "@/lib/yearInReviewUtils";
 
 
@@ -112,11 +113,6 @@ function headers(token: string): HeadersInit {
     };
 }
 
-function handleRateLimit(res: Response): never {
-    const resetHeader = res.headers.get("X-RateLimit-Reset");
-    const resetTimestamp = resetHeader ? Number.parseInt(resetHeader, 10) : Math.floor(Date.now() / 1000) + 3600;
-    throw new RateLimitError(Number.isFinite(resetTimestamp) ? resetTimestamp : Math.floor(Date.now() / 1000) + 3600);
-}
 
 async function graphql<T>(query: string, token: string, variables: Record<string, unknown>): Promise<T> {
     const res = await fetch(GITHUB_GRAPHQL, {

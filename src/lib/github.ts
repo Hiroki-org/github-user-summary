@@ -37,10 +37,10 @@ function headers(token?: string): HeadersInit {
   return h;
 }
 
-function handleRateLimit(res: Response): never {
+export function handleRateLimit(res: Response): never {
   const resetHeader = res.headers.get("X-RateLimit-Reset");
-  const resetTimestamp = resetHeader ? parseInt(resetHeader, 10) : Math.floor(Date.now() / 1000) + 3600;
-  throw new RateLimitError(resetTimestamp);
+  const resetTimestamp = resetHeader ? Number.parseInt(resetHeader, 10) : Math.floor(Date.now() / 1000) + 3600;
+  throw new RateLimitError(Number.isFinite(resetTimestamp) ? resetTimestamp : Math.floor(Date.now() / 1000) + 3600);
 }
 
 async function handleResponse<T>(res: Response): Promise<T> {
