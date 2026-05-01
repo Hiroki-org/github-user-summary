@@ -23,7 +23,7 @@ import {
 const GITHUB_API = "https://api.github.com";
 const GITHUB_GRAPHQL = "https://api.github.com/graphql";
 
-function headers(token?: string): HeadersInit {
+export function headers(token?: string): HeadersInit {
   const h: HeadersInit = {
     Accept: "application/vnd.github+json",
     "User-Agent": "github-user-summary",
