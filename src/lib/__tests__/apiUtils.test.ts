@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { getAuthenticatedUser, handleErrorResponse } from '../apiUtils';
-import { getServerSession } from 'next-auth';
+import { getServerSession, Session } from 'next-auth';
 import { fetchViewerLogin } from '../githubViewer';
 
 vi.mock('next/server', () => ({
@@ -31,7 +31,7 @@ describe('apiUtils', () => {
 
         it('returns null when token is missing from the session', async () => {
             const mockSession = { user: { name: 'test' } };
-            vi.mocked(getServerSession).mockResolvedValue(mockSession as any);
+            vi.mocked(getServerSession).mockResolvedValue(mockSession as unknown as Session);
             const result = await getAuthenticatedUser();
             expect(result).toBeNull();
         });
@@ -41,7 +41,7 @@ describe('apiUtils', () => {
                 accessToken: '',
                 user: { login: 'testuser' },
             };
-            vi.mocked(getServerSession).mockResolvedValue(mockSession as any);
+            vi.mocked(getServerSession).mockResolvedValue(mockSession as unknown as Session);
             const result = await getAuthenticatedUser();
             expect(result).toBeNull();
         });
@@ -51,7 +51,7 @@ describe('apiUtils', () => {
                 accessToken: 'valid-token',
                 user: { login: 'testuser' },
             };
-            vi.mocked(getServerSession).mockResolvedValue(mockSession as any);
+            vi.mocked(getServerSession).mockResolvedValue(mockSession as unknown as Session);
 
             const result = await getAuthenticatedUser();
             expect(result).toEqual({ username: 'testuser', token: 'valid-token' });
@@ -63,7 +63,7 @@ describe('apiUtils', () => {
                 accessToken: 'valid-token',
                 user: { name: 'Test User' }, // missing login
             };
-            vi.mocked(getServerSession).mockResolvedValue(mockSession as any);
+            vi.mocked(getServerSession).mockResolvedValue(mockSession as unknown as Session);
             vi.mocked(fetchViewerLogin).mockResolvedValue('fetcheduser');
 
             const result = await getAuthenticatedUser();
