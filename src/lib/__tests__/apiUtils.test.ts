@@ -25,11 +25,11 @@ vi.mock('next/server', () => {
 });
 
 describe('apiUtils', () => {
-  describe('getAuthenticatedUser', () => {
-    beforeEach(() => {
-      vi.clearAllMocks();
-    });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
+  describe('getAuthenticatedUser', () => {
     it('should return null if session is null', async () => {
       vi.mocked(getServerSession).mockResolvedValue(null);
 
