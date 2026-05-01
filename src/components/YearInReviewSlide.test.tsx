@@ -32,17 +32,17 @@ describe("YearInReviewSlide", () => {
     expect(screen.getByText("Your Year at a Glance")).toBeInTheDocument();
     expect(screen.getByText("A compact view")).toBeInTheDocument();
 
-    // Data formatting (toLocaleString)
-    expect(screen.getByText("12,345")).toBeInTheDocument();
-    expect(screen.getByText("5,000")).toBeInTheDocument();
-    expect(screen.getByText("50")).toBeInTheDocument();
-    expect(screen.getByText("20")).toBeInTheDocument();
-    expect(screen.getByText("30")).toBeInTheDocument();
+    // Data formatting (toLocaleString) - Use dynamic value to avoid locale dependency
+    expect(screen.getByText(mockData.totalContributions.toLocaleString())).toBeInTheDocument();
+    expect(screen.getByText(mockData.totalCommits.toLocaleString())).toBeInTheDocument();
+    expect(screen.getByText(mockData.totalPRs.toLocaleString())).toBeInTheDocument();
+    expect(screen.getByText(mockData.totalIssues.toLocaleString())).toBeInTheDocument();
+    expect(screen.getByText(mockData.totalReviews.toLocaleString())).toBeInTheDocument();
     expect(screen.getByText("14:00")).toBeInTheDocument();
 
-    // Active day and top repo
+    // Active day and top repo - Use RegExp for top repo to avoid JSX whitespace trim issues
     expect(screen.getByText("Most active day: Monday")).toBeInTheDocument();
-    expect(screen.getByText("Top repo: johndoe/cool-project (300)")).toBeInTheDocument();
+    expect(screen.getByText(/Top repo: johndoe\/cool-project\s*\(300\)/)).toBeInTheDocument();
   });
 
   it("renders correctly without caption", () => {
