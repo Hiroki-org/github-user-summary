@@ -64,8 +64,6 @@ function getBlocksByColumn(
   return layout.blocks.filter((block) => block.column === column);
 }
 
-
-
 function getInsertIndex(
   layout: CardLayout,
   activeId: CardBlockId,
@@ -76,10 +74,10 @@ function getInsertIndex(
     let count = 0;
     const blocks = layout.blocks;
     for (let i = 0; i < blocks.length; i++) {
-        const block = blocks[i];
-        if (block.column === column && block.id !== activeId) {
-            count++;
-        }
+      const block = blocks[i];
+      if (block.column === column && block.id !== activeId) {
+        count++;
+      }
     }
     return { column, index: count };
   }
@@ -87,10 +85,10 @@ function getInsertIndex(
   const blocks = layout.blocks;
   let overBlock: CardBlock | undefined;
   for (let i = 0; i < blocks.length; i++) {
-      if (blocks[i].id === overId) {
-          overBlock = blocks[i];
-          break;
-      }
+    if (blocks[i].id === overId) {
+      overBlock = blocks[i];
+      break;
+    }
   }
 
   if (!overBlock) {
@@ -99,15 +97,15 @@ function getInsertIndex(
 
   let index = 0;
   for (let i = 0; i < blocks.length; i++) {
-      const block = blocks[i];
-      if (block.column === overBlock.column) {
-          if (block.id === overId) {
-              break;
-          }
-          if (block.id !== activeId) {
-              index++;
-          }
+    const block = blocks[i];
+    if (block.column === overBlock.column) {
+      if (block.id === overId) {
+        break;
       }
+      if (block.id !== activeId) {
+        index++;
+      }
+    }
   }
 
   return {
