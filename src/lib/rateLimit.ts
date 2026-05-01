@@ -1,6 +1,6 @@
-
 export class RateLimiter {
     private cache = new Map<string, { count: number; resetTime: number }>();
+    private cleanupThreshold = 1000;
 
     constructor(private limit: number, private windowMs: number) {}
 
@@ -14,7 +14,9 @@ export class RateLimiter {
 
     check(key: string): { success: boolean; reset: number } {
         const now = Date.now();
-        this.cleanup(now); // Lazy cleanup
+        if (this.cache.size > this.cleanupThreshold) {
+            this.cleanup(now); // Lazy cleanup only when exceeding threshold
+        }
 
         const record = this.cache.get(key);
 
