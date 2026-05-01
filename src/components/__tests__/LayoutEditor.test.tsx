@@ -57,7 +57,7 @@ const defaultLayout: CardLayout = {
 };
 
 describe("LayoutEditor", () => {
-  let mockOnLayoutChange: ReturnType<typeof vi.fn>; // @ts-expect-error TS does not know it is mocked
+  let mockOnLayoutChange: ReturnType<typeof vi.fn>;
   let mockOnToggleVisibility: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
