@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { getAuthenticatedUser, handleErrorResponse } from '../apiUtils';
-import { getServerSession } from 'next-auth';
+import { getServerSession, Session } from 'next-auth';
 import { fetchViewerLogin } from '../githubViewer';
 import { NextResponse } from 'next/server';
 
@@ -42,7 +42,7 @@ describe('apiUtils', () => {
     it('should return null if token is missing in session', async () => {
       vi.mocked(getServerSession).mockResolvedValue({
         user: { name: 'test' },
-      } as unknown as any); // memory rule: double casting
+      } as unknown as Session);
 
       const result = await getAuthenticatedUser();
 
@@ -53,7 +53,7 @@ describe('apiUtils', () => {
       vi.mocked(getServerSession).mockResolvedValue({
         accessToken: 'test-token',
         user: { login: 'test-user' },
-      } as unknown as any);
+      } as unknown as Session);
 
       const result = await getAuthenticatedUser();
 
@@ -65,7 +65,7 @@ describe('apiUtils', () => {
       vi.mocked(getServerSession).mockResolvedValue({
         accessToken: 'test-token',
         user: { name: 'test-user' }, // missing login
-      } as unknown as any);
+      } as unknown as Session);
       vi.mocked(fetchViewerLogin).mockResolvedValue('fetched-user');
 
       const result = await getAuthenticatedUser();
