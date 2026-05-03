@@ -168,13 +168,13 @@ describe("useYearInReview", () => {
 
         global.fetch = vi.fn().mockResolvedValue({
             ok: true,
-            json: async () => ({ totalContributions: 100 }),
+            json: async () => ({ totalContributions: 100, monthlyContributions: 0, weeklyContributions: 0, }),
         });
 
         const { result } = renderHook(() => useYearInReview(2023), { wrapper });
 
         await waitFor(() => {
-            expect(result.current.data).toEqual({ totalContributions: 100 });
+            expect(result.current.data).toEqual({ totalContributions: 100, monthlyContributions: 0, weeklyContributions: 0, });
         });
 
         expect(result.current.isLoading).toBe(false);

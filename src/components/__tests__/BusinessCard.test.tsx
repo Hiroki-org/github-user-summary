@@ -51,7 +51,7 @@ const createMockSummary = (overrides?: Partial<UserSummary>): UserSummary => ({
     totalPRs: 50,
     totalIssues: 20,
     totalReviews: 30,
-    totalContributions: 600,
+    totalContributions: 600, monthlyContributions: 0, weeklyContributions: 0,
     longestStreak: 10,
     currentStreak: 5,
     mostActiveDay: "2023-01-01",

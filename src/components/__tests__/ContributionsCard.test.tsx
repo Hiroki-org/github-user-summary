@@ -9,7 +9,7 @@ describe("ContributionsCard", () => {
     const { container } = render(
       <ContributionsCard
         contributions={{
-          totalContributions: 0,
+          totalContributions: 0, monthlyContributions: 0, weeklyContributions: 0,
           totalCommits: 0,
           totalPRs: 0,
           totalIssues: 0,
@@ -29,7 +29,7 @@ describe("ContributionsCard", () => {
     render(
       <ContributionsCard
         contributions={{
-          totalContributions: 10,
+          totalContributions: 10, monthlyContributions: 0, weeklyContributions: 0,
           totalCommits: 5,
           totalPRs: 3,
           totalIssues: 1,

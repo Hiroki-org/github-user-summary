@@ -55,6 +55,8 @@ export type ContributionData = {
   totalIssues: number;
   totalReviews: number;
   totalContributions: number;
+  monthlyContributions: number;
+  weeklyContributions: number;
   longestStreak: number;
   currentStreak: number;
   mostActiveDay: string;
