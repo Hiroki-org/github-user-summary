@@ -170,7 +170,7 @@ describe("fetchYearInReviewData success paths", () => {
                                     totalIssueContributions: 5,
                                     totalPullRequestReviewContributions: 2,
                                     contributionCalendar: {
-                                        totalContributions: 117,
+                                        totalContributions: 117, monthlyContributions: 0, weeklyContributions: 0,
                                         weeks: [
                                             {
                                                 contributionDays: [
@@ -266,7 +266,7 @@ describe("fetchYearInReviewData success paths", () => {
                                     totalIssueContributions: 0,
                                     totalPullRequestReviewContributions: 0,
                                     contributionCalendar: {
-                                        totalContributions: 0,
+                                        totalContributions: 0, monthlyContributions: 0, weeklyContributions: 0,
                                         weeks: []
                                     }
                                 }
@@ -317,7 +317,7 @@ describe("fetchYearInReviewData success paths", () => {
                                     totalIssueContributions: 0,
                                     totalPullRequestReviewContributions: 0,
                                     contributionCalendar: {
-                                        totalContributions: 10,
+                                        totalContributions: 10, monthlyContributions: 0, weeklyContributions: 0,
                                         weeks: []
                                     }
                                 }

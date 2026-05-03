@@ -9,7 +9,7 @@ describe("ContributionGraph", () => {
     const { container } = render(
       <ContributionGraph
         contributions={{
-          totalContributions: 0,
+          totalContributions: 0, monthlyContributions: 0, weeklyContributions: 0,
           totalCommits: 0,
           totalPRs: 0,
           totalIssues: 0,
@@ -29,7 +29,7 @@ describe("ContributionGraph", () => {
     render(
       <ContributionGraph
         contributions={{
-          totalContributions: 3,
+          totalContributions: 3, monthlyContributions: 0, weeklyContributions: 0,
           totalCommits: 0,
           totalPRs: 0,
           totalIssues: 0,

@@ -543,7 +543,11 @@ export async function fetchContributions(
     }))
   );
 
+
   calendar.sort((a, b) => a.date.localeCompare(b.date));
+
+  const weeklyContributions = calendar.slice(-7).reduce((sum, day) => sum + day.count, 0);
+  const monthlyContributions = calendar.slice(-30).reduce((sum, day) => sum + day.count, 0);
 
   const { longestStreak, currentStreak } = calculateStreaks(calendar);
   const mostActiveDay = calculateMostActiveDay(calendar);
@@ -553,7 +557,10 @@ export async function fetchContributions(
     totalPRs: cc.totalPullRequestContributions,
     totalIssues: cc.totalIssueContributions,
     totalReviews: cc.totalPullRequestReviewContributions,
+
     totalContributions: cc.contributionCalendar.totalContributions,
+    monthlyContributions,
+    weeklyContributions,
     longestStreak,
     currentStreak,
     mostActiveDay,

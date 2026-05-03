@@ -63,7 +63,7 @@ const mockSummary: UserSummary = {
     totalPRs: 50,
     totalIssues: 30,
     totalReviews: 20,
-    totalContributions: 600,
+    totalContributions: 600, monthlyContributions: 0, weeklyContributions: 0,
     longestStreak: 10,
     currentStreak: 2,
     mostActiveDay: "Friday",

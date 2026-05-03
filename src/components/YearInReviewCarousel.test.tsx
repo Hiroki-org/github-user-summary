@@ -8,7 +8,7 @@ import type { YearInReviewData } from "@/lib/types";
 
 const mockData: YearInReviewData = {
   year: 2023,
-  totalContributions: 1000,
+  totalContributions: 1000, monthlyContributions: 0, weeklyContributions: 0,
   totalCommits: 500,
   totalPRs: 50,
   totalIssues: 20,
