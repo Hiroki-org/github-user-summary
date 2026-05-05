@@ -132,7 +132,7 @@ export const MOCK_CONTRIBUTIONS = {
         totalIssueContributions: 40,
         totalPullRequestReviewContributions: 60,
         contributionCalendar: {
-          totalContributions: 680, monthlyContributions: 0, weeklyContributions: 0,
+          totalContributions: 680,
           weeks: [
             {
               contributionDays: [
