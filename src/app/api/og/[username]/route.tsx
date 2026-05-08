@@ -3,8 +3,10 @@ import { NextRequest } from "next/server";
 
 import { logger } from "@/lib/logger";
 import { isValidGitHubUsername, sanitizeUrl } from "@/lib/validators";
+import { RateLimiter } from "@/lib/rateLimit";
 
 export const runtime = "edge";
+const rateLimiter = new RateLimiter(50, 60 * 1000);
 const ONE_HOUR_IN_SECONDS = 60 * 60;
 const ONE_DAY_IN_SECONDS = 24 * ONE_HOUR_IN_SECONDS;
 const OG_CACHE_CONTROL = `public, max-age=${ONE_HOUR_IN_SECONDS}, s-maxage=${ONE_DAY_IN_SECONDS}, stale-while-revalidate=${ONE_DAY_IN_SECONDS}`;
@@ -14,6 +16,13 @@ export async function GET(
   { params }: { params: Promise<{ username: string }> }
 ) {
   const { username } = await params;
+
+  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+  const rateLimitResult = rateLimiter.check(ip);
+
+  if (!rateLimitResult.success) {
+    return new Response("Rate limit exceeded", { status: 429 });
+  }
 
   if (!isValidGitHubUsername(username)) {
     return new Response("Invalid username", { status: 400 });
