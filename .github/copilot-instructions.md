@@ -15,15 +15,15 @@ This repository is **not** a monorepo. There is no separate backend service. Ser
 
 ### Quick Reference
 
-| Component | Tech | Location |
-| --- | --- | --- |
-| App shell | Next.js 16 App Router, React 19, Tailwind CSS 4 | `src/app` |
-| Auth | NextAuth.js + GitHub OAuth | `src/lib/auth.ts`, `src/app/api/auth/[...nextauth]/route.ts` |
-| GitHub data layer | GitHub REST + GraphQL APIs | `src/lib/github.ts`, `src/lib/githubViewer.ts` |
-| Dashboard APIs | Next.js route handlers + SWR clients | `src/app/api/dashboard/*`, `src/hooks/useDashboardData.ts` |
-| Shareable cards | `@vercel/og`, `satori`, image rendering | `src/app/api/card/[username]/route.ts`, `src/lib/cardRenderer.tsx` |
-| Tests | Vitest | `src/lib/__tests__`, `src/app/api/**/*.test.ts` |
-| CI | GitHub Actions | `.github/workflows/ci.yml` |
+| Component         | Tech                                            | Location                                                           |
+| ----------------- | ----------------------------------------------- | ------------------------------------------------------------------ |
+| App shell         | Next.js 16 App Router, React 19, Tailwind CSS 4 | `src/app`                                                          |
+| Auth              | NextAuth.js + GitHub OAuth                      | `src/lib/auth.ts`, `src/app/api/auth/[...nextauth]/route.ts`       |
+| GitHub data layer | GitHub REST + GraphQL APIs                      | `src/lib/github.ts`, `src/lib/githubViewer.ts`                     |
+| Dashboard APIs    | Next.js route handlers + SWR clients            | `src/app/api/dashboard/*`, `src/hooks/useDashboardData.ts`         |
+| Shareable cards   | `@vercel/og`, `satori`, image rendering         | `src/app/api/card/[username]/route.ts`, `src/lib/cardRenderer.tsx` |
+| Tests             | Vitest                                          | `src/lib/__tests__`, `src/app/api/**/*.test.ts`                    |
+| CI                | GitHub Actions                                  | `.github/workflows/ci.yml`                                         |
 
 ### Getting Started
 
@@ -169,21 +169,21 @@ When testing route handlers:
 
 ### Useful Paths & Entry Points
 
-| Purpose | Path |
-| --- | --- |
-| Root layout | `src/app/layout.tsx` |
-| Public profile page | `src/app/[username]/page.tsx` |
-| Dashboard overview page | `src/app/dashboard/page.tsx` |
-| NextAuth config | `src/lib/auth.ts` |
-| NextAuth route | `src/app/api/auth/[...nextauth]/route.ts` |
-| Dashboard summary route | `src/app/api/dashboard/summary/route.ts` |
-| Card image route | `src/app/api/card/[username]/route.ts` |
-| Card renderer | `src/lib/cardRenderer.tsx` |
-| GitHub summary fetchers | `src/lib/github.ts` |
-| Dashboard SWR hooks | `src/hooks/useDashboardData.ts` |
-| Core unit tests | `src/lib/__tests__/*.test.ts` |
-| Route tests | `src/app/api/**/*.test.ts` |
-| CI workflow | `.github/workflows/ci.yml` |
+| Purpose                 | Path                                      |
+| ----------------------- | ----------------------------------------- |
+| Root layout             | `src/app/layout.tsx`                      |
+| Public profile page     | `src/app/[username]/page.tsx`             |
+| Dashboard overview page | `src/app/dashboard/page.tsx`              |
+| NextAuth config         | `src/lib/auth.ts`                         |
+| NextAuth route          | `src/app/api/auth/[...nextauth]/route.ts` |
+| Dashboard summary route | `src/app/api/dashboard/summary/route.ts`  |
+| Card image route        | `src/app/api/card/[username]/route.ts`    |
+| Card renderer           | `src/lib/cardRenderer.tsx`                |
+| GitHub summary fetchers | `src/lib/github.ts`                       |
+| Dashboard SWR hooks     | `src/hooks/useDashboardData.ts`           |
+| Core unit tests         | `src/lib/__tests__/*.test.ts`             |
+| Route tests             | `src/app/api/**/*.test.ts`                |
+| CI workflow             | `.github/workflows/ci.yml`                |
 
 ### Common Tasks
 
@@ -324,13 +324,57 @@ Use it before treating the PR as merge-ready.
 
 ### Responding to PR Reviews
 
-For each review thread, do one of the following:
+#### PR Review 対応の基本原則
 
-- Apply the requested change, push it, and reply with what changed
-- Or explain clearly why the suggestion is being deferred or declined
+PR を作成しただけで作業を完了と見なさないでください。
 
-Do not leave review threads unacknowledged.
-Do not push a review fix without also doing the post-push wait-and-check cycle.
+- review comments、review threads、CI checks を必ず確認してください。
+- 指摘内容を分類し、必要に応じて修正を行ってください。
+- 修正後は commit / push を行い、CI が完了するまで待機・確認してください。
+- 対応した review comment / thread には必ず返信を投稿してください。
+- 解決済みの thread についてのみ、resolve 処理を行ってください。
+
+#### gh CLI / GitHub API / GraphQL の利用ルール
+
+PR 関連の操作を開始する前に、必ず以下を実行して認証状態を確認してください。
+
+- `gh --version` および `gh auth status` を確認する。
+- `gh auth status` が失敗した場合は、修正作業には進まず、認証エラーとして処理を停止してください。
+
+情報の取得と操作には以下のツールを使用します。
+
+- PR 情報、review comments、CI checks の確認には `gh` CLI を使用する。
+- review thread の一覧取得と resolve 処理には GitHub GraphQL を使用する。
+- conversation の resolve は必ず GraphQL の `resolveReviewThread` mutation を用いて行う。
+
+#### 禁止事項
+
+以下の行為は固く禁じられています。
+
+- 通常のコメントで "Resolve conversation" 等とテキスト投稿し、resolve 処理の代用とすること。
+- review の dismiss と conversation の resolve を混同すること。review の dismiss は明示的な指示があった場合のみ実行してください。
+- 指示されていない対象外の PR を勝手に操作・検証すること。
+- 明示的な指示がない限り、PR の close、branch の delete、merge を行うこと。
+- 実行結果の証跡を伴わずに「完了」と報告すること。
+
+#### 最終報告フォーマット
+
+PR 対応が完了した際、またはエラーで停止した際は、必ず以下のフォーマットで最終報告を行ってください。
+
+```markdown
+- 対象 PR URL:
+- gh version:
+- gh auth status の結果:
+- 取得した review thread 数:
+- resolve 前の unresolved thread 数:
+- resolve 後の unresolved thread 数:
+- 返信したコメント URL:
+- resolve した thread ID 一覧:
+- 実行した test / lint / typecheck コマンドと結果:
+- CI checks の結果:
+- できなかったこと:
+- どこで止まったか:
+```
 
 Suggested review workflow:
 
@@ -348,8 +392,6 @@ git push && sleep 300 && gh pr checks "$PR_URL"
 Keep the `&&` guard, or use an equivalent conditional form. Do not rewrite this as two unconditional lines.
 
 Then fetch review state again. A review-fix push can trigger fresh CI, fresh bot comments, or follow-up human review.
-
-If checks are still pending, keep repeating the sleep-and-check cycle until they finish or fail. If new review comments arrive after the push, handle them before treating the PR as done.
 
 ### PR Consolidation Playbook
 
