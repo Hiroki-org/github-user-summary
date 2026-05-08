@@ -1,14 +1,22 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedUser, handleErrorResponse } from "@/lib/apiUtils";
+import { handleErrorResponse } from "@/lib/apiUtils";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { fetchViewerLogin } from "@/lib/githubViewer";
 
 import { fetchUserSummary } from "@/lib/github";
 
 export async function GET() {
     try {
-        const user = await getAuthenticatedUser();
-        if (!user) {
+        const session = await getServerSession(authOptions);
+        const token = session?.accessToken;
+
+        if (!session || !token) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
+
+        const username = session.user?.login ?? (await fetchViewerLogin(token));
+        const user = { username, token };
 
         const summary = await fetchUserSummary(user.username, user.token);
         return NextResponse.json({ username: user.username, summary });

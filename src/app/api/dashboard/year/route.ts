@@ -1,14 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthenticatedUser, handleErrorResponse } from "@/lib/apiUtils";
+import { handleErrorResponse } from "@/lib/apiUtils";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { fetchViewerLogin } from "@/lib/githubViewer";
 
 import { fetchYearInReviewData } from "@/lib/githubYearInReview";
 
 export async function GET(request: NextRequest) {
     try {
-        const user = await getAuthenticatedUser();
-        if (!user) {
+        const session = await getServerSession(authOptions);
+        const token = session?.accessToken;
+
+        if (!session || !token) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
+
+        const username = session.user?.login ?? (await fetchViewerLogin(token));
+        const user = { username, token };
 
         const yearParam = request.nextUrl.searchParams.get("year");
         const year = yearParam ? Number.parseInt(yearParam, 10) : new Date().getUTCFullYear();
