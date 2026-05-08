@@ -15,7 +15,7 @@ describe("isTrustedFontUrl", () => {
     });
 
     it("allows the trusted application origin via HTTPS", () => {
-        expect(isTrustedFontUrl("https://localhost/fonts/NotoSans-Regular.ttf", "https://localhost")).toBe(true);
+        expect(isTrustedFontUrl("https://myapp.com/fonts/NotoSans-Regular.ttf", "https://myapp.com")).toBe(true);
     });
 
     it("blocks application origin via HTTP", () => {
