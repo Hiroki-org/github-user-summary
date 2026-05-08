@@ -9,6 +9,7 @@ import {
   useDroppable,
   useSensor,
   useSensors,
+  type DragEndEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -218,7 +219,7 @@ export default function LayoutEditor({
   );
 
   const handleDragEnd = useCallback(
-    (event) => {
+    (event: DragEndEvent) => {
       const { active, over } = event;
       if (!over || active.id === over.id) {
         return;
