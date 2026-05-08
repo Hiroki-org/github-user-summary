@@ -1,6 +1,6 @@
 import "server-only";
 
-import { GitHubApiError, RateLimitError, UserNotFoundError, type YearInReviewData } from "@/lib/types";
+import { GitHubApiError, RateLimitError, UserNotFoundError } from "@/lib/types";
 import { headers, handleRateLimit } from "@/lib/github";
 import { buildHourlyHeatmapFromCommitDates, getMostActiveDayFromCalendar, getMostActiveHour } from "@/lib/yearInReviewUtils";
 
@@ -221,7 +221,7 @@ function buildYearInReviewData(
     year: number,
     collection: NonNullable<YearInReviewResponse["user"]>["contributionsCollection"],
     commitDates: string[]
-): YearInReviewData {
+) {
     const contributionCalendar = collection.contributionCalendar.weeks.flatMap((week) =>
         week.contributionDays.map((day) => ({ date: day.date, count: day.contributionCount }))
     );
@@ -242,7 +242,7 @@ function buildYearInReviewData(
     };
 }
 
-export async function fetchYearInReviewData(username: string, year: number, token?: string): Promise<YearInReviewData> {
+export async function fetchYearInReviewData(username: string, year: number, token?: string) {
     if (!token) {
         throw new GitHubApiError("Year in Review requires authentication token", 401);
     }

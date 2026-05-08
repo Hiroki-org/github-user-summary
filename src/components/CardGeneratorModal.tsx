@@ -11,7 +11,7 @@ import {
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import { toPng, toBlob } from "html-to-image";
-import type { UserSummary, CardLayout, CardBlockId } from "@/lib/types";
+import type { UserSummary, CardLayout, CardBlockId, CardDisplayOptions } from "@/lib/types";
 import BusinessCard from "./BusinessCard";
 import {
   cloneDefaultCardLayout,
@@ -19,7 +19,7 @@ import {
   toggleBlockVisibility,
   LAYOUT_STORAGE_KEY,
 } from "@/lib/cardLayout";
-import { DEFAULT_DISPLAY_OPTIONS, type CardDisplayOptions } from "@/lib/cardSettings";
+import { DEFAULT_DISPLAY_OPTIONS } from "@/lib/cardSettings";
 import LayoutEditor from "./LayoutEditor";
 import { logger } from "@/lib/logger";
 

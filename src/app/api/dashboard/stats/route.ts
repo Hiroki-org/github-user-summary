@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthenticatedUser, handleErrorResponse } from "@/lib/apiUtils";
-
+import { handleErrorResponse, getAuthenticatedUser } from "@/lib/apiUtils";
 import { fetchCommitActivityHeatmap } from "@/lib/githubYearInReview";
 
 export async function GET(request: NextRequest) {
