@@ -63,88 +63,25 @@ describe("fetchYearInReviewData error paths", () => {
         }
     });
 
-    it("throws UserNotFoundError when statsResponse.user is null", async () => {
-        let callCount = 0;
-        mockFetch.mockImplementation((url: string | URL | Request) => {
-            const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
-            if (urlStr.includes("/graphql")) {
-                callCount++;
-                if (callCount === 1) {
-                    return Promise.resolve(jsonResponse({ data: { user: null } })); // statsPromise
-                }
-                if (callCount === 2) {
-                    return Promise.resolve(jsonResponse({
-                        data: {
-                            user: {
-                                id: "MDQ6VXNlcjEyMzQ1",
-                                contributionsCollection: {
-                                    commitContributionsByRepository: []
-                                }
-                            }
-                        }
-                    })); // reposResponse
-                }
-            }
-            return Promise.resolve(jsonResponse([], 200));
-        });
-
-        await expect(fetchYearInReviewData("nonexistent", 2024, "fake-token")).rejects.toThrow(UserNotFoundError);
-    });
-
-    it("throws UserNotFoundError when reposResponse.user is null", async () => {
-        let callCount = 0;
-        mockFetch.mockImplementation((url: string | URL | Request) => {
-            const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
-            if (urlStr.includes("/graphql")) {
-                callCount++;
-                if (callCount === 1) {
-                    return Promise.resolve(jsonResponse({ data: { user: { id: "MDQ6VXNlcjEyMzQ1", contributionsCollection: {} } } }));
-                }
-                if (callCount === 2) {
-                    return Promise.resolve(jsonResponse({ data: { user: null } }));
-                }
-            }
-            return Promise.resolve(jsonResponse([], 200));
+    it("throws UserNotFoundError when query returns null user", async () => {
+        mockFetch.mockImplementation(() => {
+            return Promise.resolve(jsonResponse({ data: { user: null } }));
         });
 
         await expect(fetchYearInReviewData("nonexistent", 2024, "fake-token")).rejects.toThrow(UserNotFoundError);
     });
 
     it("throws RateLimitError when API returns 403", async () => {
-        let callCount = 0;
-        mockFetch.mockImplementation((url: string | URL | Request) => {
-            const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
-            if (urlStr.includes("/graphql")) {
-                callCount++;
-                // Let statsPromise succeed so it doesn't cause unhandled rejection
-                if (callCount === 1) {
-                    return Promise.resolve(jsonResponse({ data: { user: { id: "MDQ6VXNlcjEyMzQ1", contributionsCollection: {} } } }));
-                }
-                // Let reposResponse fail
-                if (callCount === 2) {
-                    return Promise.resolve(jsonResponse(null, 403, { "X-RateLimit-Reset": "1700000000" }));
-                }
-            }
-            return Promise.resolve(jsonResponse([], 200));
+        mockFetch.mockImplementation(() => {
+            return Promise.resolve(jsonResponse(null, 403, { "X-RateLimit-Reset": "1700000000" }));
         });
 
         await expect(fetchYearInReviewData("testuser", 2024, "fake-token")).rejects.toThrow(RateLimitError);
     });
 
     it("throws GitHubApiError when API returns other errors", async () => {
-        let callCount = 0;
-        mockFetch.mockImplementation((url: string | URL | Request) => {
-            const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
-            if (urlStr.includes("/graphql")) {
-                callCount++;
-                if (callCount === 1) {
-                    return Promise.resolve(jsonResponse({ data: { user: { id: "MDQ6VXNlcjEyMzQ1", contributionsCollection: {} } } }));
-                }
-                if (callCount === 2) {
-                    return Promise.resolve(jsonResponse(null, 500));
-                }
-            }
-            return Promise.resolve(jsonResponse([], 200));
+        mockFetch.mockImplementation(() => {
+            return Promise.resolve(jsonResponse(null, 500));
         });
 
         await expect(fetchYearInReviewData("testuser", 2024, "fake-token")).rejects.toThrow(GitHubApiError);
@@ -159,7 +96,7 @@ describe("fetchYearInReviewData success paths", () => {
             if (urlStr.includes("/graphql")) {
                 callCount++;
                 if (callCount === 1) {
-                    // statsPromise
+                    // combined stats and repos query
                     return Promise.resolve(jsonResponse({
                         data: {
                             user: {
@@ -178,19 +115,7 @@ describe("fetchYearInReviewData success paths", () => {
                                                 ]
                                             }
                                         ]
-                                    }
-                                }
-                            }
-                        }
-                    }));
-                }
-                if (callCount === 2) {
-                    // reposResponse
-                    return Promise.resolve(jsonResponse({
-                        data: {
-                            user: {
-                                id: "MDQ6VXNlcjEyMzQ1",
-                                contributionsCollection: {
+                                    },
                                     commitContributionsByRepository: [
                                         {
                                             repository: { owner: { login: "user1" }, name: "repo1" },
@@ -208,7 +133,7 @@ describe("fetchYearInReviewData success paths", () => {
                         }
                     }));
                 }
-                if (callCount === 3) {
+                if (callCount === 2) {
                     // fetchCommitDatesForTopRepos batch query
                     return Promise.resolve(jsonResponse({
                         data: {
@@ -255,7 +180,7 @@ describe("fetchYearInReviewData success paths", () => {
             if (urlStr.includes("/graphql")) {
                 callCount++;
                 if (callCount === 1) {
-                    // statsPromise
+                    // combined query
                     return Promise.resolve(jsonResponse({
                         data: {
                             user: {
@@ -268,19 +193,7 @@ describe("fetchYearInReviewData success paths", () => {
                                     contributionCalendar: {
                                         totalContributions: 0,
                                         weeks: []
-                                    }
-                                }
-                            }
-                        }
-                    }));
-                }
-                if (callCount === 2) {
-                    // reposResponse - return empty repositories
-                    return Promise.resolve(jsonResponse({
-                        data: {
-                            user: {
-                                id: "MDQ6VXNlcjEyMzQ1",
-                                contributionsCollection: {
+                                    },
                                     commitContributionsByRepository: [],
                                     pullRequestContributionsByRepository: [],
                                     issueContributionsByRepository: []
@@ -306,7 +219,7 @@ describe("fetchYearInReviewData success paths", () => {
             if (urlStr.includes("/graphql")) {
                 callCount++;
                 if (callCount === 1) {
-                    // statsPromise
+                    // combined query
                     return Promise.resolve(jsonResponse({
                         data: {
                             user: {
@@ -319,19 +232,7 @@ describe("fetchYearInReviewData success paths", () => {
                                     contributionCalendar: {
                                         totalContributions: 10,
                                         weeks: []
-                                    }
-                                }
-                            }
-                        }
-                    }));
-                }
-                if (callCount === 2) {
-                    // reposResponse
-                    return Promise.resolve(jsonResponse({
-                        data: {
-                            user: {
-                                id: "MDQ6VXNlcjEyMzQ1",
-                                contributionsCollection: {
+                                    },
                                     commitContributionsByRepository: [
                                         {
                                             repository: { owner: { login: "user1" }, name: "repo1" },
@@ -345,7 +246,7 @@ describe("fetchYearInReviewData success paths", () => {
                         }
                     }));
                 }
-                if (callCount === 3) {
+                if (callCount === 2) {
                     // Fail the batch query
                     return Promise.resolve(jsonResponse(null, 500));
                 }

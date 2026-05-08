@@ -158,9 +158,9 @@ async function graphql<T>(query: string, token: string, variables: Record<string
 function mergeTopRepository(data: NonNullable<YearInReviewResponse["user"]>["contributionsCollection"]): { name: string; contributions: number } | null {
     const counter = new Map<string, number>();
     const buckets = [
-        ...data.commitContributionsByRepository,
-        ...data.pullRequestContributionsByRepository,
-        ...data.issueContributionsByRepository,
+        ...(data.commitContributionsByRepository || []),
+        ...(data.pullRequestContributionsByRepository || []),
+        ...(data.issueContributionsByRepository || []),
     ];
 
     for (const item of buckets) {
@@ -183,9 +183,9 @@ async function fetchCommitDatesForTopRepos(
     token: string,
     fromIso: string,
     toIso: string,
-    repositories: ContributionsByRepoNode[]
+    repositories?: ContributionsByRepoNode[]
 ): Promise<string[]> {
-    const candidates = repositories
+    const candidates = (repositories || [])
         .filter((repo) => repo.contributions.totalCount > 0)
         .sort((a, b) => b.contributions.totalCount - a.contributions.totalCount)
         .slice(0, 4);
