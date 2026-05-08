@@ -19,7 +19,14 @@ export async function getAuthenticatedUser() {
 
 export function handleErrorResponse(error: unknown) {
     if (error instanceof RateLimitError) {
-        return NextResponse.json({ error: error.message }, { status: 429 });
+        const headers: Record<string, string> = {};
+        if (error.resetAt) {
+            const retryAfter = Math.ceil((error.resetAt.getTime() - Date.now()) / 1000);
+            if (retryAfter > 0) {
+                headers["Retry-After"] = retryAfter.toString();
+            }
+        }
+        return NextResponse.json({ error: error.message }, { status: 429, headers });
     }
 
     if (error instanceof UserNotFoundError) {
@@ -27,7 +34,9 @@ export function handleErrorResponse(error: unknown) {
     }
 
     if (error instanceof GitHubApiError) {
-        return NextResponse.json({ error: error.message }, { status: error.status });
+        // Validate status code range (400-599), fallback to 500 if invalid
+        const status = error.status >= 400 && error.status <= 599 ? error.status : 500;
+        return NextResponse.json({ error: error.message }, { status });
     }
 
     // Log the actual error for debugging

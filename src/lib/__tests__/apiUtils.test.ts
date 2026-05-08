@@ -84,20 +84,24 @@ describe('apiUtils', () => {
   });
 
   describe('handleErrorResponse', () => {
-    it('should return 429 for RateLimitError', () => {
+    it('should return 429 and Retry-After for RateLimitError', () => {
       const resetTimestamp = Math.floor(Date.now() / 1000) + 3600;
       const error = new RateLimitError(resetTimestamp);
 
       const result = handleErrorResponse(error);
 
+      expect(logger.error).not.toHaveBeenCalled();
       expect(NextResponse.json).toHaveBeenCalledWith(
         { error: error.message },
-        { status: 429 }
+        expect.objectContaining({
+          status: 429,
+          headers: expect.objectContaining({
+            'Retry-After': expect.any(String)
+          })
+        })
       );
-      expect(result).toEqual({
-        body: { error: error.message },
-        init: { status: 429 }
-      });
+      expect(result.init.status).toBe(429);
+      expect(Number(result.init.headers['Retry-After'])).toBeGreaterThan(0);
     });
 
     it('should return 404 for UserNotFoundError', () => {
@@ -105,6 +109,7 @@ describe('apiUtils', () => {
 
       const result = handleErrorResponse(error);
 
+      expect(logger.error).not.toHaveBeenCalled();
       expect(NextResponse.json).toHaveBeenCalledWith(
         { error: error.message },
         { status: 404 }
@@ -120,6 +125,7 @@ describe('apiUtils', () => {
 
       const result = handleErrorResponse(error);
 
+      expect(logger.error).not.toHaveBeenCalled();
       expect(NextResponse.json).toHaveBeenCalledWith(
         { error: 'GitHub error' },
         { status: 403 }
@@ -128,6 +134,18 @@ describe('apiUtils', () => {
         body: { error: 'GitHub error' },
         init: { status: 403 }
       });
+    });
+
+    it('should fallback to 500 for invalid GitHubApiError status', () => {
+      const error = new GitHubApiError('GitHub error', 999);
+
+      const result = handleErrorResponse(error);
+
+      expect(NextResponse.json).toHaveBeenCalledWith(
+        { error: 'GitHub error' },
+        { status: 500 }
+      );
+      expect(result.init.status).toBe(500);
     });
 
     it('should return 500 and generic message for generic Error', () => {
