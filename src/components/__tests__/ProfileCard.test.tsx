@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
@@ -35,6 +34,11 @@ const mockProfile: UserProfile = {
 describe("ProfileCard", () => {
   it("renders basic profile information correctly", () => {
     render(<ProfileCard profile={mockProfile} />);
+
+    // Avatar
+    const avatar = screen.getByAltText("octocat");
+    expect(avatar).toBeInTheDocument();
+    expect(avatar).toHaveAttribute("src", mockProfile.avatar_url);
 
     // Name and login
     expect(screen.getByText("The Octocat")).toBeInTheDocument();
@@ -88,8 +92,8 @@ describe("ProfileCard", () => {
 
   it("renders organizations correctly", () => {
     render(<ProfileCard profile={mockProfile} />);
-    screen.getByText("Organizations");
-    screen.getByText("github");
+    expect(screen.getByText("Organizations")).toBeInTheDocument();
+    expect(screen.getByText("github")).toBeInTheDocument();
   });
 
   it("renders pinned repositories correctly", () => {
@@ -98,6 +102,11 @@ describe("ProfileCard", () => {
     expect(screen.getByText("Spoon-Knife")).toBeInTheDocument();
     expect(screen.getByText("This repo is for demonstration purposes only.")).toBeInTheDocument();
     expect(screen.getByText("HTML")).toBeInTheDocument();
+
+    // Check language color indicator using a more robust selector
+    const indicator = screen.getByText("HTML").previousElementSibling;
+    expect(indicator).toHaveStyle({ backgroundColor: "#e34c26" });
+
     expect(screen.getByText(mockProfile.pinnedRepos[0].stargazerCount.toLocaleString())).toBeInTheDocument();
   });
 
@@ -119,5 +128,28 @@ describe("ProfileCard", () => {
     expect(screen.getByText("Pinned Repositories")).toBeInTheDocument();
     expect(screen.getByText("Empty-Repo")).toBeInTheDocument();
     expect(screen.getByText("0")).toBeInTheDocument();
+  });
+
+  it("verifies security attributes on all external links", () => {
+    render(<ProfileCard profile={mockProfile} />);
+
+    const links = screen.getAllByRole("link");
+    expect(links.length).toBeGreaterThan(0);
+
+    links.forEach(link => {
+      expect(link).toHaveAttribute("target", "_blank");
+      expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    });
+  });
+
+  it("sanitizes malicious URLs in blog field", () => {
+    const maliciousProfile = {
+      ...mockProfile,
+      blog: "javascript:alert('xss')"
+    };
+    render(<ProfileCard profile={maliciousProfile} />);
+
+    const blogLink = screen.getByRole("link", { name: /alert\('xss'\)/i });
+    expect(blogLink).toHaveAttribute("href", "#");
   });
 });
