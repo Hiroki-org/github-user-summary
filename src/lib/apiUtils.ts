@@ -1,11 +1,36 @@
 import { NextResponse } from "next/server";
-import { RateLimitError } from "@/lib/types";
+import { RateLimitError, UserNotFoundError, GitHubApiError } from "@/lib/types";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 export function handleErrorResponse(error: unknown) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    if (error instanceof RateLimitError) {
+        const headers: Record<string, string> = {};
+        if (error.resetAt) {
+            const retryAfter = Math.ceil((error.resetAt.getTime() - Date.now()) / 1000);
+            if (retryAfter > 0) {
+                headers["Retry-After"] = retryAfter.toString();
+            }
+        }
+        return NextResponse.json({ error: error.message }, { status: 429, headers });
+    }
+
+    if (error instanceof UserNotFoundError) {
+        return NextResponse.json({ error: error.message }, { status: 404 });
+    }
+
+    if (error instanceof GitHubApiError) {
+        // Validate status code range (400-599), fallback to 500 if invalid
+        const status = error.status >= 400 && error.status <= 599 ? error.status : 500;
+        return NextResponse.json({ error: error.message }, { status });
+    }
+
+    // Log the actual error for debugging
+    logger.error("Internal Server Error:", error);
+
+    // Return a generic message for unhandled/internal errors to avoid information disclosure
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
 }
 
 export function handleRateLimit(res: Response): never {
