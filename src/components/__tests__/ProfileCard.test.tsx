@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
@@ -103,8 +104,8 @@ describe("ProfileCard", () => {
     expect(screen.getByText("This repo is for demonstration purposes only.")).toBeInTheDocument();
     expect(screen.getByText("HTML")).toBeInTheDocument();
 
-    // Check language color indicator using a more robust selector
-    const indicator = screen.getByText("HTML").previousElementSibling;
+    // Check language color indicator using data-testid
+    const indicator = screen.getByTestId("language-indicator");
     expect(indicator).toHaveStyle({ backgroundColor: "#e34c26" });
 
     expect(screen.getByText(mockProfile.pinnedRepos[0].stargazerCount.toLocaleString())).toBeInTheDocument();
