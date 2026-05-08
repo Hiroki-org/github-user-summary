@@ -3,6 +3,14 @@ import { getAuthenticatedUser, handleErrorResponse } from '../apiUtils';
 import { getServerSession, Session } from 'next-auth';
 import { fetchViewerLogin } from '../githubViewer';
 import { NextResponse } from 'next/server';
+import { RateLimitError, UserNotFoundError, GitHubApiError } from '../types';
+import { logger } from '../logger';
+
+vi.mock('../logger', () => ({
+  logger: {
+    error: vi.fn(),
+  },
+}));
 
 vi.mock('next-auth', () => ({
   getServerSession: vi.fn(),
@@ -76,32 +84,80 @@ describe('apiUtils', () => {
   });
 
   describe('handleErrorResponse', () => {
-    it('should return Next response with error message from Error object', () => {
-      const error = new Error('Test error');
+    it('should return 429 for RateLimitError', () => {
+      const resetTimestamp = Math.floor(Date.now() / 1000) + 3600;
+      const error = new RateLimitError(resetTimestamp);
 
       const result = handleErrorResponse(error);
 
       expect(NextResponse.json).toHaveBeenCalledWith(
-        { error: 'Test error' },
+        { error: error.message },
+        { status: 429 }
+      );
+      expect(result).toEqual({
+        body: { error: error.message },
+        init: { status: 429 }
+      });
+    });
+
+    it('should return 404 for UserNotFoundError', () => {
+      const error = new UserNotFoundError('testuser');
+
+      const result = handleErrorResponse(error);
+
+      expect(NextResponse.json).toHaveBeenCalledWith(
+        { error: error.message },
+        { status: 404 }
+      );
+      expect(result).toEqual({
+        body: { error: error.message },
+        init: { status: 404 }
+      });
+    });
+
+    it('should return specific status for GitHubApiError', () => {
+      const error = new GitHubApiError('GitHub error', 403);
+
+      const result = handleErrorResponse(error);
+
+      expect(NextResponse.json).toHaveBeenCalledWith(
+        { error: 'GitHub error' },
+        { status: 403 }
+      );
+      expect(result).toEqual({
+        body: { error: 'GitHub error' },
+        init: { status: 403 }
+      });
+    });
+
+    it('should return 500 and generic message for generic Error', () => {
+      const error = new Error('Sensitive data');
+
+      const result = handleErrorResponse(error);
+
+      expect(logger.error).toHaveBeenCalledWith('Internal Server Error:', error);
+      expect(NextResponse.json).toHaveBeenCalledWith(
+        { error: 'Internal Server Error' },
         { status: 500 }
       );
       expect(result).toEqual({
-        body: { error: 'Test error' },
+        body: { error: 'Internal Server Error' },
         init: { status: 500 }
       });
     });
 
-    it('should return Next response with "Unknown error" for non-Error object', () => {
+    it('should return 500 and generic message for non-Error object', () => {
       const error = 'Some string error';
 
       const result = handleErrorResponse(error);
 
+      expect(logger.error).toHaveBeenCalledWith('Internal Server Error:', error);
       expect(NextResponse.json).toHaveBeenCalledWith(
-        { error: 'Unknown error' },
+        { error: 'Internal Server Error' },
         { status: 500 }
       );
       expect(result).toEqual({
-        body: { error: 'Unknown error' },
+        body: { error: 'Internal Server Error' },
         init: { status: 500 }
       });
     });

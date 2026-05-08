@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { fetchViewerLogin } from "@/lib/githubViewer";
-import { RateLimitError } from "@/lib/types";
+import { RateLimitError, UserNotFoundError, GitHubApiError } from "@/lib/types";
+import { logger } from "@/lib/logger";
 
 export async function getAuthenticatedUser() {
     const session = await getServerSession(authOptions);
@@ -17,8 +18,23 @@ export async function getAuthenticatedUser() {
 }
 
 export function handleErrorResponse(error: unknown) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    if (error instanceof RateLimitError) {
+        return NextResponse.json({ error: error.message }, { status: 429 });
+    }
+
+    if (error instanceof UserNotFoundError) {
+        return NextResponse.json({ error: error.message }, { status: 404 });
+    }
+
+    if (error instanceof GitHubApiError) {
+        return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+
+    // Log the actual error for debugging
+    logger.error("Internal Server Error:", error);
+
+    // Return a generic message for unhandled/internal errors to avoid information disclosure
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
 }
 
 export function handleRateLimit(res: Response): never {
