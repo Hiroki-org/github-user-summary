@@ -275,15 +275,13 @@ export async function fetchYearInReviewData(username: string, year: number, toke
 
         const collection = response.user.contributionsCollection;
 
-        const commitDatesPromise = fetchCommitDatesForTopRepos(
+        const commitDates = await fetchCommitDatesForTopRepos(
             response.user.id,
             token,
             from.toISOString(),
             to.toISOString(),
             collection.commitContributionsByRepository
         );
-
-        const commitDates = await commitDatesPromise;
 
         return buildYearInReviewData(year, collection, commitDates);
     } catch (error) {
@@ -326,18 +324,25 @@ export async function fetchCommitActivityHeatmap(username: string, year: number,
     url.searchParams.set("until", to.toISOString());
     url.searchParams.set("per_page", "100");
 
-    const res = await fetch(url.toString(), { headers: headers(token), cache: "no-store" });
-    if (res.status === 403) {
-        handleRateLimit(res);
-    }
-    if (!res.ok) {
+    try {
+        const res = await fetch(url.toString(), { headers: headers(token), cache: "no-store" });
+        if (res.status === 403) {
+            handleRateLimit(res);
+        }
+        if (!res.ok) {
+            return Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
+        }
+
+        const commits = (await res.json()) as GitHubCommit[];
+        const dates = commits
+            .map((commit) => commit.commit.author?.date)
+            .filter((value): value is string => Boolean(value));
+
+        return buildHourlyHeatmapFromCommitDates(dates);
+    } catch (error) {
+        if (error instanceof RateLimitError) {
+            throw error;
+        }
         return Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
     }
-
-    const commits = (await res.json()) as GitHubCommit[];
-    const dates = commits
-        .map((commit) => commit.commit.author?.date)
-        .filter((value): value is string => Boolean(value));
-
-    return buildHourlyHeatmapFromCommitDates(dates);
 }

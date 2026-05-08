@@ -52,15 +52,11 @@ describe("githubYearInReview helpers", () => {
 
 describe("fetchYearInReviewData error paths", () => {
     it("throws GitHubApiError when token is not provided", async () => {
-        await expect(fetchYearInReviewData("testuser", 2024)).rejects.toThrow(GitHubApiError);
-
-        try {
-            await fetchYearInReviewData("testuser", 2024);
-        } catch (error) {
-            expect(error).toBeInstanceOf(GitHubApiError);
-            expect((error as GitHubApiError).message).toBe("Year in Review requires authentication token");
-            expect((error as GitHubApiError).status).toBe(401);
-        }
+        await expect(fetchYearInReviewData("testuser", 2024)).rejects.toMatchObject({
+            constructor: GitHubApiError,
+            status: 401,
+            message: "Year in Review requires authentication token",
+        });
     });
 
     it("throws UserNotFoundError when query returns null user", async () => {
@@ -79,12 +75,30 @@ describe("fetchYearInReviewData error paths", () => {
         await expect(fetchYearInReviewData("testuser", 2024, "fake-token")).rejects.toThrow(RateLimitError);
     });
 
-    it("throws GitHubApiError when API returns other errors", async () => {
+    it("throws GitHubApiError when API returns 500", async () => {
         mockFetch.mockImplementation(() => {
             return Promise.resolve(jsonResponse(null, 500));
         });
 
         await expect(fetchYearInReviewData("testuser", 2024, "fake-token")).rejects.toThrow(GitHubApiError);
+    });
+
+    it("throws GitHubApiError when API returns 404", async () => {
+        mockFetch.mockImplementation(() => {
+            return Promise.resolve(jsonResponse(null, 404));
+        });
+
+        await expect(fetchYearInReviewData("testuser", 2024, "fake-token")).rejects.toThrow(GitHubApiError);
+    });
+
+    it("throws GitHubApiError on fetch timeout", async () => {
+        mockFetch.mockRejectedValueOnce(new Error("timeout"));
+
+        await expect(fetchYearInReviewData("testuser", 2024, "fake-token")).rejects.toMatchObject({
+            constructor: GitHubApiError,
+            status: 500,
+            message: "timeout",
+        });
     });
 });
 
@@ -329,7 +343,7 @@ describe("fetchCommitActivityHeatmap", () => {
         await expect(fetchCommitActivityHeatmap("testuser", 2024)).rejects.toThrow(GitHubApiError);
     });
 
-    it("returns empty heatmap when REST API fails", async () => {
+    it("returns empty heatmap when REST API fails with 500", async () => {
         mockFetch.mockImplementation((url: string | URL | Request) => {
             const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
             if (urlStr.includes("/graphql")) {
@@ -352,6 +366,32 @@ describe("fetchCommitActivityHeatmap", () => {
                 }));
             }
             return Promise.resolve(jsonResponse(null, 500));
+        });
+
+        const heatmap = await fetchCommitActivityHeatmap("testuser", 2024, "fake-token");
+        expect(heatmap.every(row => row.every(val => val === 0))).toBe(true);
+    });
+
+    it("returns empty heatmap when REST API fails with 404", async () => {
+        mockFetch.mockImplementation((url) => {
+            const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
+            if (urlStr.includes("/graphql")) {
+                return Promise.resolve(jsonResponse({ data: { user: { id: "123", contributionsCollection: { commitContributionsByRepository: [{ repository: { owner: { login: "user1" }, name: "repo1" }, contributions: { totalCount: 50 } }], pullRequestContributionsByRepository: [], issueContributionsByRepository: [] } } } }));
+            }
+            return Promise.resolve(jsonResponse(null, 404));
+        });
+
+        const heatmap = await fetchCommitActivityHeatmap("testuser", 2024, "fake-token");
+        expect(heatmap.every(row => row.every(val => val === 0))).toBe(true);
+    });
+
+    it("returns empty heatmap on REST API timeout", async () => {
+        mockFetch.mockImplementation((url) => {
+            const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
+            if (urlStr.includes("/graphql")) {
+                return Promise.resolve(jsonResponse({ data: { user: { id: "123", contributionsCollection: { commitContributionsByRepository: [{ repository: { owner: { login: "user1" }, name: "repo1" }, contributions: { totalCount: 50 } }], pullRequestContributionsByRepository: [], issueContributionsByRepository: [] } } } }));
+            }
+            return Promise.reject(new Error("timeout"));
         });
 
         const heatmap = await fetchCommitActivityHeatmap("testuser", 2024, "fake-token");
@@ -394,14 +434,11 @@ describe("fetchYearInReviewData additional coverage", () => {
             throw new Error("Unexpected crash");
         });
 
-        await expect(fetchYearInReviewData("testuser", 2024, "fake-token")).rejects.toThrow(GitHubApiError);
-        try {
-            await fetchYearInReviewData("testuser", 2024, "fake-token");
-        } catch (error) {
-            expect(error).toBeInstanceOf(GitHubApiError);
-            expect((error as GitHubApiError).status).toBe(500);
-            expect((error as GitHubApiError).message).toBe("Unexpected crash");
-        }
+        await expect(fetchYearInReviewData("testuser", 2024, "fake-token")).rejects.toMatchObject({
+            constructor: GitHubApiError,
+            status: 500,
+            message: "Unexpected crash",
+        });
     });
 
     it("handles partial repository data in mergeTopRepository", async () => {
@@ -486,12 +523,10 @@ describe("graphql helper error paths", () => {
             return Promise.resolve(jsonResponse({ errors: [{ message: "GraphQL error" }] }));
         });
 
-        try {
-            await fetchYearInReviewData("testuser", 2024, "fake-token");
-        } catch (error) {
-            expect(error).toBeInstanceOf(GitHubApiError);
-            expect((error as GitHubApiError).status).toBe(422);
-            expect((error as GitHubApiError).message).toBe("GraphQL error");
-        }
+        await expect(fetchYearInReviewData("testuser", 2024, "fake-token")).rejects.toMatchObject({
+            constructor: GitHubApiError,
+            status: 422,
+            message: "GraphQL error",
+        });
     });
 });
