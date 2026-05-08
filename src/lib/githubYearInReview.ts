@@ -5,7 +5,7 @@ import { headers, handleRateLimit } from "@/lib/github";
 import { buildHourlyHeatmapFromCommitDates, getMostActiveDayFromCalendar, getMostActiveHour } from "@/lib/yearInReviewUtils";
 
 
-const YEAR_IN_REVIEW_STATS_QUERY = `query($login: String!, $from: DateTime!, $to: DateTime!) {
+const YEAR_IN_REVIEW_QUERY = `query($login: String!, $from: DateTime!, $to: DateTime!, $maxRepositories: Int!) {
     user(login: $login) {
       id
       contributionsCollection(from: $from, to: $to) {
@@ -21,6 +21,27 @@ const YEAR_IN_REVIEW_STATS_QUERY = `query($login: String!, $from: DateTime!, $to
               contributionCount
             }
           }
+        }
+        commitContributionsByRepository(maxRepositories: $maxRepositories) {
+          repository {
+            name
+            owner { login }
+          }
+          contributions { totalCount }
+        }
+        pullRequestContributionsByRepository(maxRepositories: $maxRepositories) {
+          repository {
+            name
+            owner { login }
+          }
+          contributions { totalCount }
+        }
+        issueContributionsByRepository(maxRepositories: $maxRepositories) {
+          repository {
+            name
+            owner { login }
+          }
+          contributions { totalCount }
         }
       }
     }
@@ -270,42 +291,26 @@ export async function fetchYearInReviewData(username: string, year: number, toke
     const to = new Date(Date.UTC(year, 11, 31, 23, 59, 59));
 
     try {
-        const statsPromise = graphql<YearInReviewResponse>(YEAR_IN_REVIEW_STATS_QUERY, token, {
-            login: username,
-            from: from.toISOString(),
-            to: to.toISOString(),
-        });
-
-        const reposResponse = await graphql<YearInReviewResponse>(YEAR_IN_REVIEW_REPOS_QUERY, token, {
+        const response = await graphql<YearInReviewResponse>(YEAR_IN_REVIEW_QUERY, token, {
             login: username,
             from: from.toISOString(),
             to: to.toISOString(),
             maxRepositories: 10,
         });
 
-        if (!reposResponse.user) {
+        if (!response.user) {
             throw new UserNotFoundError(username);
         }
 
-        const reposCollection = reposResponse.user.contributionsCollection;
+        const collection = response.user.contributionsCollection;
 
         const commitDatesPromise = fetchCommitDatesForTopRepos(
-            reposResponse.user.id,
+            response.user.id,
             token,
             from.toISOString(),
             to.toISOString(),
-            reposCollection.commitContributionsByRepository
+            collection.commitContributionsByRepository
         );
-
-        const statsResponse = await statsPromise;
-        if (!statsResponse.user) {
-            throw new UserNotFoundError(username);
-        }
-
-        const collection = {
-            ...statsResponse.user.contributionsCollection,
-            ...reposCollection,
-        } as NonNullable<YearInReviewResponse["user"]>["contributionsCollection"];
 
         const commitDates = await commitDatesPromise;
 
