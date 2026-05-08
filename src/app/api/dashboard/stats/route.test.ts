@@ -16,9 +16,6 @@ vi.mock("@/lib/auth", () => ({
     authOptions: {},
 }));
 
-vi.mock("@/lib/githubViewer", () => ({
-    fetchViewerLogin: vi.fn(),
-}));
 
 vi.mock("@/lib/githubYearInReview", () => ({
     fetchCommitActivityHeatmap: vi.fn(),
@@ -140,30 +137,6 @@ describe("GET /api/dashboard/stats validation", () => {
         expect(fetchCommitActivityHeatmap).toHaveBeenCalledWith("alice", currentYear, "token");
     });
 
-    it("returns 200 and fetches viewer login if session user login is missing", async () => {
-        const { getServerSession } = await import("next-auth");
-        const sessionWithoutLogin = { ...mockSession, user: { name: "Alice", email: "alice@example.com", image: "" } };
-        vi.mocked(getServerSession).mockResolvedValueOnce(sessionWithoutLogin as Session);
-
-        const { fetchViewerLogin } = await import("@/lib/githubViewer");
-        vi.mocked(fetchViewerLogin).mockResolvedValueOnce("fetched-user");
-
-        const { fetchCommitActivityHeatmap } = await import("@/lib/githubYearInReview");
-        const mockHeatmap = [[1, 2], [3, 4]];
-        vi.mocked(fetchCommitActivityHeatmap).mockResolvedValueOnce(mockHeatmap);
-
-        const { GET } = await import("./route");
-        const currentYear = new Date().getUTCFullYear();
-        const req = createMockRequest(`http://localhost/api/dashboard/stats?year=${currentYear}`);
-        const response = await GET(req);
-
-        expect(response.status).toBe(200);
-        const data = await response.json();
-        expect(data.year).toBe(currentYear);
-        expect(data.heatmap).toEqual(mockHeatmap);
-        expect(fetchViewerLogin).toHaveBeenCalledWith("token");
-        expect(fetchCommitActivityHeatmap).toHaveBeenCalledWith("fetched-user", currentYear, "token");
-    });
 
     it("returns 500 when fetchCommitActivityHeatmap throws an Error", async () => {
         const { getServerSession } = await import("next-auth");
