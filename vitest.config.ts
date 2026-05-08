@@ -19,6 +19,7 @@ export default defineConfig({
         "src/components/BusinessCard.tsx",
         "src/components/LanguageChart.tsx",
         "src/components/SkillsCard.tsx",
+        "src/components/LayoutEditor.tsx",
       ],
       thresholds: {
         lines: 80,

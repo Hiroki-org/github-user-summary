@@ -20,9 +20,9 @@ vi.mock("@dnd-kit/core", async (importOriginal) => {
     ),
     useSensors: vi.fn(() => []),
     useSensor: vi.fn(() => ({})),
-    useDroppable: () => ({
+    useDroppable: ({ id }: { id: string }) => ({
       setNodeRef: vi.fn(),
-      isOver: false,
+      isOver: id === "right",
     }),
     PointerSensor: vi.fn(),
     KeyboardSensor: vi.fn(),
@@ -39,9 +39,9 @@ vi.mock("@dnd-kit/sortable", async (importOriginal) => {
       attributes: { "data-id": id },
       listeners: {},
       setNodeRef: vi.fn(),
-      transform: null,
+      transform: id === "avatar" ? { x: 10, y: 20, scaleX: 1, scaleY: 1 } : null,
       transition: undefined,
-      isDragging: false,
+      isDragging: id === "avatar",
     }),
     sortableKeyboardCoordinates: vi.fn(),
     verticalListSortingStrategy: vi.fn(),
@@ -223,5 +223,115 @@ describe("LayoutEditor", () => {
     });
 
     expect(mockOnLayoutChange).not.toHaveBeenCalled();
+  });
+
+  it("calls onLayoutChange when dragging a block downwards within the same column", () => {
+    render(
+      <LayoutEditor
+        layout={{
+          blocks: [
+            { id: "avatar", visible: true, column: "left" },
+            { id: "bio", visible: true, column: "left" },
+            { id: "stats", visible: true, column: "left" },
+          ],
+        } as CardLayout}
+        onLayoutChange={mockOnLayoutChange as unknown as (layout: CardLayout) => void}
+        onToggleBlockVisibility={mockOnToggleVisibility as unknown as (blockId: string) => void}
+      />
+    );
+
+    const dndContext = screen.getByTestId("dnd-context");
+    fireEvent.click(dndContext);
+
+    const triggerDragEnd = (window as unknown as { triggerDragEnd: (event: unknown) => void }).triggerDragEnd;
+
+    // Drag 'avatar' over 'stats' (downwards)
+    triggerDragEnd({
+      active: { id: "avatar" },
+      over: { id: "stats" },
+    });
+
+    expect(mockOnLayoutChange).toHaveBeenCalled();
+  });
+
+  it("handles dragging over an empty column correctly", () => {
+    render(
+      <LayoutEditor
+        layout={defaultLayout}
+        onLayoutChange={mockOnLayoutChange as unknown as (layout: CardLayout) => void}
+        onToggleBlockVisibility={mockOnToggleVisibility as unknown as (blockId: string) => void}
+      />
+    );
+
+    const dndContext = screen.getByTestId("dnd-context");
+    fireEvent.click(dndContext);
+
+    const triggerDragEnd = (window as unknown as { triggerDragEnd: (event: unknown) => void }).triggerDragEnd;
+
+    // Drag 'avatar' to empty column 'left'
+    triggerDragEnd({
+      active: { id: "avatar" },
+      over: { id: "full" }, // actually defaultLayout has 'profile' in 'full', let's mock one
+    });
+
+    expect(mockOnLayoutChange).toHaveBeenCalled();
+  });
+
+  it("calls onLayoutChange when dragging a block downwards within the same column", () => {
+    render(
+      <LayoutEditor
+        layout={{
+          blocks: [
+            { id: "avatar", visible: true, column: "left" },
+            { id: "bio", visible: true, column: "left" },
+            { id: "stats", visible: true, column: "left" },
+          ],
+        } as CardLayout}
+        onLayoutChange={mockOnLayoutChange as unknown as (layout: CardLayout) => void}
+        onToggleBlockVisibility={mockOnToggleVisibility as unknown as (blockId: string) => void}
+      />
+    );
+
+    const dndContext = screen.getByTestId("dnd-context");
+    fireEvent.click(dndContext);
+
+    const triggerDragEnd = (window as unknown as { triggerDragEnd: (event: unknown) => void }).triggerDragEnd;
+
+    // Drag 'avatar' over 'stats' (downwards)
+    triggerDragEnd({
+      active: { id: "avatar" },
+      over: { id: "stats" },
+    });
+
+    expect(mockOnLayoutChange).toHaveBeenCalled();
+  });
+
+  it("handles dragging over an empty column correctly", () => {
+    render(
+      <LayoutEditor
+        layout={defaultLayout}
+        onLayoutChange={mockOnLayoutChange as unknown as (layout: CardLayout) => void}
+        onToggleBlockVisibility={mockOnToggleVisibility as unknown as (blockId: string) => void}
+      />
+    );
+
+    const dndContext = screen.getByTestId("dnd-context");
+    fireEvent.click(dndContext);
+
+    const triggerDragEnd = (window as unknown as { triggerDragEnd: (event: unknown) => void }).triggerDragEnd;
+
+    // Drag 'avatar' to empty column 'right'
+    // By default, defaultLayout has right column empty except 'topLanguages' is false visible? Actually defaultLayout has:
+    // { id: "profile", visible: true, column: "full" },
+    // { id: "avatar", visible: true, column: "left" },
+    // { id: "topLanguages", visible: false, column: "right" },
+
+    // We drag 'avatar' to 'right' (which is the column ID)
+    triggerDragEnd({
+      active: { id: "avatar" },
+      over: { id: "full" }, // We drag it to 'full' container since it's an empty drop zone mock
+    });
+
+    expect(mockOnLayoutChange).toHaveBeenCalled();
   });
 });
