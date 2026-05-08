@@ -506,13 +506,8 @@ export async function fetchContributions(
   const oneYearAgo = new Date(now);
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
-  const sevenDaysAgo = new Date(now);
-  sevenDaysAgo.setUTCDate(now.getUTCDate() - 6);
-  sevenDaysAgo.setUTCHours(0, 0, 0, 0); // Ensure comparison at start of day
-
-  const thirtyDaysAgo = new Date(now);
-  thirtyDaysAgo.setUTCDate(now.getUTCDate() - 29);
-  thirtyDaysAgo.setUTCHours(0, 0, 0, 0); // Ensure comparison at start of day
+  const sevenDaysAgoStr = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const thirtyDaysAgoStr = new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
   const query = `query($login: String!, $from: DateTime!, $to: DateTime!) {
     user(login: $login) {
@@ -559,15 +554,14 @@ export async function fetchContributions(
 
   for (let i = calendar.length - 1; i >= 0; i--) {
     const day = calendar[i];
-    const dayDate = new Date(day.date);
 
-    if (dayDate < thirtyDaysAgo) {
+    if (day.date < thirtyDaysAgoStr) {
       break;
     }
 
     monthlyContributions += day.count;
 
-    if (dayDate >= sevenDaysAgo) {
+    if (day.date >= sevenDaysAgoStr) {
       weeklyContributions += day.count;
     }
   }
