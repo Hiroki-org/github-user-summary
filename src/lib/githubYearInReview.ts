@@ -47,9 +47,6 @@ const YEAR_IN_REVIEW_QUERY = `query($login: String!, $from: DateTime!, $to: Date
     }
   }`;
 
-    }
-  }`;
-
 const GITHUB_API = "https://api.github.com";
 const GITHUB_GRAPHQL = "https://api.github.com/graphql";
 

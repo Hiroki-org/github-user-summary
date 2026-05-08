@@ -263,7 +263,6 @@ describe("fetchYearInReviewData success paths", () => {
 
 describe("fetchCommitActivityHeatmap", () => {
     it("successfully fetches and builds commit activity heatmap", async () => {
-        let callCount = 0;
         mockFetch.mockImplementation((url: string | URL | Request) => {
             const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
             if (urlStr.includes("/graphql")) {
