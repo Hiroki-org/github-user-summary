@@ -132,6 +132,7 @@ const PinnedRepos = ({ repos }: { repos: UserProfile["pinnedRepos"] }) => {
               {repo.primaryLanguage && (
                 <span className="flex items-center gap-1.5">
                   <span
+                    data-testid="language-indicator"
                     className="inline-block h-3 w-3 rounded-full border border-card-bg shadow-sm"
                     style={{ backgroundColor: repo.primaryLanguage.color }}
                   />

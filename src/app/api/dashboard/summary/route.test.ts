@@ -54,7 +54,19 @@ describe("GET /api/dashboard/summary", () => {
     expect(fetchUserSummary).toHaveBeenCalledWith("testuser", "fake-token");
   });
 
-  it("returns 500 if fetchUserSummary throws UserNotFoundError", async () => {
+  it("returns 500 if fetchUserSummary fails with generic error", async () => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValueOnce({ username: "testuser", token: "fake-token" });
+    vi.mocked(fetchUserSummary).mockRejectedValueOnce(new Error("Summary fetch failed"));
+
+    const { GET } = await import("./route");
+    const response = await GET();
+    const data = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(data.error).toBe("Internal Server Error");
+  });
+
+  it("returns 404 if fetchUserSummary fails with UserNotFoundError", async () => {
     vi.mocked(getAuthenticatedUser).mockResolvedValueOnce({ username: "testuser", token: "fake-token" });
     vi.mocked(fetchUserSummary).mockRejectedValueOnce(new UserNotFoundError("testuser"));
 
@@ -62,31 +74,20 @@ describe("GET /api/dashboard/summary", () => {
     const response = await GET();
     const data = await response.json();
 
-    expect(response.status).toBe(500);
+    expect(response.status).toBe(404);
     expect(data.error).toBe('User "testuser" not found');
   });
 
-  it("returns 500 if fetchUserSummary throws RateLimitError", async () => {
+  it("returns 429 if fetchUserSummary fails with RateLimitError", async () => {
     vi.mocked(getAuthenticatedUser).mockResolvedValueOnce({ username: "testuser", token: "fake-token" });
-    vi.mocked(fetchUserSummary).mockRejectedValueOnce(new RateLimitError(12345));
+    const mockRateLimitError = new RateLimitError(Math.floor(Date.now() / 1000) + 3600);
+    vi.mocked(fetchUserSummary).mockRejectedValueOnce(mockRateLimitError);
 
     const { GET } = await import("./route");
     const response = await GET();
     const data = await response.json();
 
-    expect(response.status).toBe(500);
-    expect(data.error).toContain("rate limit exceeded");
-  });
-
-  it("returns 500 for generic errors", async () => {
-    vi.mocked(getAuthenticatedUser).mockResolvedValueOnce({ username: "testuser", token: "fake-token" });
-    vi.mocked(fetchUserSummary).mockRejectedValueOnce(new Error("Something went wrong"));
-
-    const { GET } = await import("./route");
-    const response = await GET();
-    const data = await response.json();
-
-    expect(response.status).toBe(500);
-    expect(data.error).toBe("Something went wrong");
+    expect(response.status).toBe(429);
+    expect(data.error).toBe(mockRateLimitError.message);
   });
 });
