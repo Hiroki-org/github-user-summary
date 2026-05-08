@@ -36,6 +36,8 @@ vi.mock("@/lib/color", () => {
 });
 
 describe("ThemeController", () => {
+  let consoleSpy: ReturnType<typeof vi.spyOn> | undefined;
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetColorAsync.mockResolvedValue({
@@ -57,6 +59,8 @@ describe("ThemeController", () => {
   afterEach(() => {
     // We don't use resetAllMocks because it clears implementations we want to keep.
     // clearAllMocks in beforeEach is sufficient for call history.
+    consoleSpy?.mockRestore();
+    consoleSpy = undefined;
   });
 
   it("renders null but sets CSS variables immediately when topLanguageColor is provided", () => {
@@ -112,7 +116,7 @@ describe("ThemeController", () => {
   });
 
   it("handles failure during color extraction", async () => {
-    const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     mockGetColorAsync.mockRejectedValueOnce(new Error("Failed to fetch"));
 
     render(
@@ -124,6 +128,8 @@ describe("ThemeController", () => {
 
     // Initial sync application
     expect(document.documentElement.style.getPropertyValue("--accent")).toBe("mock-accent-#0000ff");
+    expect(document.documentElement.style.getPropertyValue("--accent-rgb")).toBe("mock-rgb-#0000ff");
+    expect(document.documentElement.style.getPropertyValue("--accent-hover")).toBe("mock-hover-#0000ff");
 
     // Wait for the async failure
     await waitFor(() => {
@@ -135,7 +141,8 @@ describe("ThemeController", () => {
 
     // Still has the fallback color
     expect(document.documentElement.style.getPropertyValue("--accent")).toBe("mock-accent-#0000ff");
-    consoleSpy.mockRestore();
+    expect(document.documentElement.style.getPropertyValue("--accent-rgb")).toBe("mock-rgb-#0000ff");
+    expect(document.documentElement.style.getPropertyValue("--accent-hover")).toBe("mock-hover-#0000ff");
   });
 
   it("cleans up CSS variables on unmount", () => {
