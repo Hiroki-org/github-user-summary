@@ -685,28 +685,20 @@ export const fetchActivity = cache(async function fetchActivity(
   // Suppress unhandled promise rejections for subsequent pages if we break early or throw
   promises.forEach((p) => p.catch((e) => logger.error("Event fetch promise rejected:", e)));
 
-  try {
-    const results = await Promise.all(
-      promises.map((p) =>
-        p.catch((error) => {
-          if (
-            error instanceof UserNotFoundError ||
-            error instanceof RateLimitError
-          ) {
-            throw error;
-          }
-          return error as Error;
-        })
-      )
-    );
-
-    for (const res of results) {
-      if (res instanceof Error) break;
-      allEvents.push(...res);
-      if (res.length < 100) break;
+  for (const p of promises) {
+    try {
+      const events = await p;
+      allEvents.push(...events);
+      if (events.length < 100) break;
+    } catch (error) {
+      if (
+        error instanceof UserNotFoundError ||
+        error instanceof RateLimitError
+      ) {
+        throw error;
+      }
+      break;
     }
-  } catch (error) {
-    throw error;
   }
 
   // 曜日×時間帯ヒートマップ (7×24)
