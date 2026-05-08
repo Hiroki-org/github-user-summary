@@ -54,8 +54,19 @@ const TRUSTED_DOMAINS = [
   "localhost",
   "127.0.0.1",
   "github-user-summary.vercel.app",
-  "myapp.com",
 ];
+
+// Add APP_URL hostname to trusted domains if provided
+if (process.env.APP_URL) {
+  try {
+    const appUrl = new URL(process.env.APP_URL);
+    if (appUrl.hostname && !TRUSTED_DOMAINS.includes(appUrl.hostname)) {
+      TRUSTED_DOMAINS.push(appUrl.hostname);
+    }
+  } catch {
+    // Ignore invalid APP_URL
+  }
+}
 
 /**
  * Validates if a font URL is from a trusted source.
@@ -82,7 +93,13 @@ export function isTrustedFontUrl(url: string, allowedOrigin?: string): boolean {
     // Allow the application's own origin
     if (allowedOrigin) {
       const originUrl = new URL(allowedOrigin);
-      if (parsedUrl.origin === originUrl.origin && TRUSTED_DOMAINS.includes(originUrl.hostname)) {
+      // Validate that the allowed origin itself is HTTPS (or localhost for dev)
+      // and its hostname is in the trusted list.
+      const isSecure = originUrl.protocol === "https:" || 
+                      originUrl.hostname === "localhost" || 
+                      originUrl.hostname === "127.0.0.1";
+
+      if (isSecure && parsedUrl.origin === originUrl.origin && TRUSTED_DOMAINS.includes(originUrl.hostname)) {
         return true;
       }
     }
