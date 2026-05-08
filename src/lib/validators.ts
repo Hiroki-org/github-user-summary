@@ -50,6 +50,13 @@ export function sanitizeUrl(url: string | null | undefined): string {
   return `https://${trimmedUrl}`;
 }
 
+const TRUSTED_DOMAINS = [
+  "localhost",
+  "127.0.0.1",
+  "github-user-summary.vercel.app",
+  "myapp.com",
+];
+
 /**
  * Validates if a font URL is from a trusted source.
  * Trusted sources include specific paths on cdn.jsdelivr.net and the application's own origin.
@@ -75,7 +82,7 @@ export function isTrustedFontUrl(url: string, allowedOrigin?: string): boolean {
     // Allow the application's own origin
     if (allowedOrigin) {
       const originUrl = new URL(allowedOrigin);
-      if (parsedUrl.origin === originUrl.origin) {
+      if (parsedUrl.origin === originUrl.origin && TRUSTED_DOMAINS.includes(originUrl.hostname)) {
         return true;
       }
     }

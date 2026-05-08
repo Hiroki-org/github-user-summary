@@ -37,4 +37,8 @@ describe("isTrustedFontUrl", () => {
     it("handles invalid URL strings gracefully", () => {
         expect(isTrustedFontUrl("not-a-url")).toBe(false);
     });
+
+    it("blocks when allowedOrigin is manipulated to an untrusted domain", () => {
+        expect(isTrustedFontUrl("https://evil.com/font.ttf", "https://evil.com")).toBe(false);
+    });
 });
