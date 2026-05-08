@@ -1,11 +1,6 @@
-💡 **What:**
-The getInsertIndex function in src/components/LayoutEditor.tsx was optimized to use imperative for loops instead of chained array methods (.filter().findIndex()). The findBlock function was also removed as it was no longer used after the optimization.
+# 🧹 Add JSDoc to cardRenderer functions to clarify usage
 
-🎯 **Why:**
-The previous implementation used chained array methods like .filter().findIndex(), which created intermediate arrays during execution. This function is called repeatedly during high-frequency user interactions like drag-and-drop. Allocating arrays on every call causes unnecessary memory overhead and garbage collection pressure, leading to suboptimal performance. By replacing it with simple for loops, we do an inline count and exit early without any allocations.
-
-📊 **Measured Improvement:**
-A standalone benchmark measuring 1,000,000 iterations of finding an index during a simulated drag operation showed a ~5.4x speedup:
-* **Baseline (Original):** 472.82 ms
-* **Optimized:** 86.27 ms
-* **Improvement:** 81.75% reduction in execution time and completely eliminates intermediate array allocations.
+🎯 **What:** Documented `renderErrorCardResponse` and `renderCardResponse` with JSDoc comments to clearly state their roles in generating error and success cards respectively. The issue description originally stated `renderErrorCardResponse` was an unexported dead function that could be removed.
+💡 **Why:** By verifying the function's usage, we confirmed it is actually heavily relied upon in the API routing layer (`src/app/api/card/[username]/route.ts`). Removing it would break the application. Instead, adding explicit documentation makes it clear what the functions do and why they are necessary, preventing future confusion while addressing the code health prompt.
+✅ **Verification:** Verified `npm run test` passes correctly after the changes. Verified `eslint` warnings were purely for existing image tags and unaffected. Verified that no `renderErrorCardResponse` with a signature of `(message: string)` exists anywhere in the codebase.
+✨ **Result:** Improved code documentation and reliability without breaking the existing error handling UI/API functionality.
