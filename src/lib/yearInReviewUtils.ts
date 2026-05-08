@@ -11,8 +11,8 @@ export function buildHourlyHeatmapFromCommitDates(commitDates: string[]): number
     const dayCache = new Map<string, number>();
 
     for (const dateString of commitDates) {
-        // Fast path for standard ISO 8601 strings (e.g., "2023-01-01T10:00:00Z")
-        if (dateString.length < 19 || dateString[10] !== 'T') {
+        // Non-standard date string: fall back to full Date parsing
+        if (dateString.length < 19 || dateString[10] !== "T") {
             parseFallbackDate(dateString, heatmap);
             continue;
         }
@@ -33,7 +33,7 @@ export function buildHourlyHeatmapFromCommitDates(commitDates: string[]): number
             dayCache.set(datePart, day);
         }
 
-        // Parse hour manually
+        // Fast path for standard ISO 8601 strings (e.g., "2023-01-01T10:00:00Z")
         const h1 = dateString.charCodeAt(11) - 48;
         const h2 = dateString.charCodeAt(12) - 48;
 
@@ -44,9 +44,8 @@ export function buildHourlyHeatmapFromCommitDates(commitDates: string[]): number
 
         const hour = h1 * 10 + h2;
 
-        // If there is a timezone offset (e.g., +09:00 or -05:00), we cannot simply use the cached day and raw hour.
-        // We must adjust for the offset to get the correct UTC time, so we fall back to standard date parsing.
-        if (!(dateString.endsWith('Z') || dateString.length === 20 || (dateString.length === 24 && dateString.endsWith('.000Z')))) {
+        // Ensure hour is within valid range and handle potential timezone offsets
+        if (hour < 0 || hour > 23 || !dateString.endsWith("Z")) {
             parseFallbackDate(dateString, heatmap);
             continue;
         }
