@@ -37,6 +37,7 @@ describe('apiUtils', () => {
       const resetTimestamp = Math.floor(Date.now() / 1000) + 3600;
       const error = new RateLimitError(resetTimestamp);
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = handleErrorResponse(error) as any;
 
       expect(logger.error).not.toHaveBeenCalled();
@@ -88,6 +89,7 @@ describe('apiUtils', () => {
     it('should fallback to 500 for invalid GitHubApiError status', () => {
       const error = new GitHubApiError('GitHub error', 999);
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = handleErrorResponse(error) as any;
 
       expect(NextResponse.json).toHaveBeenCalledWith(
