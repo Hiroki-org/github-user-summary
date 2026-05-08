@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 import { getAuthenticatedUser } from "@/lib/apiUtils";
 import { fetchCommitActivityHeatmap } from "@/lib/githubYearInReview";
+import { GitHubApiError } from "@/lib/types";
 
 vi.mock("@/lib/apiUtils", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/apiUtils")>();
@@ -89,6 +90,34 @@ describe("GET /api/dashboard/stats validation", () => {
 
         expect(response.status).toBe(500);
         const data = await response.json();
+        expect(data.error).toBe("Internal Server Error");
+    });
+
+    it("returns specific status when fetchCommitActivityHeatmap throws a GitHubApiError", async () => {
+        vi.mocked(getAuthenticatedUser).mockResolvedValueOnce({ username: "alice", token: "token" });
+        vi.mocked(fetchCommitActivityHeatmap).mockRejectedValueOnce(new GitHubApiError("API Error", 403));
+
+        const { GET } = await import("./route");
+        const currentYear = new Date().getUTCFullYear();
+        const req = createMockRequest(`http://localhost/api/dashboard/stats?year=${currentYear}`);
+        const response = await GET(req);
+
+        expect(response.status).toBe(403);
+        const data = await response.json();
         expect(data.error).toBe("API Error");
+    });
+
+    it("returns 500 when fetchCommitActivityHeatmap throws an unknown error", async () => {
+        vi.mocked(getAuthenticatedUser).mockResolvedValueOnce({ username: "alice", token: "token" });
+        vi.mocked(fetchCommitActivityHeatmap).mockRejectedValueOnce("String error");
+
+        const { GET } = await import("./route");
+        const currentYear = new Date().getUTCFullYear();
+        const req = createMockRequest(`http://localhost/api/dashboard/stats?year=${currentYear}`);
+        const response = await GET(req);
+
+        expect(response.status).toBe(500);
+        const data = await response.json();
+        expect(data.error).toBe("Internal Server Error");
     });
 });
