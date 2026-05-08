@@ -1,12 +1,17 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { getServerSession } from "next-auth";
+import { getAuthenticatedUser } from "@/lib/apiUtils";
 import { fetchUserSummary } from "@/lib/github";
+import { UserNotFoundError, RateLimitError } from "@/lib/types";
 
 import type { UserSummary } from "@/lib/types";
 
-vi.mock("next-auth", () => ({
-  getServerSession: vi.fn(),
-}));
+vi.mock("@/lib/apiUtils", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/apiUtils")>();
+  return {
+    ...actual,
+    getAuthenticatedUser: vi.fn(),
+  };
+});
 
 vi.mock("@/lib/github", () => ({
   fetchUserSummary: vi.fn(),
@@ -18,8 +23,8 @@ describe("GET /api/dashboard/summary", () => {
     vi.clearAllMocks();
   });
 
-  it("returns 401 if no session exists", async () => {
-    vi.mocked(getServerSession).mockResolvedValueOnce(null);
+  it("returns 401 if not authenticated", async () => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValueOnce(null);
 
     const { GET } = await import("./route");
     const response = await GET();
@@ -29,25 +34,14 @@ describe("GET /api/dashboard/summary", () => {
     expect(data.error).toBe("Unauthorized");
   });
 
-  it("returns 401 if no access token exists", async () => {
-    vi.mocked(getServerSession).mockResolvedValueOnce({ user: { login: "testuser" } });
-
-    const { GET } = await import("./route");
-    const response = await GET();
-    const data = await response.json();
-
-    expect(response.status).toBe(401);
-    expect(data.error).toBe("Unauthorized");
-  });
-
-  it("returns 200 and summary if session has login", async () => {
-    const mockSession = {
-      accessToken: "fake-token",
-      user: { login: "testuser" },
+  it("returns 200 and summary if authenticated", async () => {
+    const mockUser = {
+      token: "fake-token",
+      username: "testuser",
     };
     const mockSummary = { profile: { login: "testuser" } };
 
-    vi.mocked(getServerSession).mockResolvedValueOnce(mockSession);
+    vi.mocked(getAuthenticatedUser).mockResolvedValueOnce(mockUser);
     vi.mocked(fetchUserSummary).mockResolvedValueOnce(mockSummary as unknown as UserSummary);
 
     const { GET } = await import("./route");
@@ -60,5 +54,39 @@ describe("GET /api/dashboard/summary", () => {
     expect(fetchUserSummary).toHaveBeenCalledWith("testuser", "fake-token");
   });
 
+  it("returns 500 if fetchUserSummary throws UserNotFoundError", async () => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValueOnce({ username: "testuser", token: "fake-token" });
+    vi.mocked(fetchUserSummary).mockRejectedValueOnce(new UserNotFoundError("testuser"));
 
+    const { GET } = await import("./route");
+    const response = await GET();
+    const data = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(data.error).toBe('User "testuser" not found');
+  });
+
+  it("returns 500 if fetchUserSummary throws RateLimitError", async () => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValueOnce({ username: "testuser", token: "fake-token" });
+    vi.mocked(fetchUserSummary).mockRejectedValueOnce(new RateLimitError(12345));
+
+    const { GET } = await import("./route");
+    const response = await GET();
+    const data = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(data.error).toContain("rate limit exceeded");
+  });
+
+  it("returns 500 for generic errors", async () => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValueOnce({ username: "testuser", token: "fake-token" });
+    vi.mocked(fetchUserSummary).mockRejectedValueOnce(new Error("Something went wrong"));
+
+    const { GET } = await import("./route");
+    const response = await GET();
+    const data = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(data.error).toBe("Something went wrong");
+  });
 });

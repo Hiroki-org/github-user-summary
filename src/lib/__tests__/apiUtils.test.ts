@@ -1,6 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { handleErrorResponse } from '../apiUtils';
+import { handleErrorResponse, getAuthenticatedUser } from '../apiUtils';
 import { NextResponse } from 'next/server';
+import { getServerSession } from "next-auth";
+
+vi.mock('next-auth', () => ({
+  getServerSession: vi.fn(),
+}));
+
+vi.mock("@/lib/auth", () => ({
+  authOptions: {},
+}));
 
 vi.mock('next/server', () => {
   return {
@@ -44,6 +53,48 @@ describe('apiUtils', () => {
         body: { error: 'Unknown error' },
         init: { status: 500 }
       });
+    });
+  });
+
+  describe('getAuthenticatedUser', () => {
+    it('should return user object if session is valid', async () => {
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        accessToken: 'fake-token',
+        user: { login: 'testuser' }
+      });
+
+      const result = await getAuthenticatedUser();
+
+      expect(result).toEqual({ username: 'testuser', token: 'fake-token' });
+    });
+
+    it('should return null if no session', async () => {
+      vi.mocked(getServerSession).mockResolvedValueOnce(null);
+
+      const result = await getAuthenticatedUser();
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null if no accessToken', async () => {
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        user: { login: 'testuser' }
+      });
+
+      const result = await getAuthenticatedUser();
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null if no user login', async () => {
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        accessToken: 'fake-token',
+        user: {}
+      });
+
+      const result = await getAuthenticatedUser();
+
+      expect(result).toBeNull();
     });
   });
 });

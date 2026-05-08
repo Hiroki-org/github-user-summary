@@ -1,25 +1,17 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
-import { type Session } from "next-auth";
+import { getAuthenticatedUser } from "@/lib/apiUtils";
+import { fetchYearInReviewData } from "@/lib/githubYearInReview";
 
 import type { YearInReviewData } from "@/lib/types";
 
-const mockSession: Session = {
-    user: { name: "Alice", email: "alice@example.com", image: "", login: "alice" },
-    accessToken: "token",
-    expires: new Date(Date.now() + 2 * 86400 * 1000).toISOString(),
-};
-vi.mock("next-auth", () => ({
-    getServerSession: vi.fn(),
-}));
-
-vi.mock("@/lib/auth", () => ({
-    authOptions: {},
-}));
-
-vi.mock("@/lib/githubViewer", () => ({
-    fetchViewerLogin: vi.fn(),
-}));
+vi.mock("@/lib/apiUtils", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/apiUtils")>();
+  return {
+    ...actual,
+    getAuthenticatedUser: vi.fn(),
+  };
+});
 
 vi.mock("@/lib/githubYearInReview", () => ({
     fetchYearInReviewData: vi.fn(),
@@ -31,12 +23,11 @@ function createMockRequest(url: string): NextRequest {
 
 describe("GET /api/dashboard/year validation", () => {
     beforeEach(() => {
-        vi.resetAllMocks();
+        vi.clearAllMocks();
     });
 
     it("returns 401 when not authorized", async () => {
-        const { getServerSession } = await import("next-auth");
-        vi.mocked(getServerSession).mockResolvedValueOnce(null);
+        vi.mocked(getAuthenticatedUser).mockResolvedValueOnce(null);
 
         const { GET } = await import("./route");
         const req = createMockRequest("http://localhost/api/dashboard/year");
@@ -46,8 +37,7 @@ describe("GET /api/dashboard/year validation", () => {
     });
 
     it("returns 400 when year is invalid (not a number)", async () => {
-        const { getServerSession } = await import("next-auth");
-        vi.mocked(getServerSession).mockResolvedValueOnce(mockSession);
+        vi.mocked(getAuthenticatedUser).mockResolvedValueOnce({ username: "alice", token: "token" });
 
         const { GET } = await import("./route");
         const req = createMockRequest("http://localhost/api/dashboard/year?year=abc");
@@ -59,8 +49,7 @@ describe("GET /api/dashboard/year validation", () => {
     });
 
     it("returns 400 when year is before 2008", async () => {
-        const { getServerSession } = await import("next-auth");
-        vi.mocked(getServerSession).mockResolvedValueOnce(mockSession);
+        vi.mocked(getAuthenticatedUser).mockResolvedValueOnce({ username: "alice", token: "token" });
 
         const { GET } = await import("./route");
         const req = createMockRequest("http://localhost/api/dashboard/year?year=2007");
@@ -72,8 +61,7 @@ describe("GET /api/dashboard/year validation", () => {
     });
 
     it("returns 400 when year is in the future", async () => {
-        const { getServerSession } = await import("next-auth");
-        vi.mocked(getServerSession).mockResolvedValueOnce(mockSession);
+        vi.mocked(getAuthenticatedUser).mockResolvedValueOnce({ username: "alice", token: "token" });
 
         const { GET } = await import("./route");
         const currentYear = new Date().getUTCFullYear();
@@ -86,10 +74,8 @@ describe("GET /api/dashboard/year validation", () => {
     });
 
     it("returns 200 and fetches data when year is valid", async () => {
-        const { getServerSession } = await import("next-auth");
-        vi.mocked(getServerSession).mockResolvedValueOnce(mockSession);
+        vi.mocked(getAuthenticatedUser).mockResolvedValueOnce({ username: "alice", token: "token" });
 
-        const { fetchYearInReviewData } = await import("@/lib/githubYearInReview");
         vi.mocked(fetchYearInReviewData).mockResolvedValueOnce({ data: "ok" } as unknown as YearInReviewData);
 
         const { GET } = await import("./route");
@@ -104,10 +90,8 @@ describe("GET /api/dashboard/year validation", () => {
     });
 
     it("returns 200 and falls back to current year when year is not provided", async () => {
-        const { getServerSession } = await import("next-auth");
-        vi.mocked(getServerSession).mockResolvedValueOnce(mockSession);
+        vi.mocked(getAuthenticatedUser).mockResolvedValueOnce({ username: "alice", token: "token" });
 
-        const { fetchYearInReviewData } = await import("@/lib/githubYearInReview");
         vi.mocked(fetchYearInReviewData).mockResolvedValueOnce({ data: "ok" } as unknown as YearInReviewData);
 
         const { GET } = await import("./route");
