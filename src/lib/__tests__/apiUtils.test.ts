@@ -22,7 +22,7 @@ vi.mock("@/lib/auth", () => ({
 vi.mock('next/server', () => {
   return {
     NextResponse: {
-      json: vi.fn((body, init) => ({ body, init })),
+      json: vi.fn((body, init) => ({ ...body, init })),
     },
   };
 });
@@ -37,7 +37,7 @@ describe('apiUtils', () => {
       const resetTimestamp = Math.floor(Date.now() / 1000) + 3600;
       const error = new RateLimitError(resetTimestamp);
 
-      const result = handleErrorResponse(error);
+      const result = handleErrorResponse(error) as any;
 
       expect(logger.error).not.toHaveBeenCalled();
       expect(NextResponse.json).toHaveBeenCalledWith(
@@ -64,7 +64,7 @@ describe('apiUtils', () => {
         { status: 404 }
       );
       expect(result).toEqual({
-        body: { error: error.message },
+        error: error.message,
         init: { status: 404 }
       });
     });
@@ -80,7 +80,7 @@ describe('apiUtils', () => {
         { status: 403 }
       );
       expect(result).toEqual({
-        body: { error: 'GitHub error' },
+        error: 'GitHub error',
         init: { status: 403 }
       });
     });
@@ -88,7 +88,7 @@ describe('apiUtils', () => {
     it('should fallback to 500 for invalid GitHubApiError status', () => {
       const error = new GitHubApiError('GitHub error', 999);
 
-      const result = handleErrorResponse(error);
+      const result = handleErrorResponse(error) as any;
 
       expect(NextResponse.json).toHaveBeenCalledWith(
         { error: 'GitHub error' },
@@ -108,7 +108,7 @@ describe('apiUtils', () => {
         { status: 500 }
       );
       expect(result).toEqual({
-        body: { error: 'Internal Server Error' },
+        error: 'Internal Server Error',
         init: { status: 500 }
       });
     });
@@ -124,7 +124,7 @@ describe('apiUtils', () => {
         { status: 500 }
       );
       expect(result).toEqual({
-        body: { error: 'Internal Server Error' },
+        error: 'Internal Server Error',
         init: { status: 500 }
       });
     });
