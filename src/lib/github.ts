@@ -554,13 +554,23 @@ export async function fetchContributions(
 
   calendar.sort((a, b) => a.date.localeCompare(b.date));
 
-  const weeklyContributions = calendar
-    .filter((day) => new Date(day.date) >= sevenDaysAgo)
-    .reduce((sum, day) => sum + day.count, 0);
+  let weeklyContributions = 0;
+  let monthlyContributions = 0;
 
-  const monthlyContributions = calendar
-    .filter((day) => new Date(day.date) >= thirtyDaysAgo)
-    .reduce((sum, day) => sum + day.count, 0);
+  for (let i = calendar.length - 1; i >= 0; i--) {
+    const day = calendar[i];
+    const dayDate = new Date(day.date);
+
+    if (dayDate < thirtyDaysAgo) {
+      break;
+    }
+
+    monthlyContributions += day.count;
+
+    if (dayDate >= sevenDaysAgo) {
+      weeklyContributions += day.count;
+    }
+  }
 
   const { longestStreak, currentStreak } = calculateStreaks(calendar);
   const mostActiveDay = calculateMostActiveDay(calendar);
