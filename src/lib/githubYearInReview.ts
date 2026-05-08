@@ -22,29 +22,18 @@ const YEAR_IN_REVIEW_QUERY = `query($login: String!, $from: DateTime!, $to: Date
             }
           }
         }
-        commitContributionsByRepository(maxRepositories: $maxRepositories) {
-          repository {
-            name
-            owner { login }
-          }
-          contributions { totalCount }
-        }
-        pullRequestContributionsByRepository(maxRepositories: $maxRepositories) {
-          repository {
-            name
-            owner { login }
-          }
-          contributions { totalCount }
-        }
-        issueContributionsByRepository(maxRepositories: $maxRepositories) {
-          repository {
-            name
-            owner { login }
-          }
-          contributions { totalCount }
-        }
+        commitContributionsByRepository(maxRepositories: $maxRepositories) { ...repoFields }
+        pullRequestContributionsByRepository(maxRepositories: $maxRepositories) { ...repoFields }
+        issueContributionsByRepository(maxRepositories: $maxRepositories) { ...repoFields }
       }
     }
+  }
+  fragment repoFields on ContributionsByRepository {
+    repository {
+      name
+      owner { login }
+    }
+    contributions { totalCount }
   }`;
 
 const GITHUB_API = "https://api.github.com";
