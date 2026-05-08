@@ -218,7 +218,7 @@ export default function LayoutEditor({
   );
 
   const handleDragEnd = useCallback(
-    (event: any) => {
+    (event) => {
       const { active, over } = event;
       if (!over || active.id === over.id) {
         return;
