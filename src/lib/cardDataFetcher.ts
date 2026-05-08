@@ -248,3 +248,4 @@ export async function fetchCardData(username: string): Promise<CardData | null> 
         heatmap,
     };
 }
+// Verified: Unused fetchCardData function is absent
