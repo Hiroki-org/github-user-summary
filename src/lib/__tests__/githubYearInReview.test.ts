@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
 import { getMostActiveDayFromCalendar, getMostActiveHour } from "@/lib/yearInReviewUtils";
-import { fetchYearInReviewData } from "@/lib/githubYearInReview";
+import { fetchYearInReviewData, fetchCommitActivityHeatmap } from "@/lib/githubYearInReview";
 import { GitHubApiError, RateLimitError, UserNotFoundError } from "@/lib/types";
 
 // "server-only" を事前にモック
@@ -258,5 +258,241 @@ describe("fetchYearInReviewData success paths", () => {
         expect(data.year).toBe(2024);
         expect(consoleSpy).toHaveBeenCalled();
         consoleSpy.mockRestore();
+    });
+});
+
+describe("fetchCommitActivityHeatmap", () => {
+    it("successfully fetches and builds commit activity heatmap", async () => {
+        let callCount = 0;
+        mockFetch.mockImplementation((url: string | URL | Request) => {
+            const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
+            if (urlStr.includes("/graphql")) {
+                return Promise.resolve(jsonResponse({
+                    data: {
+                        user: {
+                            id: "123",
+                            contributionsCollection: {
+                                commitContributionsByRepository: [
+                                    {
+                                        repository: { owner: { login: "user1" }, name: "repo1" },
+                                        contributions: { totalCount: 50 }
+                                    }
+                                ],
+                                pullRequestContributionsByRepository: [],
+                                issueContributionsByRepository: []
+                            }
+                        }
+                    }
+                }));
+            }
+            if (urlStr.includes("/repos/user1/repo1/commits")) {
+                return Promise.resolve(jsonResponse([
+                    { commit: { author: { date: "2024-01-01T10:00:00Z" } } }
+                ]));
+            }
+            return Promise.resolve(jsonResponse([], 200));
+        });
+
+        const heatmap = await fetchCommitActivityHeatmap("testuser", 2024, "fake-token");
+        expect(heatmap.length).toBe(7);
+        expect(heatmap[1][10]).toBe(1); // 2024-01-01 is Monday (index 1)
+    });
+
+    it("returns empty heatmap when no top repository found", async () => {
+        mockFetch.mockImplementation(() => {
+            return Promise.resolve(jsonResponse({
+                data: {
+                    user: {
+                        id: "123",
+                        contributionsCollection: {
+                            commitContributionsByRepository: [],
+                            pullRequestContributionsByRepository: [],
+                            issueContributionsByRepository: []
+                        }
+                    }
+                }
+            }));
+        });
+
+        const heatmap = await fetchCommitActivityHeatmap("testuser", 2024, "fake-token");
+        expect(heatmap.every(row => row.every(val => val === 0))).toBe(true);
+    });
+
+    it("throws UserNotFoundError when query returns null user", async () => {
+        mockFetch.mockImplementation(() => {
+            return Promise.resolve(jsonResponse({ data: { user: null } }));
+        });
+
+        await expect(fetchCommitActivityHeatmap("nonexistent", 2024, "fake-token")).rejects.toThrow(UserNotFoundError);
+    });
+
+    it("throws GitHubApiError when token is missing", async () => {
+        await expect(fetchCommitActivityHeatmap("testuser", 2024)).rejects.toThrow(GitHubApiError);
+    });
+
+    it("returns empty heatmap when REST API fails", async () => {
+        mockFetch.mockImplementation((url: string | URL | Request) => {
+            const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
+            if (urlStr.includes("/graphql")) {
+                return Promise.resolve(jsonResponse({
+                    data: {
+                        user: {
+                            id: "123",
+                            contributionsCollection: {
+                                commitContributionsByRepository: [
+                                    {
+                                        repository: { owner: { login: "user1" }, name: "repo1" },
+                                        contributions: { totalCount: 50 }
+                                    }
+                                ],
+                                pullRequestContributionsByRepository: [],
+                                issueContributionsByRepository: []
+                            }
+                        }
+                    }
+                }));
+            }
+            return Promise.resolve(jsonResponse(null, 500));
+        });
+
+        const heatmap = await fetchCommitActivityHeatmap("testuser", 2024, "fake-token");
+        expect(heatmap.every(row => row.every(val => val === 0))).toBe(true);
+    });
+});
+
+describe("fetchYearInReviewData safety checks", () => {
+    it("handles missing collection fields gracefully", async () => {
+        mockFetch.mockImplementation(() => {
+            return Promise.resolve(jsonResponse({
+                data: {
+                    user: {
+                        id: "123",
+                        contributionsCollection: {
+                            totalCommitContributions: 10,
+                            totalPullRequestContributions: 0,
+                            totalIssueContributions: 0,
+                            totalPullRequestReviewContributions: 0,
+                            contributionCalendar: {
+                                totalContributions: 10,
+                                weeks: []
+                            }
+                            // commitContributionsByRepository and others are missing
+                        }
+                    }
+                }
+            }));
+        });
+
+        const data = await fetchYearInReviewData("testuser", 2024, "fake-token");
+        expect(data.totalCommits).toBe(10);
+        expect(data.topRepository).toBeNull();
+    });
+});
+
+describe("fetchYearInReviewData additional coverage", () => {
+    it("throws 500 GitHubApiError for unknown errors", async () => {
+        mockFetch.mockImplementation(() => {
+            throw new Error("Unexpected crash");
+        });
+
+        await expect(fetchYearInReviewData("testuser", 2024, "fake-token")).rejects.toThrow(GitHubApiError);
+        try {
+            await fetchYearInReviewData("testuser", 2024, "fake-token");
+        } catch (error) {
+            expect(error).toBeInstanceOf(GitHubApiError);
+            expect((error as GitHubApiError).status).toBe(500);
+            expect((error as GitHubApiError).message).toBe("Unexpected crash");
+        }
+    });
+
+    it("handles partial repository data in mergeTopRepository", async () => {
+        mockFetch.mockImplementation(() => {
+            return Promise.resolve(jsonResponse({
+                data: {
+                    user: {
+                        id: "123",
+                        contributionsCollection: {
+                            totalCommitContributions: 100,
+                            totalPullRequestContributions: 0,
+                            totalIssueContributions: 0,
+                            totalPullRequestReviewContributions: 0,
+                            contributionCalendar: { totalContributions: 100, weeks: [] },
+                            commitContributionsByRepository: [
+                                { repository: { owner: { login: "user1" }, name: "repo1" }, contributions: { totalCount: 50 } }
+                            ],
+                            // pullRequestContributionsByRepository and issueContributionsByRepository missing
+                        }
+                    }
+                }
+            }));
+        });
+
+        const data = await fetchYearInReviewData("testuser", 2024, "fake-token");
+        expect(data.topRepository?.name).toBe("user1/repo1");
+    });
+});
+
+describe("fetchCommitActivityHeatmap additional coverage", () => {
+    it("throws error when GraphQL query fails", async () => {
+        mockFetch.mockImplementation(() => {
+            return Promise.resolve(jsonResponse(null, 500));
+        });
+
+        await expect(fetchCommitActivityHeatmap("testuser", 2024, "fake-token")).rejects.toThrow(GitHubApiError);
+    });
+
+    it("handles missing repository fields in fetchCommitActivityHeatmap", async () => {
+        mockFetch.mockImplementation((url) => {
+             const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
+            if (urlStr.includes("/graphql")) {
+                return Promise.resolve(jsonResponse({
+                    data: {
+                        user: {
+                            id: "123",
+                            contributionsCollection: {
+                                commitContributionsByRepository: [
+                                    { repository: { owner: { login: "user1" }, name: "repo1" }, contributions: { totalCount: 50 } }
+                                ]
+                                // other fields missing
+                            }
+                        }
+                    }
+                }));
+            }
+            if (urlStr.includes("/repos/user1/repo1/commits")) {
+                return Promise.resolve(jsonResponse([
+                    { commit: { author: { date: "2024-01-01T10:00:00Z" } } }
+                ]));
+            }
+            return Promise.resolve(jsonResponse([], 200));
+        });
+
+        const heatmap = await fetchCommitActivityHeatmap("testuser", 2024, "fake-token");
+        expect(heatmap[1][10]).toBe(1);
+    });
+});
+
+describe("graphql helper error paths", () => {
+    it("throws GitHubApiError when data is missing and no errors returned", async () => {
+        // We need to trigger the graphql helper. We can do this via fetchYearInReviewData.
+        mockFetch.mockImplementation(() => {
+            return Promise.resolve(jsonResponse({ data: null }));
+        });
+
+        await expect(fetchYearInReviewData("testuser", 2024, "fake-token")).rejects.toThrow("No data returned from GitHub GraphQL");
+    });
+
+    it("throws GitHubApiError with status 422 when GraphQL returns errors", async () => {
+        mockFetch.mockImplementation(() => {
+            return Promise.resolve(jsonResponse({ errors: [{ message: "GraphQL error" }] }));
+        });
+
+        try {
+            await fetchYearInReviewData("testuser", 2024, "fake-token");
+        } catch (error) {
+            expect(error).toBeInstanceOf(GitHubApiError);
+            expect((error as GitHubApiError).status).toBe(422);
+            expect((error as GitHubApiError).message).toBe("GraphQL error");
+        }
     });
 });

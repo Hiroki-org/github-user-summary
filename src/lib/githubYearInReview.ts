@@ -47,32 +47,6 @@ const YEAR_IN_REVIEW_QUERY = `query($login: String!, $from: DateTime!, $to: Date
     }
   }`;
 
-const YEAR_IN_REVIEW_REPOS_QUERY = `query($login: String!, $from: DateTime!, $to: DateTime!, $maxRepositories: Int!) {
-    user(login: $login) {
-      id
-      contributionsCollection(from: $from, to: $to) {
-        commitContributionsByRepository(maxRepositories: $maxRepositories) {
-          repository {
-            name
-            owner { login }
-          }
-          contributions { totalCount }
-        }
-        pullRequestContributionsByRepository(maxRepositories: $maxRepositories) {
-          repository {
-            name
-            owner { login }
-          }
-          contributions { totalCount }
-        }
-        issueContributionsByRepository(maxRepositories: $maxRepositories) {
-          repository {
-            name
-            owner { login }
-          }
-          contributions { totalCount }
-        }
-      }
     }
   }`;
 
@@ -331,7 +305,7 @@ export async function fetchCommitActivityHeatmap(username: string, year: number,
     const from = new Date(Date.UTC(year, 0, 1, 0, 0, 0));
     const to = new Date(Date.UTC(year, 11, 31, 23, 59, 59));
 
-    const reposResponse = await graphql<YearInReviewResponse>(YEAR_IN_REVIEW_REPOS_QUERY, token, {
+    const reposResponse = await graphql<YearInReviewResponse>(YEAR_IN_REVIEW_QUERY, token, {
         login: username,
         from: from.toISOString(),
         to: to.toISOString(),
