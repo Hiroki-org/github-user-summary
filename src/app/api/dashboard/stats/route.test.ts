@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 import { type Session } from "next-auth";
+import { GitHubApiError } from "@/lib/types";
 
 const mockSession: Session = {
     user: { name: "Alice", email: "alice@example.com", image: "", login: "alice" },
@@ -179,6 +180,23 @@ describe("GET /api/dashboard/stats validation", () => {
 
         expect(response.status).toBe(500);
         const data = await response.json();
+        expect(data.error).toBe("Internal Server Error");
+    });
+
+    it("returns specific status when fetchCommitActivityHeatmap throws a GitHubApiError", async () => {
+        const { getServerSession } = await import("next-auth");
+        vi.mocked(getServerSession).mockResolvedValueOnce(mockSession);
+
+        const { fetchCommitActivityHeatmap } = await import("@/lib/githubYearInReview");
+        vi.mocked(fetchCommitActivityHeatmap).mockRejectedValueOnce(new GitHubApiError("API Error", 403));
+
+        const { GET } = await import("./route");
+        const currentYear = new Date().getUTCFullYear();
+        const req = createMockRequest(`http://localhost/api/dashboard/stats?year=${currentYear}`);
+        const response = await GET(req);
+
+        expect(response.status).toBe(403);
+        const data = await response.json();
         expect(data.error).toBe("API Error");
     });
 
@@ -196,6 +214,6 @@ describe("GET /api/dashboard/stats validation", () => {
 
         expect(response.status).toBe(500);
         const data = await response.json();
-        expect(data.error).toBe("Unknown error");
+        expect(data.error).toBe("Internal Server Error");
     });
 });

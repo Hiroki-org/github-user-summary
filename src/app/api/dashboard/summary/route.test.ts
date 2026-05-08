@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { getServerSession } from "next-auth";
 import { fetchUserSummary } from "@/lib/github";
 import { fetchViewerLogin } from "@/lib/githubViewer";
+import { RateLimitError, UserNotFoundError, GitHubApiError } from "@/lib/types";
 
 import type { UserSummary } from "@/lib/types";
 
@@ -87,7 +88,7 @@ describe("GET /api/dashboard/summary", () => {
     expect(fetchUserSummary).toHaveBeenCalledWith("testuser", "fake-token");
   });
 
-  it("returns 500 if fetchViewerLogin fails", async () => {
+  it("returns 500 if fetchViewerLogin fails with generic error", async () => {
     const mockSession = {
       accessToken: "fake-token",
       user: { name: "Test User" }, // login missing
@@ -101,6 +102,23 @@ describe("GET /api/dashboard/summary", () => {
     const data = await response.json();
 
     expect(response.status).toBe(500);
+    expect(data.error).toBe("Internal Server Error");
+  });
+
+  it("returns specific status if fetchViewerLogin fails with GitHubApiError", async () => {
+    const mockSession = {
+      accessToken: "fake-token",
+      user: { name: "Test User" }, // login missing
+    };
+
+    vi.mocked(getServerSession).mockResolvedValueOnce(mockSession);
+    vi.mocked(fetchViewerLogin).mockRejectedValueOnce(new GitHubApiError("Viewer login failed", 401));
+
+    const { GET } = await import("./route");
+    const response = await GET();
+    const data = await response.json();
+
+    expect(response.status).toBe(401);
     expect(data.error).toBe("Viewer login failed");
   });
 
@@ -118,10 +136,10 @@ describe("GET /api/dashboard/summary", () => {
     const data = await response.json();
 
     expect(response.status).toBe(500);
-    expect(data.error).toBe("Summary fetch failed");
+    expect(data.error).toBe("Internal Server Error");
   });
 
-  it("returns 500 with 'Unknown error' if error is not an Error instance", async () => {
+  it("returns 500 with 'Internal Server Error' if error is not an Error instance", async () => {
     const mockSession = {
       accessToken: "fake-token",
       user: { login: "testuser" },
@@ -135,21 +153,14 @@ describe("GET /api/dashboard/summary", () => {
     const data = await response.json();
 
     expect(response.status).toBe(500);
-    expect(data.error).toBe("Unknown error");
+    expect(data.error).toBe("Internal Server Error");
   });
 
-  it("returns 500 if fetchUserSummary fails with UserNotFoundError", async () => {
+  it("returns 404 if fetchUserSummary fails with UserNotFoundError", async () => {
     const mockSession = {
       accessToken: "fake-token",
       user: { login: "testuser" },
     };
-
-    class UserNotFoundError extends Error {
-      constructor(username: string) {
-        super(`User "${username}" not found`);
-        this.name = "UserNotFoundError";
-      }
-    }
 
     vi.mocked(getServerSession).mockResolvedValueOnce(mockSession);
     vi.mocked(fetchUserSummary).mockRejectedValueOnce(new UserNotFoundError("testuser"));
@@ -158,25 +169,15 @@ describe("GET /api/dashboard/summary", () => {
     const response = await GET();
     const data = await response.json();
 
-    expect(response.status).toBe(500);
+    expect(response.status).toBe(404);
     expect(data.error).toBe('User "testuser" not found');
   });
 
-  it("returns 500 if fetchUserSummary fails with RateLimitError", async () => {
+  it("returns 429 if fetchUserSummary fails with RateLimitError", async () => {
     const mockSession = {
       accessToken: "fake-token",
       user: { login: "testuser" },
     };
-
-    class RateLimitError extends Error {
-      resetAt: Date;
-      constructor(resetTimestamp: number) {
-        const resetDate = new Date(resetTimestamp * 1000);
-        super(`GitHub API rate limit exceeded. Resets at ${resetDate.toISOString()}`);
-        this.name = "RateLimitError";
-        this.resetAt = resetDate;
-      }
-    }
 
     vi.mocked(getServerSession).mockResolvedValueOnce(mockSession);
     const mockRateLimitError = new RateLimitError(1234567890);
@@ -186,7 +187,7 @@ describe("GET /api/dashboard/summary", () => {
     const response = await GET();
     const data = await response.json();
 
-    expect(response.status).toBe(500);
+    expect(response.status).toBe(429);
     expect(data.error).toBe(mockRateLimitError.message);
   });
 });
