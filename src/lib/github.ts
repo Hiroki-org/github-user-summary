@@ -506,13 +506,8 @@ export async function fetchContributions(
   const oneYearAgo = new Date(now);
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
-  const sevenDaysAgo = new Date(now);
-  sevenDaysAgo.setUTCDate(now.getUTCDate() - 6);
-  sevenDaysAgo.setUTCHours(0, 0, 0, 0); // Ensure comparison at start of day
-
-  const thirtyDaysAgo = new Date(now);
-  thirtyDaysAgo.setUTCDate(now.getUTCDate() - 29);
-  thirtyDaysAgo.setUTCHours(0, 0, 0, 0); // Ensure comparison at start of day
+  const sevenDaysAgoStr = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const thirtyDaysAgoStr = new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
   const query = `query($login: String!, $from: DateTime!, $to: DateTime!) {
     user(login: $login) {
@@ -554,13 +549,22 @@ export async function fetchContributions(
 
   calendar.sort((a, b) => a.date.localeCompare(b.date));
 
-  const weeklyContributions = calendar
-    .filter((day) => new Date(day.date) >= sevenDaysAgo)
-    .reduce((sum, day) => sum + day.count, 0);
+  let weeklyContributions = 0;
+  let monthlyContributions = 0;
 
-  const monthlyContributions = calendar
-    .filter((day) => new Date(day.date) >= thirtyDaysAgo)
-    .reduce((sum, day) => sum + day.count, 0);
+  for (let i = calendar.length - 1; i >= 0; i--) {
+    const day = calendar[i];
+
+    if (day.date < thirtyDaysAgoStr) {
+      break;
+    }
+
+    monthlyContributions += day.count;
+
+    if (day.date >= sevenDaysAgoStr) {
+      weeklyContributions += day.count;
+    }
+  }
 
   const { longestStreak, currentStreak } = calculateStreaks(calendar);
   const mostActiveDay = calculateMostActiveDay(calendar);

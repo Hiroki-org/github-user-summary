@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback } from "react";
 import {
   DndContext,
   KeyboardSensor,
@@ -217,26 +218,29 @@ export default function LayoutEditor({
     }),
   );
 
-  const onDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) {
-      return;
-    }
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) {
+        return;
+      }
 
-    const activeId = String(active.id) as CardBlockId;
-    const next = getInsertIndex(layout, activeId, String(over.id));
-    if (!next) {
-      return;
-    }
+      const activeId = String(active.id) as CardBlockId;
+      const next = getInsertIndex(layout, activeId, String(over.id));
+      if (!next) {
+        return;
+      }
 
-    onLayoutChange(moveBlock(layout, activeId, next.column, next.index));
-  };
+      onLayoutChange(moveBlock(layout, activeId, next.column, next.index));
+    },
+    [layout, onLayoutChange],
+  );
 
   return (
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
-      onDragEnd={onDragEnd}
+      onDragEnd={handleDragEnd}
     >
       <div className="grid gap-4 md:grid-cols-3">
         {CONTAINERS.map((column) => (

@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getAuthenticatedUser, handleErrorResponse } from '../apiUtils';
-import { getServerSession, Session } from 'next-auth';
-import { fetchViewerLogin } from '../githubViewer';
+import { handleErrorResponse, getAuthenticatedUser } from '../apiUtils';
 import { NextResponse } from 'next/server';
+import { getServerSession } from "next-auth";
 import { RateLimitError, UserNotFoundError, GitHubApiError } from '../types';
 import { logger } from '../logger';
 
@@ -16,11 +15,7 @@ vi.mock('next-auth', () => ({
   getServerSession: vi.fn(),
 }));
 
-vi.mock('../githubViewer', () => ({
-  fetchViewerLogin: vi.fn(),
-}));
-
-vi.mock('@/lib/auth', () => ({
+vi.mock("@/lib/auth", () => ({
   authOptions: {},
 }));
 
@@ -35,52 +30,6 @@ vi.mock('next/server', () => {
 describe('apiUtils', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  describe('getAuthenticatedUser', () => {
-    it('should return null if session is null', async () => {
-      vi.mocked(getServerSession).mockResolvedValue(null);
-
-      const result = await getAuthenticatedUser();
-
-      expect(result).toBeNull();
-      expect(getServerSession).toHaveBeenCalled();
-    });
-
-    it('should return null if token is missing in session', async () => {
-      vi.mocked(getServerSession).mockResolvedValue({
-        user: { name: 'test' },
-      } as unknown as Session);
-
-      const result = await getAuthenticatedUser();
-
-      expect(result).toBeNull();
-    });
-
-    it('should return username from session if available', async () => {
-      vi.mocked(getServerSession).mockResolvedValue({
-        accessToken: 'test-token',
-        user: { login: 'test-user' },
-      } as unknown as Session);
-
-      const result = await getAuthenticatedUser();
-
-      expect(result).toEqual({ username: 'test-user', token: 'test-token' });
-      expect(fetchViewerLogin).not.toHaveBeenCalled();
-    });
-
-    it('should fetch username using token if not in session', async () => {
-      vi.mocked(getServerSession).mockResolvedValue({
-        accessToken: 'test-token',
-        user: { name: 'test-user' }, // missing login
-      } as unknown as Session);
-      vi.mocked(fetchViewerLogin).mockResolvedValue('fetched-user');
-
-      const result = await getAuthenticatedUser();
-
-      expect(result).toEqual({ username: 'fetched-user', token: 'test-token' });
-      expect(fetchViewerLogin).toHaveBeenCalledWith('test-token');
-    });
   });
 
   describe('handleErrorResponse', () => {
@@ -178,6 +127,48 @@ describe('apiUtils', () => {
         body: { error: 'Internal Server Error' },
         init: { status: 500 }
       });
+    });
+  });
+
+  describe('getAuthenticatedUser', () => {
+    it('should return user object if session is valid', async () => {
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        accessToken: 'fake-token',
+        user: { login: 'testuser' }
+      });
+
+      const result = await getAuthenticatedUser();
+
+      expect(result).toEqual({ username: 'testuser', token: 'fake-token' });
+    });
+
+    it('should return null if no session', async () => {
+      vi.mocked(getServerSession).mockResolvedValueOnce(null);
+
+      const result = await getAuthenticatedUser();
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null if no accessToken', async () => {
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        user: { login: 'testuser' }
+      });
+
+      const result = await getAuthenticatedUser();
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null if no user login', async () => {
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        accessToken: 'fake-token',
+        user: {}
+      });
+
+      const result = await getAuthenticatedUser();
+
+      expect(result).toBeNull();
     });
   });
 });
