@@ -75,7 +75,12 @@ export function isTrustedFontUrl(url: string, allowedOrigin?: string): boolean {
     // Allow the application's own origin
     if (allowedOrigin) {
       const originUrl = new URL(allowedOrigin);
-      if (parsedUrl.origin === originUrl.origin) {
+      const TRUSTED_DOMAINS = ["github-user-summary.vercel.app", "localhost"];
+
+      if (
+        TRUSTED_DOMAINS.includes(originUrl.hostname) &&
+        parsedUrl.origin === originUrl.origin
+      ) {
         return true;
       }
     }
