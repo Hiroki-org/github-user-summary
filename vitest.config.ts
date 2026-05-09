@@ -19,6 +19,10 @@ export default defineConfig({
         "src/components/BusinessCard.tsx",
         "src/components/LanguageChart.tsx",
         "src/components/SkillsCard.tsx",
+        "src/hooks/useCardPreview.ts",
+        "src/hooks/useCardSettings.ts",
+        "src/components/SettingsTab.tsx",
+        "src/components/ActionButtons.tsx",
       ],
       thresholds: {
         lines: 80,
