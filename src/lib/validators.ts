@@ -50,11 +50,11 @@ export function sanitizeUrl(url: string | null | undefined): string {
   return `https://${trimmedUrl}`;
 }
 
-const TRUSTED_DOMAINS = [
-  "localhost",
-  "127.0.0.1",
-  "github-user-summary.vercel.app",
-  "myapp.com",
+const TRUSTED_ORIGINS = [
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "https://github-user-summary.vercel.app",
+  "https://myapp.com",
 ];
 
 /**
@@ -80,9 +80,9 @@ export function isTrustedFontUrl(url: string, allowedOrigin?: string): boolean {
     }
 
     // Allow the application's own origin
-    if (allowedOrigin) {
+    if (allowedOrigin && TRUSTED_ORIGINS.includes(allowedOrigin)) {
       const originUrl = new URL(allowedOrigin);
-      if (parsedUrl.origin === originUrl.origin && TRUSTED_DOMAINS.includes(originUrl.hostname)) {
+      if (parsedUrl.origin === originUrl.origin) {
         return true;
       }
     }
