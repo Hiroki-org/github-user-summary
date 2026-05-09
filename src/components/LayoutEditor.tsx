@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, type ComponentProps } from "react";
 import {
   DndContext,
   KeyboardSensor,
@@ -8,7 +9,6 @@ import {
   useDroppable,
   useSensor,
   useSensors,
-  type DragEndEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -217,20 +217,24 @@ export default function LayoutEditor({
     }),
   );
 
-  const onDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) {
-      return;
-    }
+  const onDragEnd: NonNullable<ComponentProps<typeof DndContext>["onDragEnd"]> =
+    useCallback(
+      (event) => {
+        const { active, over } = event;
+        if (!over || active.id === over.id) {
+          return;
+        }
 
-    const activeId = String(active.id) as CardBlockId;
-    const next = getInsertIndex(layout, activeId, String(over.id));
-    if (!next) {
-      return;
-    }
+        const activeId = String(active.id) as CardBlockId;
+        const next = getInsertIndex(layout, activeId, String(over.id));
+        if (!next) {
+          return;
+        }
 
-    onLayoutChange(moveBlock(layout, activeId, next.column, next.index));
-  };
+        onLayoutChange(moveBlock(layout, activeId, next.column, next.index));
+      },
+      [layout, onLayoutChange],
+    );
 
   return (
     <DndContext
