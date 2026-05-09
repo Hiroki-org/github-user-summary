@@ -79,6 +79,12 @@ async function renderSvg(
   });
 }
 
+/**
+ * Renders a successful business card as an SVG or an ImageResponse (PNG).
+ *
+ * @param args - Configuration arguments including data, options, cache control, and font URL
+ * @returns A Promise that resolves to a Response object containing the image
+ */
 export async function renderCardResponse(args: {
   data: CardData;
   options: CardRenderOptions;
@@ -115,6 +121,12 @@ export async function renderCardResponse(args: {
   });
 }
 
+/**
+ * Renders an error card as an SVG or an ImageResponse (PNG).
+ *
+ * @param args - Configuration arguments including error message, options, status, cache control, and font URL
+ * @returns A Promise that resolves to a Response object containing the error image
+ */
 export async function renderErrorCardResponse(args: {
   message: string;
   options: CardRenderOptions;
