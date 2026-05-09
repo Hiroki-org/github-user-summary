@@ -62,7 +62,7 @@ const TRUSTED_DOMAINS = [
  * Trusted sources include specific paths on cdn.jsdelivr.net and the application's own origin.
  * All URLs must use the HTTPS protocol.
  */
-export function isTrustedFontUrl(url: string, allowedOrigin?: string): boolean {
+export function isTrustedFontUrl(url: string): boolean {
   try {
     const parsedUrl = new URL(url);
 
@@ -79,12 +79,9 @@ export function isTrustedFontUrl(url: string, allowedOrigin?: string): boolean {
       return true;
     }
 
-    // Allow the application's own origin
-    if (allowedOrigin) {
-      const originUrl = new URL(allowedOrigin);
-      if (parsedUrl.origin === originUrl.origin && TRUSTED_DOMAINS.includes(originUrl.hostname)) {
-        return true;
-      }
+    // Allow explicitly trusted domains
+    if (TRUSTED_DOMAINS.includes(parsedUrl.hostname)) {
+      return true;
     }
 
     return false;

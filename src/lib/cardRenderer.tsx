@@ -19,7 +19,7 @@ const fontCache = new Map<string, Promise<ArrayBuffer>>();
 
 function getFontData(fontUrl?: string, allowedOrigin?: string): Promise<ArrayBuffer> {
   const targetUrl =
-    fontUrl && isTrustedFontUrl(fontUrl, allowedOrigin)
+    fontUrl && isTrustedFontUrl(fontUrl)
       ? fontUrl
       : DEFAULT_FONT_URL;
 

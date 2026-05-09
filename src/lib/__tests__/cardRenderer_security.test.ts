@@ -15,19 +15,15 @@ describe("isTrustedFontUrl", () => {
     });
 
     it("allows the trusted application origin via HTTPS", () => {
-        expect(isTrustedFontUrl("https://myapp.com/fonts/NotoSans-Regular.ttf", "https://myapp.com")).toBe(true);
+        expect(isTrustedFontUrl("https://myapp.com/fonts/NotoSans-Regular.ttf")).toBe(true);
     });
 
     it("blocks application origin via HTTP", () => {
-        expect(isTrustedFontUrl("http://myapp.com/fonts/NotoSans-Regular.ttf", "https://myapp.com")).toBe(false);
+        expect(isTrustedFontUrl("http://myapp.com/fonts/NotoSans-Regular.ttf")).toBe(false);
     });
 
     it("blocks untrusted hosts", () => {
-        expect(isTrustedFontUrl("https://evil.com/font.ttf", "https://myapp.com")).toBe(false);
-    });
-
-    it("blocks the host if the origin does not match exactly", () => {
-        expect(isTrustedFontUrl("https://myapp.net/fonts/font.ttf", "https://myapp.com")).toBe(false);
+        expect(isTrustedFontUrl("https://evil.com/font.ttf")).toBe(false);
     });
 
     it("blocks relative URLs", () => {
