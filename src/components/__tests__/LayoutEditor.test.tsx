@@ -20,9 +20,10 @@ vi.mock("@dnd-kit/core", async (importOriginal) => {
     ),
     useSensors: vi.fn(() => []),
     useSensor: vi.fn(() => ({})),
-    useDroppable: () => ({
+    useDroppable: ({ id }: { id: string }) => ({
       setNodeRef: vi.fn(),
-      isOver: false,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      isOver: (window as any).mockIsOverId === id,
     }),
     PointerSensor: vi.fn(),
     KeyboardSensor: vi.fn(),
@@ -39,9 +40,9 @@ vi.mock("@dnd-kit/sortable", async (importOriginal) => {
       attributes: { "data-id": id },
       listeners: {},
       setNodeRef: vi.fn(),
-      transform: null,
+      transform: id === "avatar" ? { x: 10, y: 20, scaleX: 1, scaleY: 1 } : null,
       transition: undefined,
-      isDragging: false,
+      isDragging: id === "avatar",
     }),
     sortableKeyboardCoordinates: vi.fn(),
     verticalListSortingStrategy: vi.fn(),
@@ -63,7 +64,10 @@ describe("LayoutEditor", () => {
   beforeEach(() => {
     mockOnLayoutChange = vi.fn();
     mockOnToggleVisibility = vi.fn();
-    (window as unknown as { triggerDragEnd?: (event: unknown) => void }).triggerDragEnd = undefined;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).triggerDragEnd = undefined;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).mockIsOverId = undefined;
   });
 
   it("renders blocks in their respective columns", () => {
@@ -94,8 +98,6 @@ describe("LayoutEditor", () => {
       />
     );
 
-    // Get the checkbox for the avatar block
-
     // Find the Avatar block and click its checkbox
     const avatarBlock = screen.getByText("Avatar").closest("div[class*='rounded-md border']") as HTMLElement;
     const checkbox = avatarBlock.querySelector("input[type='checkbox']") as HTMLInputElement;
@@ -117,7 +119,8 @@ describe("LayoutEditor", () => {
     const dndContext = screen.getByTestId("dnd-context");
     fireEvent.click(dndContext);
 
-    const triggerDragEnd = (window as unknown as { triggerDragEnd: (event: unknown) => void }).triggerDragEnd;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const triggerDragEnd = (window as any).triggerDragEnd;
     expect(triggerDragEnd).toBeDefined();
 
     // Drag 'avatar' to 'right' column
@@ -146,7 +149,8 @@ describe("LayoutEditor", () => {
     const dndContext = screen.getByTestId("dnd-context");
     fireEvent.click(dndContext);
 
-    const triggerDragEnd = (window as unknown as { triggerDragEnd: (event: unknown) => void }).triggerDragEnd;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const triggerDragEnd = (window as any).triggerDragEnd;
 
     // Drag 'avatar' over 'topLanguages'
     triggerDragEnd({
@@ -174,7 +178,8 @@ describe("LayoutEditor", () => {
     const dndContext = screen.getByTestId("dnd-context");
     fireEvent.click(dndContext);
 
-    const triggerDragEnd = (window as unknown as { triggerDragEnd: (event: unknown) => void }).triggerDragEnd;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const triggerDragEnd = (window as any).triggerDragEnd;
     triggerDragEnd({
       active: { id: "avatar" },
       over: null,
@@ -195,7 +200,8 @@ describe("LayoutEditor", () => {
     const dndContext = screen.getByTestId("dnd-context");
     fireEvent.click(dndContext);
 
-    const triggerDragEnd = (window as unknown as { triggerDragEnd: (event: unknown) => void }).triggerDragEnd;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const triggerDragEnd = (window as any).triggerDragEnd;
     triggerDragEnd({
       active: { id: "avatar" },
       over: { id: "avatar" },
@@ -216,12 +222,73 @@ describe("LayoutEditor", () => {
     const dndContext = screen.getByTestId("dnd-context");
     fireEvent.click(dndContext);
 
-    const triggerDragEnd = (window as unknown as { triggerDragEnd: (event: unknown) => void }).triggerDragEnd;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const triggerDragEnd = (window as any).triggerDragEnd;
     triggerDragEnd({
       active: { id: "avatar" },
       over: { id: "non-existent-block" },
     });
 
     expect(mockOnLayoutChange).not.toHaveBeenCalled();
+  });
+
+  it("calls onLayoutChange when dragging a block downwards within the same column", () => {
+    render(
+      <LayoutEditor
+        layout={{
+          blocks: [
+            { id: "avatar", visible: true, column: "left" },
+            { id: "bio", visible: true, column: "left" },
+            { id: "stats", visible: true, column: "left" },
+          ],
+        } as CardLayout}
+        onLayoutChange={mockOnLayoutChange as unknown as (layout: CardLayout) => void}
+        onToggleBlockVisibility={mockOnToggleVisibility as unknown as (blockId: string) => void}
+      />
+    );
+
+    const dndContext = screen.getByTestId("dnd-context");
+    fireEvent.click(dndContext);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const triggerDragEnd = (window as any).triggerDragEnd;
+
+    // Drag 'avatar' over 'stats' (downwards)
+    triggerDragEnd({
+      active: { id: "avatar" },
+      over: { id: "stats" },
+    });
+
+    expect(mockOnLayoutChange).toHaveBeenCalled();
+  });
+
+  it("calls onLayoutChange when dragging a block to an empty column", () => {
+    render(
+      <LayoutEditor
+        layout={{
+          blocks: [
+            { id: "avatar", visible: true, column: "left" },
+          ],
+        } as CardLayout}
+        onLayoutChange={mockOnLayoutChange as unknown as (layout: CardLayout) => void}
+        onToggleBlockVisibility={mockOnToggleVisibility as unknown as (blockId: string) => void}
+      />
+    );
+
+    const dndContext = screen.getByTestId("dnd-context");
+    fireEvent.click(dndContext);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const triggerDragEnd = (window as any).triggerDragEnd;
+
+    // Drag 'avatar' to empty column 'right'
+    triggerDragEnd({
+      active: { id: "avatar" },
+      over: { id: "right" },
+    });
+
+    expect(mockOnLayoutChange).toHaveBeenCalled();
+    const newLayout = mockOnLayoutChange.mock.calls[0][0] as CardLayout;
+    expect(newLayout.blocks.find(b => b.id === "avatar")?.column).toBe("right");
   });
 });
