@@ -3,7 +3,6 @@ import {
   toggleBlockVisibility,
 } from "@/lib/cardLayout";
 import { 
-  DEFAULT_DISPLAY_OPTIONS, 
   loadCardSettings, 
   saveCardSettings,
   type CardDisplayOptions 
@@ -19,15 +18,19 @@ export function useCardSettings(mounted: boolean) {
 
   // Initialize state from storage on mount
   useEffect(() => {
-    if (!mounted) {
+    if (!mounted || isHydrated) {
       return;
     }
 
     const { layout: storedLayout, options: storedOptions } = loadCardSettings();
-    setLayout(storedLayout);
-    setDisplayOptions(storedOptions);
+    
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLayout((prev) => JSON.stringify(prev) !== JSON.stringify(storedLayout) ? storedLayout : prev);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDisplayOptions((prev) => JSON.stringify(prev) !== JSON.stringify(storedOptions) ? storedOptions : prev);
+    
     setIsHydrated(true);
-  }, [mounted]);
+  }, [mounted, isHydrated]);
 
   // Persist changes to storage
   useEffect(() => {
