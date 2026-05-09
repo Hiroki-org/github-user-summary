@@ -17,11 +17,16 @@ export async function GET(
 ) {
   const { username } = await params;
 
-  const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+  const forwarded = request.headers.get("x-forwarded-for");
+  const ip = forwarded ? forwarded.split(",").at(-1)?.trim() ?? "unknown" : "unknown";
   const rateLimitResult = rateLimiter.check(ip);
 
   if (!rateLimitResult.success) {
-    return new Response("Rate limit exceeded", { status: 429 });
+    const retryAfterSec = Math.ceil((rateLimitResult.reset - Date.now()) / 1000);
+    return new Response("Rate limit exceeded", {
+      status: 429,
+      headers: { "Retry-After": String(retryAfterSec > 0 ? retryAfterSec : 0) },
+    });
   }
 
   if (!isValidGitHubUsername(username)) {
