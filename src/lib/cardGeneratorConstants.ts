@@ -1,12 +1,11 @@
-import type { CardBlockId } from "@/lib/types";
-import type { CardDisplayOptions } from "@/lib/cardSettings";
+import type { CardBlockId, CardDisplayOptions } from "@/lib/types";
 
 export const MAIN_BLOCKS: { id: CardBlockId; label: string }[] = [
   { id: "profile", label: "Profile" },
   { id: "contributions", label: "Contributions" },
   { id: "heatmap", label: "Activity Heatmap" },
   { id: "interests", label: "Interests" },
-  { id: "repos", label: "Popular Repos" },
+  { id: "topRepos", label: "Popular Repos" },
   { id: "skills", label: "Skills" },
 ];
 

@@ -1,51 +1,42 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
-  cloneDefaultCardLayout,
-  normalizeCardLayout,
   toggleBlockVisibility,
-  LAYOUT_STORAGE_KEY,
 } from "@/lib/cardLayout";
-import { DEFAULT_DISPLAY_OPTIONS, type CardDisplayOptions } from "@/lib/cardSettings";
+import { 
+  DEFAULT_DISPLAY_OPTIONS, 
+  loadCardSettings, 
+  saveCardSettings,
+  type CardDisplayOptions 
+} from "@/lib/cardSettings";
 import type { CardLayout, CardBlockId } from "@/lib/types";
 
 export function useCardSettings(mounted: boolean) {
-  const [isLayoutHydrated, setIsLayoutHydrated] = useState(false);
-  const [layout, setLayout] = useState<CardLayout>(cloneDefaultCardLayout());
+  const [isHydrated, setIsHydrated] = useState(false);
+  const [layout, setLayout] = useState<CardLayout>(() => loadCardSettings().layout);
   const [displayOptions, setDisplayOptions] = useState<CardDisplayOptions>(
-    DEFAULT_DISPLAY_OPTIONS,
+    () => loadCardSettings().options,
   );
 
+  // Initialize state from storage on mount
   useEffect(() => {
     if (!mounted) {
       return;
     }
 
-    try {
-      const raw = localStorage.getItem(LAYOUT_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        setLayout(normalizeCardLayout(parsed));
-      } else {
-        setLayout(cloneDefaultCardLayout());
-      }
-    } catch {
-      setLayout(cloneDefaultCardLayout());
-    } finally {
-      setIsLayoutHydrated(true);
-    }
+    const { layout: storedLayout, options: storedOptions } = loadCardSettings();
+    setLayout(storedLayout);
+    setDisplayOptions(storedOptions);
+    setIsHydrated(true);
   }, [mounted]);
 
+  // Persist changes to storage
   useEffect(() => {
-    if (!mounted || !isLayoutHydrated) {
+    if (!mounted || !isHydrated) {
       return;
     }
 
-    try {
-      localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(layout));
-    } catch {
-      // Ignore storage write failures (private mode, quota exceeded, etc.)
-    }
-  }, [layout, mounted, isLayoutHydrated]);
+    saveCardSettings(layout, displayOptions);
+  }, [layout, displayOptions, mounted, isHydrated]);
 
   const toggleMainBlockVisibility = useCallback((blockId: CardBlockId) => {
     setLayout((prev) => toggleBlockVisibility(prev, blockId));

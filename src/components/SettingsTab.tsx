@@ -1,3 +1,5 @@
+"use client";
+
 import { MAIN_BLOCKS, DETAIL_OPTIONS } from "@/lib/cardGeneratorConstants";
 import type { CardDisplayOptions } from "@/lib/cardSettings";
 import type { CardBlockId } from "@/lib/types";
