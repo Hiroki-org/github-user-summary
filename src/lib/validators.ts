@@ -74,7 +74,9 @@ export function isTrustedFontUrl(url: string, allowedOrigin?: string): boolean {
     // Allow JSDelivr only for trusted paths (e.g., googlefonts)
     if (
       parsedUrl.hostname === "cdn.jsdelivr.net" &&
-      parsedUrl.pathname.startsWith("/gh/googlefonts/noto-fonts")
+      (parsedUrl.pathname.startsWith("/gh/googlefonts/noto-fonts/") || parsedUrl.pathname === "/gh/googlefonts/noto-fonts") &&
+      !parsedUrl.pathname.includes("..") &&
+      !parsedUrl.pathname.includes("%")
     ) {
       return true;
     }
