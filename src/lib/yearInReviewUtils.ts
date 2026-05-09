@@ -11,52 +11,55 @@ export function buildHourlyHeatmapFromCommitDates(commitDates: string[]): number
     const dayCache = new Map<string, number>();
 
     for (const dateString of commitDates) {
-        // Fast path for standard ISO 8601 strings (e.g., "2023-01-01T10:00:00Z")
-        if (dateString.length >= 19 && dateString[10] === 'T') {
-            const datePart = dateString.slice(0, 10);
-
-            // Check cache for day
-            let day = dayCache.get(datePart);
-
-            // If missing, compute via Date parsing (but cached per day)
-            if (day === undefined) {
-                const date = new Date(datePart + "T00:00:00Z");
-                if (Number.isNaN(date.getTime())) {
-                    // Fall back to full date parsing if something goes wrong with parsing this substring
-                    const fullDate = new Date(dateString);
-                    if (!Number.isNaN(fullDate.getTime())) {
-                        heatmap[fullDate.getUTCDay()][fullDate.getUTCHours()] += 1;
-                    }
-                    continue;
-                }
-                day = date.getUTCDay();
-                dayCache.set(datePart, day);
-            }
-
-            // Parse hour manually
-            const h1 = dateString.charCodeAt(11) - 48;
-            const h2 = dateString.charCodeAt(12) - 48;
-
-            if (h1 >= 0 && h1 <= 9 && h2 >= 0 && h2 <= 9) {
-                const hour = h1 * 10 + h2;
-
-                // If there is a timezone offset (e.g., +09:00 or -05:00), we cannot simply use the cached day and raw hour.
-                // We must adjust for the offset to get the correct UTC time, so we fall back to standard date parsing.
-                if (dateString.endsWith('Z') || dateString.length === 20 || (dateString.length === 24 && dateString.endsWith('.000Z'))) {
-                    heatmap[day][hour] += 1;
-                    continue;
-                }
-            }
-        }
-
-        // Fallback for non-standard dates or dates with timezone offsets
-        const date = new Date(dateString);
-        if (Number.isNaN(date.getTime())) {
+        // Non-standard date string: fall back to full Date parsing
+        if (dateString.length < 19 || dateString[10] !== "T") {
+            parseFallbackDate(dateString, heatmap);
             continue;
         }
-        heatmap[date.getUTCDay()][date.getUTCHours()] += 1;
+
+        const datePart = dateString.slice(0, 10);
+
+        // Check cache for day
+        let day = dayCache.get(datePart);
+
+        // If missing, compute via Date parsing (but cached per day)
+        if (day === undefined) {
+            const date = new Date(datePart + "T00:00:00Z");
+            if (Number.isNaN(date.getTime())) {
+                parseFallbackDate(dateString, heatmap);
+                continue;
+            }
+            day = date.getUTCDay();
+            dayCache.set(datePart, day);
+        }
+
+        // Fast path for standard ISO 8601 strings (e.g., "2023-01-01T10:00:00Z")
+        const h1 = dateString.charCodeAt(11) - 48;
+        const h2 = dateString.charCodeAt(12) - 48;
+
+        if (h1 < 0 || h1 > 9 || h2 < 0 || h2 > 9) {
+            parseFallbackDate(dateString, heatmap);
+            continue;
+        }
+
+        const hour = h1 * 10 + h2;
+
+        // Ensure hour is within valid range and handle potential timezone offsets
+        if (hour < 0 || hour > 23 || !dateString.endsWith("Z")) {
+            parseFallbackDate(dateString, heatmap);
+            continue;
+        }
+
+        heatmap[day][hour] += 1;
     }
     return heatmap;
+}
+
+function parseFallbackDate(dateString: string, heatmap: number[][]): void {
+    const date = new Date(dateString);
+    if (!Number.isNaN(date.getTime())) {
+        heatmap[date.getUTCDay()][date.getUTCHours()] += 1;
+    }
 }
 
 /**
