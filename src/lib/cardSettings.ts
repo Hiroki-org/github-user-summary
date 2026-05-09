@@ -44,13 +44,17 @@ export function loadCardSettings(): { layout: CardLayout; options: CardDisplayOp
         return { layout: DEFAULT_CARD_LAYOUT, options: DEFAULT_DISPLAY_OPTIONS };
     }
 
-    const parsedLayout = safeParse<CardLayout>(window.localStorage.getItem(LAYOUT_KEY));
-    const parsedOptions = safeParse<CardDisplayOptions>(window.localStorage.getItem(OPTIONS_KEY));
+    try {
+        const parsedLayout = safeParse<CardLayout>(window.localStorage.getItem(LAYOUT_KEY));
+        const parsedOptions = safeParse<CardDisplayOptions>(window.localStorage.getItem(OPTIONS_KEY));
 
-    return {
-        layout: parsedLayout ? normalizeCardLayout(parsedLayout) : DEFAULT_CARD_LAYOUT,
-        options: { ...DEFAULT_DISPLAY_OPTIONS, ...(parsedOptions ?? {}) },
-    };
+        return {
+            layout: parsedLayout ? normalizeCardLayout(parsedLayout) : DEFAULT_CARD_LAYOUT,
+            options: { ...DEFAULT_DISPLAY_OPTIONS, ...(parsedOptions ?? {}) },
+        };
+    } catch {
+        return { layout: DEFAULT_CARD_LAYOUT, options: DEFAULT_DISPLAY_OPTIONS };
+    }
 }
 
 export function saveCardSettings(layout: CardLayout, options: CardDisplayOptions): void {
@@ -58,8 +62,12 @@ export function saveCardSettings(layout: CardLayout, options: CardDisplayOptions
         return;
     }
 
-    window.localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
-    window.localStorage.setItem(OPTIONS_KEY, JSON.stringify(options));
+    try {
+        window.localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
+        window.localStorage.setItem(OPTIONS_KEY, JSON.stringify(options));
+    } catch {
+        // Ignore storage write failures (private mode, quota exceeded, etc.)
+    }
 }
 
 export function getDefaultCardSettings(): { layout: CardLayout; options: CardDisplayOptions } {

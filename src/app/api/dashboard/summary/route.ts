@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedUser, handleErrorResponse } from "@/lib/apiUtils";
-
+import { handleErrorResponse, getAuthenticatedUser } from "@/lib/apiUtils";
 import { fetchUserSummary } from "@/lib/github";
 
 export async function GET() {
