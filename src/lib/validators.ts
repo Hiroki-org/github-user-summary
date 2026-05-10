@@ -50,12 +50,45 @@ export function sanitizeUrl(url: string | null | undefined): string {
   return `https://${trimmedUrl}`;
 }
 
-const TRUSTED_ORIGINS = [
-  "http://localhost:3000",
-  "http://127.0.0.1:3000",
+const DEFAULT_TRUSTED_FONT_ORIGINS = [
   "https://github-user-summary.vercel.app",
-  "https://myapp.com",
 ];
+
+function getTrustedFontOrigins(): Set<string> {
+  const origins = new Set(DEFAULT_TRUSTED_FONT_ORIGINS);
+  const configuredAppUrl = process.env.APP_URL;
+
+  if (configuredAppUrl) {
+    try {
+      const configuredOrigin = new URL(configuredAppUrl).origin;
+      if (configuredOrigin.startsWith("https://")) {
+        origins.add(configuredOrigin);
+      }
+    } catch {
+      // Ignore invalid deployment configuration and fall back to the fixed allowlist.
+    }
+  }
+
+  return origins;
+}
+
+function isTrustedJsDelivrNotoFont(parsedUrl: URL): boolean {
+  if (parsedUrl.hostname !== "cdn.jsdelivr.net") {
+    return false;
+  }
+
+  if (parsedUrl.pathname.includes("%")) {
+    return false;
+  }
+
+  const pathSegments = parsedUrl.pathname.split("/");
+  const repoSegment = pathSegments[3];
+  const isNotoFontsRepo =
+    repoSegment === "noto-fonts" ||
+    /^noto-fonts@.+$/.test(repoSegment ?? "");
+
+  return pathSegments[1] === "gh" && pathSegments[2] === "googlefonts" && isNotoFontsRepo;
+}
 
 /**
  * Validates if a font URL is from a trusted source.
@@ -71,18 +104,18 @@ export function isTrustedFontUrl(url: string, allowedOrigin?: string): boolean {
       return false;
     }
 
-    // Allow JSDelivr only for trusted paths (e.g., googlefonts)
-    if (
-      parsedUrl.hostname === "cdn.jsdelivr.net" &&
-      parsedUrl.pathname.startsWith("/gh/googlefonts/noto-fonts")
-    ) {
+    // Allow JSDelivr only for the googlefonts/noto-fonts repository.
+    if (isTrustedJsDelivrNotoFont(parsedUrl)) {
       return true;
     }
 
     // Allow the application's own origin
-    if (allowedOrigin && TRUSTED_ORIGINS.includes(allowedOrigin)) {
+    if (allowedOrigin) {
       const originUrl = new URL(allowedOrigin);
-      if (parsedUrl.origin === originUrl.origin) {
+      if (
+        parsedUrl.origin === originUrl.origin &&
+        getTrustedFontOrigins().has(originUrl.origin)
+      ) {
         return true;
       }
     }
