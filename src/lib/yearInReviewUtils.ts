@@ -55,6 +55,46 @@ export function buildHourlyHeatmapFromCommitDates(commitDates: string[]): number
     return heatmap;
 }
 
+/**
+ * Fast weekday calculation using Sakamoto's algorithm.
+ * Returns 0 for Sunday, 1 for Monday, ..., 6 for Saturday.
+ */
+function getWeekdaySakamoto(y: number, m: number, d: number): number {
+    const t = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
+    if (m < 3) y -= 1;
+    return (y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) + t[m - 1] + d) % 7;
+}
+
+/**
+ * Optimized weekday calculation from a YYYY-MM-DD string.
+ * Falls back to Date parsing for non-standard formats.
+ *
+ * @param dateStr The date string (expected YYYY-MM-DD).
+ * @returns The weekday (0-6) or null if invalid.
+ */
+export function getWeekdayFromDateString(dateStr: string): number | null {
+    if (dateStr.length !== 10 || dateStr[4] !== "-" || dateStr[7] !== "-") {
+        const parsedDate = new Date(`${dateStr}T00:00:00Z`);
+        if (Number.isNaN(parsedDate.getTime())) {
+            return null;
+        }
+        return parsedDate.getUTCDay();
+    }
+    const y = Number.parseInt(dateStr.substring(0, 4), 10);
+    const m = Number.parseInt(dateStr.substring(5, 7), 10);
+    const d = Number.parseInt(dateStr.substring(8, 10), 10);
+
+    if (Number.isNaN(y) || Number.isNaN(m) || Number.isNaN(d)) {
+        const parsedDate = new Date(`${dateStr}T00:00:00Z`);
+        if (Number.isNaN(parsedDate.getTime())) {
+            return null;
+        }
+        return parsedDate.getUTCDay();
+    }
+
+    return getWeekdaySakamoto(y, m, d);
+}
+
 function parseFallbackDate(dateString: string, heatmap: number[][]): void {
     const date = new Date(dateString);
     if (!Number.isNaN(date.getTime())) {
@@ -100,18 +140,16 @@ export function getMostActiveHour(heatmap: number[][]): number {
  */
 export function getMostActiveDayFromCalendar(calendar: { date: string; count: number }[]): string {
     const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    const totals = Array.from({ length: 7 }, () => 0);
+    const totals = [0, 0, 0, 0, 0, 0, 0];
 
     for (const day of calendar) {
         if (day.count <= 0) {
             continue;
         }
-        const parsedDate = new Date(`${day.date}T00:00:00Z`);
-        if (Number.isNaN(parsedDate.getTime())) {
-            continue;
+        const weekday = getWeekdayFromDateString(day.date);
+        if (weekday !== null) {
+            totals[weekday] += day.count;
         }
-        const weekday = parsedDate.getUTCDay();
-        totals[weekday] += day.count;
     }
 
     let maxDay = 0;

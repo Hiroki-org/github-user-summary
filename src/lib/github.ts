@@ -13,6 +13,7 @@ import type {
   TopRepo,
   PinnedRepo,
 } from "./types";
+import { getWeekdayFromDateString } from "./yearInReviewUtils";
 import {
   UserNotFoundError,
   RateLimitError,
@@ -90,20 +91,28 @@ function calculateStreaks(calendar: { count: number }[]): { longestStreak: numbe
 
 function calculateMostActiveDay(calendar: { date: string; count: number }[]): string {
   const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const weekdayTotals = Array.from({ length: 7 }, () => 0);
+  const weekdayTotals = [0, 0, 0, 0, 0, 0, 0];
 
   for (const day of calendar) {
     if (day.count === 0) {
       continue;
     }
-    const weekday = new Date(`${day.date}T00:00:00Z`).getUTCDay();
-    weekdayTotals[weekday] += day.count;
+    const weekday = getWeekdayFromDateString(day.date);
+    if (weekday !== null) {
+      weekdayTotals[weekday] += day.count;
+    }
   }
 
-  const maxWeekdayTotal = Math.max(...weekdayTotals);
-  return maxWeekdayTotal > 0
-    ? weekdayNames[weekdayTotals.findIndex((count) => count === maxWeekdayTotal)]
-    : "";
+  let maxCount = -1;
+  let maxIdx = -1;
+  for (let i = 0; i < 7; i++) {
+    if (weekdayTotals[i] > maxCount) {
+      maxCount = weekdayTotals[i];
+      maxIdx = i;
+    }
+  }
+
+  return maxCount > 0 ? weekdayNames[maxIdx] : "";
 }
 
 async function graphql<T>(query: string, token?: string, variables?: Record<string, unknown>): Promise<T> {
