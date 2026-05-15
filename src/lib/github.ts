@@ -1,3 +1,4 @@
+import { REPOSITORIES_QUERY, CONTRIBUTIONS_QUERY } from "./graphql/queries";
 import "server-only";
 import { cache } from 'react';
 import { logger } from "@/lib/logger";
@@ -310,35 +311,7 @@ export async function fetchRepositories(
     return fetchRepositoriesREST(username);
   }
 
-  const query = `query($login: String!) {
-    user(login: $login) {
-      repositories(first: 100, ownerAffiliations: [OWNER, ORGANIZATION_MEMBER, COLLABORATOR], orderBy: {field: STARGAZERS, direction: DESC}, isFork: false, privacy: PUBLIC) {
-        totalCount
-        nodes {
-          name
-          description
-          url
-          stargazerCount
-          forkCount
-          isFork
-          primaryLanguage { name color }
-          languages(first: 10) {
-            edges {
-              size
-              node { name color }
-            }
-          }
-          repositoryTopics(first: 10) {
-            nodes {
-              topic { name }
-            }
-          }
-        }
-      }
-    }
-  }`;
-
-  const data = await graphql<RepositoriesResponse>(query, token, { login: username });
+  const data = await graphql<RepositoriesResponse>(REPOSITORIES_QUERY, token, { login: username });
   if (!data.user) {
     throw new UserNotFoundError(username);
   }
@@ -509,27 +482,7 @@ export async function fetchContributions(
   const sevenDaysAgoStr = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
   const thirtyDaysAgoStr = new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
-  const query = `query($login: String!, $from: DateTime!, $to: DateTime!) {
-    user(login: $login) {
-      contributionsCollection(from: $from, to: $to) {
-        totalCommitContributions
-        totalPullRequestContributions
-        totalIssueContributions
-        totalPullRequestReviewContributions
-        contributionCalendar {
-          totalContributions
-          weeks {
-            contributionDays {
-              date
-              contributionCount
-            }
-          }
-        }
-      }
-    }
-  }`;
-
-  const data = await graphql<ContributionsResponse>(query, token, {
+  const data = await graphql<ContributionsResponse>(CONTRIBUTIONS_QUERY, token, {
     login: username,
     from: oneYearAgo.toISOString(),
     to: now.toISOString(),

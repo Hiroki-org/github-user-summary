@@ -1,3 +1,4 @@
+import { YEAR_IN_REVIEW_QUERY } from "./graphql/queries";
 import "server-only";
 
 import { GitHubApiError, RateLimitError, UserNotFoundError } from "@/lib/types";
@@ -5,36 +6,7 @@ import { headers, handleRateLimit } from "@/lib/github";
 import { buildHourlyHeatmapFromCommitDates, getMostActiveDayFromCalendar, getMostActiveHour } from "@/lib/yearInReviewUtils";
 
 
-const YEAR_IN_REVIEW_QUERY = `query($login: String!, $from: DateTime!, $to: DateTime!, $maxRepositories: Int!) {
-    user(login: $login) {
-      id
-      contributionsCollection(from: $from, to: $to) {
-        totalCommitContributions
-        totalPullRequestContributions
-        totalIssueContributions
-        totalPullRequestReviewContributions
-        contributionCalendar {
-          totalContributions
-          weeks {
-            contributionDays {
-              date
-              contributionCount
-            }
-          }
-        }
-        commitContributionsByRepository(maxRepositories: $maxRepositories) { ...repoFields }
-        pullRequestContributionsByRepository(maxRepositories: $maxRepositories) { ...repoFields }
-        issueContributionsByRepository(maxRepositories: $maxRepositories) { ...repoFields }
-      }
-    }
-  }
-  fragment repoFields on ContributionsByRepository {
-    repository {
-      name
-      owner { login }
-    }
-    contributions { totalCount }
-  }`;
+
 
 const GITHUB_API = "https://api.github.com";
 const GITHUB_GRAPHQL = "https://api.github.com/graphql";
