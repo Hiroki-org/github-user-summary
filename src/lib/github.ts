@@ -493,7 +493,7 @@ type ContributionsResponse = {
  * @throws {UserNotFoundError} ユーザーが見つからない場合
  * @throws {RateLimitError} APIレート制限に達した場合
  */
-export async function fetchContributions(
+export const fetchContributions = cache(async function fetchContributions(
   username: string,
   token?: string
 ): Promise<ContributionData> {
@@ -583,7 +583,7 @@ export async function fetchContributions(
     mostActiveDay,
     calendar,
   };
-}
+});
 
 // ===== 4.5 fetchStarredRepos =====
 
