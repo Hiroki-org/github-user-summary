@@ -598,7 +598,7 @@ type StarredRepo = {
  * @throws {UserNotFoundError} ユーザーが見つからない場合
  * @throws {RateLimitError} APIレート制限に達した場合
  */
-export async function fetchStarredRepos(
+export const fetchStarredRepos = cache(async function fetchStarredRepos(
   username: string,
   token?: string
 ): Promise<InterestsData> {
@@ -652,7 +652,7 @@ export async function fetchStarredRepos(
     topLanguages,
     totalStarred: allStarred.length,
   };
-}
+});
 
 // ===== 5. fetchActivity =====
 
