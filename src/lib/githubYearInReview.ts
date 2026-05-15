@@ -1,3 +1,4 @@
+import { cache } from "react";
 import "server-only";
 
 import { GitHubApiError, RateLimitError, UserNotFoundError } from "@/lib/types";
@@ -242,7 +243,7 @@ function buildYearInReviewData(
     };
 }
 
-export async function fetchYearInReviewData(username: string, year: number, token?: string) {
+export const fetchYearInReviewData = cache(async function fetchYearInReviewData(username: string, year: number, token?: string) {
     if (!token) {
         throw new GitHubApiError("Year in Review requires authentication token", 401);
     }
@@ -281,7 +282,7 @@ export async function fetchYearInReviewData(username: string, year: number, toke
         }
         throw new GitHubApiError(error instanceof Error ? error.message : "Failed to fetch year in review data", 500);
     }
-}
+});
 
 export async function fetchCommitActivityHeatmap(username: string, year: number, token?: string): Promise<number[][]> {
     if (!token) {
