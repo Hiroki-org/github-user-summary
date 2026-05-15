@@ -228,7 +228,7 @@ async function fetchPinnedRepos(username: string, token?: string): Promise<Pinne
  * @throws {UserNotFoundError} ユーザーが存在しない場合
  * @throws {RateLimitError} APIレート制限に達した場合
  */
-export async function fetchUserProfile(
+export const fetchUserProfile = cache(async function fetchUserProfile(
   username: string,
   token?: string
 ): Promise<UserProfile> {
@@ -254,7 +254,7 @@ export async function fetchUserProfile(
     orgs,
     pinnedRepos,
   };
-}
+});
 
 // ===== 2. fetchRepositories =====
 
