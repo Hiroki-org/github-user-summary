@@ -17,7 +17,9 @@ export async function GET(
 ) {
   const { username } = await params;
 
-  const ip = request.ip ?? "unknown";
+  // In Next.js 15+ request.ip is deprecated/removed in some contexts. We fallback to headers if not present on type.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const ip = (request as any).ip ?? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
   const rateLimitResult = rateLimiter.check(ip);
 
   if (!rateLimitResult.success) {
