@@ -301,7 +301,7 @@ type RepositoriesResponse = {
  * @throws {UserNotFoundError} ユーザーが存在しない場合
  * @throws {RateLimitError} APIレート制限に達した場合
  */
-export async function fetchRepositories(
+export const fetchRepositories = cache(async function fetchRepositories(
   username: string,
   token?: string
 ): Promise<RepositoryData> {
@@ -345,7 +345,7 @@ export async function fetchRepositories(
 
   const repos = data.user.repositories.nodes.filter((r) => !r.isFork);
   return processRepoData(repos);
-}
+});
 
 async function fetchRepositoriesREST(username: string): Promise<RepositoryData> {
   type RESTRepo = {
