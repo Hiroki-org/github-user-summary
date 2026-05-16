@@ -315,7 +315,13 @@ export async function fetchCommitActivityHeatmap(username: string, year: number,
     url.searchParams.set("until", to.toISOString());
     url.searchParams.set("per_page", "100");
 
-    const res = await fetch(url.toString(), { headers: headers(token), cache: "no-store" });
+    let res;
+    try {
+        res = await fetch(url.toString(), { headers: headers(token), cache: "no-store" });
+    } catch {
+        return Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
+    }
+
     if (res.status === 403) {
         handleRateLimit(res);
     }
