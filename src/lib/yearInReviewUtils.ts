@@ -98,6 +98,38 @@ export function getMostActiveHour(heatmap: number[][]): number {
  * @param calendar Array of objects containing date and contribution count.
  * @returns The name of the most active day (e.g., "Monday").
  */
+
+/**
+ * Fast calculation of weekday from YYYY-MM-DD strings using Sakamoto's algorithm.
+ * Avoids the overhead of Date object allocation and parsing.
+ * @param dateString ISO 8601 date string (YYYY-MM-DD or full timestamp).
+ * @returns 0 (Sunday) to 6 (Saturday), or -1 if invalid.
+ */
+export function getWeekdayFromDateString(dateString: string): number {
+    if (dateString.length < 10 || dateString[4] !== "-" || dateString[7] !== "-") {
+        const date = new Date(dateString.includes("T") ? dateString : `${dateString}T00:00:00Z`);
+        return Number.isNaN(date.getTime()) ? -1 : date.getUTCDay();
+    }
+
+    const yStr = dateString.slice(0, 4);
+    const mStr = dateString.slice(5, 7);
+    const dStr = dateString.slice(8, 10);
+
+    let y = parseInt(yStr, 10);
+    const m = parseInt(mStr, 10);
+    const d = parseInt(dStr, 10);
+
+    if (Number.isNaN(y) || Number.isNaN(m) || Number.isNaN(d) || m < 1 || m > 12) {
+        return -1;
+    }
+
+    const t = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
+    if (m < 3) {
+        y -= 1;
+    }
+    return (y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) + t[m - 1] + d) % 7;
+}
+
 export function getMostActiveDayFromCalendar(calendar: { date: string; count: number }[]): string {
     const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     const totals = Array.from({ length: 7 }, () => 0);
@@ -106,12 +138,10 @@ export function getMostActiveDayFromCalendar(calendar: { date: string; count: nu
         if (day.count <= 0) {
             continue;
         }
-        const parsedDate = new Date(`${day.date}T00:00:00Z`);
-        if (Number.isNaN(parsedDate.getTime())) {
-            continue;
+        const weekday = getWeekdayFromDateString(day.date);
+        if (weekday !== -1) {
+            totals[weekday] += day.count;
         }
-        const weekday = parsedDate.getUTCDay();
-        totals[weekday] += day.count;
     }
 
     let maxDay = 0;
