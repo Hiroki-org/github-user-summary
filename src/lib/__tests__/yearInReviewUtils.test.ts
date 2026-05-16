@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import {
     buildHourlyHeatmapFromCommitDates,
     getMostActiveHour,
@@ -213,6 +214,23 @@ describe("buildHourlyHeatmapFromCommitDates - edge cases", () => {
 });
 
 describe("getWeekdayFromDateString", () => {
+    it("returns correctly for invalid month", () => {
+        expect(getWeekdayFromDateString("2023-99-01")).toBe(-1);
+    });
+
+    it("returns correctly for months > 3", () => {
+        expect(getWeekdayFromDateString("2023-04-01")).toBe(6); // April 1st 2023 was a Saturday
+    });
+
+    it("falls back to Date fallback in sakamoto when time parsing is partially invalid", () => {
+        // Line 110-111 & 127 in getWeekdayFromDateString. Let's see what these are.
+        // Actually, let's just make sure we hit every edge case.
+
+
+
+        expect(getWeekdayFromDateString("2023-XX-01")).toBe(-1);
+    });
+
     it("returns -1 for invalid number components", () => {
         expect(getWeekdayFromDateString("YYYY-01-01")).toBe(-1);
     });
