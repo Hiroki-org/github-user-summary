@@ -344,7 +344,21 @@ export async function fetchRepositories(
   }
 
   const repos = data.user.repositories.nodes.filter((r) => !r.isFork);
-  return processRepoData(repos);
+  const unifiedRepos: UnifiedRepo[] = repos.map((r) => ({
+    name: r.name,
+    description: r.description,
+    url: r.url,
+    stargazerCount: r.stargazerCount,
+    forkCount: r.forkCount,
+    primaryLanguage: r.primaryLanguage,
+    languages: r.languages.edges.map((e) => ({
+      name: e.node.name,
+      bytes: e.size,
+      color: e.node.color,
+    })),
+    topics: r.repositoryTopics.nodes.map((n) => n.topic?.name?.trim()).filter(Boolean) as string[],
+  }));
+  return processRepoData(unifiedRepos);
 }
 
 async function fetchRepositoriesREST(username: string): Promise<RepositoryData> {
@@ -364,30 +378,7 @@ async function fetchRepositoriesREST(username: string): Promise<RepositoryData> 
   );
 
   const nonFork = repos.filter((r) => !r.fork);
-  // REST API は言語のバイト数を提供しないため、リポジトリ数を代用
-  const languageRepoCount = new Map<string, number>();
-  const topicCountMap = new Map<string, number>();
-
-  for (const repo of nonFork) {
-    if (repo.language) {
-      languageRepoCount.set(repo.language, (languageRepoCount.get(repo.language) ?? 0) + 1);
-    }
-    for (const topic of repo.topics ?? []) {
-      const normalized = topic.trim();
-      if (!normalized) continue;
-      topicCountMap.set(normalized, (topicCountMap.get(normalized) ?? 0) + 1);
-    }
-  }
-
-  const totalRepoCount = Array.from(languageRepoCount.values()).reduce((a, b) => a + b, 0);
-  const languages: LanguageStats[] = getTopK(languageRepoCount, 10).map(({ name, count }) => ({
-    name,
-    bytes: count,
-    percentage: totalRepoCount > 0 ? Math.round((count / totalRepoCount) * 1000) / 10 : 0,
-    color: getLanguageColor(name),
-  }));
-
-  const topRepos: TopRepo[] = nonFork.slice(0, 5).map((r) => ({
+  const unifiedRepos: UnifiedRepo[] = nonFork.map((r) => ({
     name: r.name,
     description: r.description,
     url: r.html_url,
@@ -396,57 +387,65 @@ async function fetchRepositoriesREST(username: string): Promise<RepositoryData> 
     primaryLanguage: r.language
       ? { name: r.language, color: getLanguageColor(r.language) }
       : null,
+    // REST API は言語のバイト数を提供しないため、リポジトリ数を代用(bytes = 1 とする)
+    languages: r.language
+      ? [{ name: r.language, bytes: 1, color: getLanguageColor(r.language) }]
+      : [],
+    topics: (r.topics ?? []).map((t) => t.trim()).filter(Boolean),
   }));
 
-  const topics = getTopK(topicCountMap, 10);
-
-  return { languages, topics, topRepos, totalCount: nonFork.length };
+  return processRepoData(unifiedRepos);
 }
 
-function processRepoData(repos: RepoNode[]): RepositoryData {
+
+type UnifiedRepo = {
+  name: string;
+  description: string | null;
+  url: string;
+  stargazerCount: number;
+  forkCount: number;
+  primaryLanguage: { name: string; color: string } | null;
+  languages: { name: string; bytes: number; color: string }[];
+  topics: string[];
+};
+
+function processRepoData(repos: UnifiedRepo[]): RepositoryData {
   const languageMap = new Map<string, { bytes: number; color: string }>();
   const topicCountMap = new Map<string, number>();
 
   for (const repo of repos) {
-    for (const edge of repo.languages.edges) {
-      const existing = languageMap.get(edge.node.name);
+    for (const lang of repo.languages) {
+      const existing = languageMap.get(lang.name);
       if (existing) {
-        existing.bytes += edge.size;
+        existing.bytes += lang.bytes;
       } else {
-        languageMap.set(edge.node.name, { bytes: edge.size, color: edge.node.color });
+        languageMap.set(lang.name, { bytes: lang.bytes, color: lang.color });
       }
     }
 
-    for (const node of repo.repositoryTopics.nodes) {
-      const topicName = node.topic?.name?.trim();
-      if (!topicName) {
-        continue;
-      }
+    for (const topicName of repo.topics) {
+      if (!topicName) continue;
       topicCountMap.set(topicName, (topicCountMap.get(topicName) ?? 0) + 1);
     }
   }
 
   const totalBytes = Array.from(languageMap.values()).reduce((a, b) => a + b.bytes, 0);
-  const topLanguages: { name: string; bytes: number; color: string }[] = [];
+
+  // Transform languageMap to use getTopK for consistency
+  const languageBytesMap = new Map<string, number>();
+  const languageColorMap = new Map<string, string>();
   for (const [name, data] of languageMap.entries()) {
-    if (topLanguages.length < 10) {
-      topLanguages.push({ name, ...data });
-      topLanguages.sort((a, b) => b.bytes - a.bytes);
-    } else if (data.bytes > topLanguages[9].bytes) {
-      let i = 8;
-      while (i >= 0 && topLanguages[i].bytes < data.bytes) {
-        topLanguages[i + 1] = topLanguages[i];
-        i--;
-      }
-      topLanguages[i + 1] = { name, ...data };
-    }
+    languageBytesMap.set(name, data.bytes);
+    languageColorMap.set(name, data.color);
   }
 
-  const languages: LanguageStats[] = topLanguages.map(({ name, bytes, color }) => ({
+  const topLanguages = getTopK(languageBytesMap, 10);
+
+  const languages: LanguageStats[] = topLanguages.map(({ name, count }) => ({
     name,
-    bytes,
-    percentage: totalBytes > 0 ? Math.round((bytes / totalBytes) * 1000) / 10 : 0,
-    color,
+    bytes: count,
+    percentage: totalBytes > 0 ? Math.round((count / totalBytes) * 1000) / 10 : 0,
+    color: languageColorMap.get(name) || "#8b949e",
   }));
 
   const topRepos: TopRepo[] = repos.slice(0, 5).map((r) => ({
@@ -462,6 +461,7 @@ function processRepoData(repos: RepoNode[]): RepositoryData {
 
   return { languages, topics, topRepos, totalCount: repos.length };
 }
+
 
 // ===== 3. fetchContributions =====
 
