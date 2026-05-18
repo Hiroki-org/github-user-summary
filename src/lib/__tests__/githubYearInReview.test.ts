@@ -410,11 +410,14 @@ describe("fetchYearInReviewData additional coverage", () => {
             throw "String error instead of Error object";
         });
 
-        await expect(fetchYearInReviewData("testuser", 2024, "fake-token")).rejects.toThrow(GitHubApiError);
-        await expect(fetchYearInReviewData("testuser", 2024, "fake-token")).rejects.toMatchObject({
-            status: 500,
-            message: "Failed to fetch year in review data",
-        });
+        expect.assertions(3);
+        try {
+            await fetchYearInReviewData("testuser", 2024, "fake-token");
+        } catch (error) {
+            expect(error).toBeInstanceOf(GitHubApiError);
+            expect((error as GitHubApiError).status).toBe(500);
+            expect((error as GitHubApiError).message).toBe("Failed to fetch year in review data");
+        }
     });
 
 
