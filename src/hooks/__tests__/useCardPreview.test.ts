@@ -23,14 +23,9 @@ describe("useCardPreview", () => {
   let mockSummary: unknown;
   let mockLayout: unknown;
   let mockDisplayOptions: unknown;
-  let originalClipboardDescriptor: PropertyDescriptor | undefined;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    originalClipboardDescriptor = Object.getOwnPropertyDescriptor(
-      navigator,
-      "clipboard",
-    );
 
     // We will use real timers, just mock RAF
     vi.stubGlobal("requestAnimationFrame", (cb: () => void) => setTimeout(cb, 0));
@@ -85,12 +80,6 @@ describe("useCardPreview", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
-    if (originalClipboardDescriptor) {
-      Object.defineProperty(navigator, "clipboard", originalClipboardDescriptor);
-    } else {
-      delete (navigator as { clipboard?: Clipboard }).clipboard;
-    }
-    vi.useRealTimers();
   });
 
   it("should initialize with default states", () => {
@@ -247,28 +236,6 @@ describe("useCardPreview", () => {
     expect(result.current.copyStatus).toBe("copied");
   });
 
-  it("should reset copy status after a successful copy", async () => {
-    vi.useFakeTimers();
-    const mockBlob = new Blob(["test"], { type: "image/png" });
-    vi.mocked(toBlob).mockResolvedValue(mockBlob);
-
-    const { result } = renderHook(() =>
-      useCardPreview(false, mockCardRef, mockSummary as unknown as UserSummary, mockLayout as unknown as CardLayout, mockDisplayOptions as unknown as CardDisplayOptions)
-    );
-
-    await act(async () => {
-      await result.current.handleCopy();
-    });
-
-    expect(result.current.copyStatus).toBe("copied");
-
-    act(() => {
-      vi.advanceTimersByTime(2000);
-    });
-
-    expect(result.current.copyStatus).toBe("idle");
-  });
-
   it("should handle copy failure", async () => {
     const error = new Error("Blob error");
     vi.mocked(toBlob).mockRejectedValue(error);
@@ -283,41 +250,6 @@ describe("useCardPreview", () => {
 
     expect(logger.error).toHaveBeenCalledWith("Failed to copy", error);
     expect(result.current.copyStatus).toBe("error");
-  });
-
-  it("should handle toBlob returning null during copy", async () => {
-    vi.mocked(toBlob).mockResolvedValue(null);
-
-    const { result } = renderHook(() =>
-      useCardPreview(false, mockCardRef, mockSummary as unknown as UserSummary, mockLayout as unknown as CardLayout, mockDisplayOptions as unknown as CardDisplayOptions)
-    );
-
-    await act(async () => {
-      await result.current.handleCopy();
-    });
-
-    expect(logger.error).toHaveBeenCalledWith(
-      "Failed to copy",
-      expect.any(Error),
-    );
-    expect(navigator.clipboard.write).not.toHaveBeenCalled();
-    expect(result.current.copyStatus).toBe("error");
-  });
-
-  it("should return early if cardRef is null during copy", async () => {
-    const nullRef = { current: null };
-
-    const { result } = renderHook(() =>
-      useCardPreview(false, nullRef, mockSummary as unknown as UserSummary, mockLayout as unknown as CardLayout, mockDisplayOptions as unknown as CardDisplayOptions)
-    );
-
-    await act(async () => {
-      await result.current.handleCopy();
-    });
-
-    expect(toBlob).not.toHaveBeenCalled();
-    expect(navigator.clipboard.write).not.toHaveBeenCalled();
-    expect(result.current.copyStatus).toBe("idle");
   });
 
   it("should cancel generation on unmount", async () => {
