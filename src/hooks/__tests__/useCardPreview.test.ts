@@ -27,6 +27,7 @@ describe("useCardPreview", () => {
   let mockAnchor: HTMLAnchorElement;
   let mockAnchorClick: ReturnType<typeof vi.fn>;
   let originalFontsDescriptor: PropertyDescriptor | undefined;
+  let originalClipboardDescriptor: PropertyDescriptor | undefined;
 
   const createMockCardElement = () =>
     ({
@@ -95,6 +96,7 @@ describe("useCardPreview", () => {
     });
 
     // Mock navigator.clipboard
+    originalClipboardDescriptor = Object.getOwnPropertyDescriptor(navigator, "clipboard");
     Object.defineProperty(navigator, "clipboard", {
       value: {
         write: vi.fn().mockResolvedValue(undefined),
@@ -121,6 +123,12 @@ describe("useCardPreview", () => {
       Object.defineProperty(document, "fonts", originalFontsDescriptor);
     } else {
       Reflect.deleteProperty(document, "fonts");
+    }
+
+    if (originalClipboardDescriptor) {
+      Object.defineProperty(navigator, "clipboard", originalClipboardDescriptor);
+    } else {
+      Reflect.deleteProperty(navigator, "clipboard");
     }
   });
 
@@ -184,6 +192,8 @@ describe("useCardPreview", () => {
     const { result } = renderHook(() =>
       useCardPreview(true, nullRef, mockSummary as unknown as UserSummary, mockLayout as unknown as CardLayout, mockDisplayOptions as unknown as CardDisplayOptions)
     );
+
+    expect(result.current.isGenerating).toBe(true);
 
     await flushImageGeneration();
 
