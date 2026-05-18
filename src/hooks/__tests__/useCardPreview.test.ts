@@ -1,7 +1,8 @@
 import type { UserSummary, CardLayout } from "@/lib/types";
 import type { CardDisplayOptions } from "@/lib/cardSettings";
+import type { RefObject } from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import { useCardPreview } from "../useCardPreview";
 import { toPng, toBlob } from "html-to-image";
 import { logger } from "@/lib/logger";
@@ -19,27 +20,52 @@ vi.mock("@/lib/logger", () => ({
 }));
 
 describe("useCardPreview", () => {
-  let mockCardRef: React.RefObject<HTMLDivElement | null>;
+  let mockCardRef: RefObject<HTMLDivElement | null>;
   let mockSummary: unknown;
   let mockLayout: unknown;
   let mockDisplayOptions: unknown;
+  let mockAnchor: HTMLAnchorElement;
+  let mockAnchorClick: ReturnType<typeof vi.fn>;
+  let originalFontsDescriptor: PropertyDescriptor | undefined;
+
+  const createMockCardElement = () =>
+    ({
+      getBoundingClientRect: () => ({
+        width: 800,
+        height: 600,
+        x: 0,
+        y: 0,
+        top: 0,
+        left: 0,
+        right: 800,
+        bottom: 600,
+        toJSON: () => ({}),
+      }),
+      scrollWidth: 800,
+      scrollHeight: 600,
+      clientWidth: 800,
+      clientHeight: 600,
+    }) as HTMLDivElement;
+
+  const flushImageGeneration = async () => {
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(100);
+    });
+  };
 
   beforeEach(() => {
+    vi.useFakeTimers();
     vi.clearAllMocks();
 
-    // We will use real timers, just mock RAF
-    vi.stubGlobal("requestAnimationFrame", (cb: () => void) => setTimeout(cb, 0));
-    vi.stubGlobal("cancelAnimationFrame", (id: number) => clearTimeout(id));
+    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
+      cb(0);
+      return 1;
+    });
+    vi.stubGlobal("cancelAnimationFrame", vi.fn());
 
     // Setup mocks
     mockCardRef = {
-      current: {
-        getBoundingClientRect: () => ({ width: 800, height: 600 }),
-        scrollWidth: 800,
-        scrollHeight: 600,
-        clientWidth: 800,
-        clientHeight: 600,
-      },
+      current: createMockCardElement(),
     };
 
     mockSummary = { profile: { login: "testuser" } };
@@ -47,21 +73,23 @@ describe("useCardPreview", () => {
     mockDisplayOptions = { theme: "dark" };
 
     // Mock document.fonts.ready
+    originalFontsDescriptor = Object.getOwnPropertyDescriptor(document, "fonts");
     Object.defineProperty(document, "fonts", {
-      value: { ready: Promise.resolve() },
+      get: () => ({ ready: Promise.resolve() }),
       configurable: true,
     });
 
     // Mock document.createElement for handleDownload
-    const mockClick = vi.fn();
+    mockAnchorClick = vi.fn();
+    mockAnchor = {
+      download: "",
+      href: "",
+      click: mockAnchorClick,
+    } as unknown as HTMLAnchorElement;
     const originalCreateElement = document.createElement.bind(document);
     vi.spyOn(document, "createElement").mockImplementation((tagName) => {
       if (tagName === "a") {
-        return {
-          download: "",
-          href: "",
-          click: mockClick,
-        } as unknown as HTMLAnchorElement;
+        return mockAnchor;
       }
       return originalCreateElement(tagName);
     });
@@ -75,11 +103,25 @@ describe("useCardPreview", () => {
     });
 
     // Mock ClipboardItem
-    vi.stubGlobal("ClipboardItem", class { constructor(data: unknown) { return data; } });
+    vi.stubGlobal(
+      "ClipboardItem",
+      vi.fn(function ClipboardItem(data: Record<string, Blob>) {
+        return data;
+      }),
+    );
   });
 
   afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+
+    if (originalFontsDescriptor) {
+      Object.defineProperty(document, "fonts", originalFontsDescriptor);
+    } else {
+      Reflect.deleteProperty(document, "fonts");
+    }
   });
 
   it("should initialize with default states", () => {
@@ -103,10 +145,9 @@ describe("useCardPreview", () => {
 
     expect(result.current.isGenerating).toBe(true);
 
-    // Wait for the async generation to complete
-    await waitFor(() => {
-      expect(result.current.isGenerating).toBe(false);
-    });
+    await flushImageGeneration();
+
+    expect(result.current.isGenerating).toBe(false);
 
     expect(toPng).toHaveBeenCalledWith(mockCardRef.current, {
       cacheBust: true,
@@ -128,9 +169,9 @@ describe("useCardPreview", () => {
 
     expect(result.current.isGenerating).toBe(true);
 
-    await waitFor(() => {
-      expect(result.current.isGenerating).toBe(false);
-    });
+    await flushImageGeneration();
+
+    expect(result.current.isGenerating).toBe(false);
 
     expect(logger.error).toHaveBeenCalledWith("Failed to generate image", error);
     expect(result.current.previewUrl).toBeNull();
@@ -144,9 +185,9 @@ describe("useCardPreview", () => {
       useCardPreview(true, nullRef, mockSummary as unknown as UserSummary, mockLayout as unknown as CardLayout, mockDisplayOptions as unknown as CardDisplayOptions)
     );
 
-    await waitFor(() => {
-      expect(result.current.isGenerating).toBe(false);
-    });
+    await flushImageGeneration();
+
+    expect(result.current.isGenerating).toBe(false);
 
     expect(toPng).not.toHaveBeenCalled();
     expect(result.current.previewUrl).toBeNull();
@@ -167,9 +208,9 @@ describe("useCardPreview", () => {
       }
     );
 
-    await waitFor(() => {
-      expect(result.current.previewUrl).toBe("mock-url");
-    });
+    await flushImageGeneration();
+
+    expect(result.current.previewUrl).toBe("mock-url");
 
     // Rerender with new layout
     const newLayout = { id: "layout2" };
@@ -188,18 +229,17 @@ describe("useCardPreview", () => {
       useCardPreview(true, mockCardRef, mockSummary as unknown as UserSummary, mockLayout as unknown as CardLayout, mockDisplayOptions as unknown as CardDisplayOptions)
     );
 
-    await waitFor(() => {
-      expect(result.current.previewUrl).toBe("mock-url");
-    });
+    await flushImageGeneration();
+
+    expect(result.current.previewUrl).toBe("mock-url");
 
     act(() => {
       result.current.handleDownload();
     });
 
-    const mockAnchor = vi.mocked(document.createElement).mock.results.find(r => r.value && r.value.download !== undefined)?.value;
     expect(mockAnchor.download).toBe("testuser-summary-card.png");
     expect(mockAnchor.href).toBe("mock-url");
-    expect(mockAnchor.click).toHaveBeenCalled();
+    expect(mockAnchorClick).toHaveBeenCalled();
   });
 
   it("should do nothing if handleDownload is called without previewUrl", () => {
@@ -234,6 +274,28 @@ describe("useCardPreview", () => {
 
     expect(navigator.clipboard.write).toHaveBeenCalled();
     expect(result.current.copyStatus).toBe("copied");
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+
+    expect(result.current.copyStatus).toBe("idle");
+  });
+
+  it("should return early when copying with a null cardRef", async () => {
+    const nullRef = { current: null };
+
+    const { result } = renderHook(() =>
+      useCardPreview(false, nullRef, mockSummary as unknown as UserSummary, mockLayout as unknown as CardLayout, mockDisplayOptions as unknown as CardDisplayOptions)
+    );
+
+    await act(async () => {
+      await result.current.handleCopy();
+    });
+
+    expect(toBlob).not.toHaveBeenCalled();
+    expect(navigator.clipboard.write).not.toHaveBeenCalled();
+    expect(result.current.copyStatus).toBe("idle");
   });
 
   it("should handle copy failure", async () => {
@@ -253,8 +315,7 @@ describe("useCardPreview", () => {
   });
 
   it("should cancel generation on unmount", async () => {
-    vi.mocked(toPng).mockResolvedValue(new Promise((resolve) => setTimeout(() => resolve("mock"), 1000)));
-    const clearTimeoutSpy = vi.spyOn(globalThis, "clearTimeout");
+    vi.mocked(toPng).mockResolvedValue("mock");
 
     const { result, unmount } = renderHook(() =>
       useCardPreview(true, mockCardRef, mockSummary as unknown as UserSummary, mockLayout as unknown as CardLayout, mockDisplayOptions as unknown as CardDisplayOptions)
@@ -264,6 +325,11 @@ describe("useCardPreview", () => {
 
     unmount();
 
-    expect(clearTimeoutSpy).toHaveBeenCalled();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(100);
+    });
+
+    expect(toPng).not.toHaveBeenCalled();
+    expect(result.current.previewUrl).toBeNull();
   });
 });
