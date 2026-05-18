@@ -2,7 +2,7 @@ import type { UserSummary, CardLayout } from "@/lib/types";
 import type { CardDisplayOptions } from "@/lib/cardSettings";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
-import { useCardPreview } from "../useCardPreview";
+import { useCardPreview } from "@/hooks/useCardPreview";
 import { toPng, toBlob } from "html-to-image";
 import { logger } from "@/lib/logger";
 
