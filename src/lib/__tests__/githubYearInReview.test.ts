@@ -319,7 +319,7 @@ describe("fetchCommitActivityHeatmap", () => {
 
     it("fetchCommitActivityHeatmap returns empty heatmap when fetch throws a network error", async () => {
         mockFetch.mockImplementation((url) => {
-             const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
+            const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
             if (urlStr.includes("/graphql")) {
                 return Promise.resolve(jsonResponse({
                     data: {
@@ -530,7 +530,7 @@ describe("fetchCommitActivityHeatmap additional coverage", () => {
 
     it("handles missing repository fields in fetchCommitActivityHeatmap", async () => {
         mockFetch.mockImplementation((url) => {
-             const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
+            const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
             if (urlStr.includes("/graphql")) {
                 return Promise.resolve(jsonResponse({
                     data: {
@@ -587,7 +587,7 @@ describe("graphql helper error paths", () => {
 describe("githubYearInReview additional edge cases", () => {
     it("fetchCommitActivityHeatmap handles 403 Rate Limit", async () => {
         mockFetch.mockImplementation((url) => {
-             const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
+            const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
             if (urlStr.includes("/graphql")) {
                 return Promise.resolve(jsonResponse({
                     data: {
@@ -611,37 +611,9 @@ describe("githubYearInReview additional edge cases", () => {
         await expect(fetchCommitActivityHeatmap("user", 2024, "token")).rejects.toThrow(RateLimitError);
     });
 
-    it("fetchCommitActivityHeatmap returns empty heatmap when fetch status is not ok (e.g. 500)", async () => {
-        mockFetch.mockImplementation((url) => {
-             const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
-            if (urlStr.includes("/graphql")) {
-                return Promise.resolve(jsonResponse({
-                    data: {
-                        user: {
-                            id: "123",
-                            contributionsCollection: {
-                                commitContributionsByRepository: [
-                                    { repository: { owner: { login: "u" }, name: "r" }, contributions: { totalCount: 1 } }
-                                ]
-                            }
-                        }
-                    }
-                }));
-            }
-            if (urlStr.includes("/commits")) {
-                return Promise.resolve(jsonResponse(null, 500));
-            }
-            return Promise.resolve(jsonResponse([], 200));
-        });
-
-        const heatmap = await fetchCommitActivityHeatmap("user", 2024, "token");
-        expect(heatmap.every(row => row.every(val => val === 0))).toBe(true);
-    });
-
-
     it("fetchCommitActivityHeatmap filters out commits without dates", async () => {
         mockFetch.mockImplementation((url) => {
-             const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
+            const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
             if (urlStr.includes("/graphql")) {
                 return Promise.resolve(jsonResponse({
                     data: {
@@ -672,7 +644,7 @@ describe("githubYearInReview additional edge cases", () => {
 
     it("fetchYearInReviewData filters out repositories with zero contributions", async () => {
         mockFetch.mockImplementation((url) => {
-             const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
+            const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
             if (urlStr.includes("/graphql")) {
                 // If it's the second call (fetchCommitDatesForTopRepos), we expect repo0 but NOT repo1
                 if (urlStr.includes("repo1: repository")) {

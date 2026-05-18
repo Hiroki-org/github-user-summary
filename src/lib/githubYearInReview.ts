@@ -305,7 +305,7 @@ export async function fetchCommitActivityHeatmap(username: string, year: number,
     const topRepository = mergeTopRepository(reposResponse.user.contributionsCollection);
 
     if (!topRepository) {
-        return Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
+        return buildHourlyHeatmapFromCommitDates([]);
     }
 
     const [owner, repo] = topRepository.name.split("/");
@@ -319,14 +319,14 @@ export async function fetchCommitActivityHeatmap(username: string, year: number,
     try {
         res = await fetch(url.toString(), { headers: headers(token), cache: "no-store" });
     } catch {
-        return Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
+        return buildHourlyHeatmapFromCommitDates([]);
     }
 
     if (res.status === 403) {
         handleRateLimit(res);
     }
     if (!res.ok) {
-        return Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
+        return buildHourlyHeatmapFromCommitDates([]);
     }
 
     const commits = (await res.json()) as GitHubCommit[];
