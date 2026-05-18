@@ -410,13 +410,11 @@ describe("fetchYearInReviewData additional coverage", () => {
             throw "String error instead of Error object";
         });
 
-        try {
-            await fetchYearInReviewData("testuser", 2024, "fake-token");
-        } catch (error) {
-            expect(error).toBeInstanceOf(GitHubApiError);
-            expect((error as GitHubApiError).status).toBe(500);
-            expect((error as GitHubApiError).message).toBe("Failed to fetch year in review data");
-        }
+        await expect(fetchYearInReviewData("testuser", 2024, "fake-token")).rejects.toThrow(GitHubApiError);
+        await expect(fetchYearInReviewData("testuser", 2024, "fake-token")).rejects.toMatchObject({
+            status: 500,
+            message: "Failed to fetch year in review data",
+        });
     });
 
 
@@ -459,6 +457,9 @@ describe("fetchYearInReviewData additional coverage", () => {
 
         const data = await fetchYearInReviewData("testuser", 2024, "fake-token");
         expect(data.year).toBe(2024);
+        expect(data.totalContributions).toBe(1);
+        expect(data.totalCommits).toBe(1);
+        expect(data.topRepository?.name).toBe("u/r");
     });
 
     it("handles partial repository data in mergeTopRepository", async () => {
