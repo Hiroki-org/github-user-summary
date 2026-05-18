@@ -3,7 +3,7 @@ import type { CardDisplayOptions } from "@/lib/cardSettings";
 import type { RefObject } from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import { useCardPreview } from "../useCardPreview";
+import { useCardPreview } from "@/hooks/useCardPreview";
 import { toPng, toBlob } from "html-to-image";
 import { logger } from "@/lib/logger";
 
@@ -310,6 +310,41 @@ describe("useCardPreview", () => {
       await result.current.handleCopy();
     });
 
+    expect(logger.error).toHaveBeenCalledWith("Failed to copy", error);
+    expect(result.current.copyStatus).toBe("error");
+  });
+
+  it("should handle null blob copy failure", async () => {
+    vi.mocked(toBlob).mockResolvedValue(null);
+
+    const { result } = renderHook(() =>
+      useCardPreview(false, mockCardRef, mockSummary as unknown as UserSummary, mockLayout as unknown as CardLayout, mockDisplayOptions as unknown as CardDisplayOptions)
+    );
+
+    await act(async () => {
+      await result.current.handleCopy();
+    });
+
+    expect(logger.error).toHaveBeenCalledWith("Failed to copy", expect.any(Error));
+    expect(result.current.copyStatus).toBe("error");
+    expect(navigator.clipboard.write).not.toHaveBeenCalled();
+  });
+
+  it("should handle clipboard write failure", async () => {
+    const mockBlob = new Blob(["test"], { type: "image/png" });
+    const error = new Error("Clipboard denied");
+    vi.mocked(toBlob).mockResolvedValue(mockBlob);
+    vi.mocked(navigator.clipboard.write).mockRejectedValue(error);
+
+    const { result } = renderHook(() =>
+      useCardPreview(false, mockCardRef, mockSummary as unknown as UserSummary, mockLayout as unknown as CardLayout, mockDisplayOptions as unknown as CardDisplayOptions)
+    );
+
+    await act(async () => {
+      await result.current.handleCopy();
+    });
+
+    expect(navigator.clipboard.write).toHaveBeenCalled();
     expect(logger.error).toHaveBeenCalledWith("Failed to copy", error);
     expect(result.current.copyStatus).toBe("error");
   });
