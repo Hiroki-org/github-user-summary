@@ -1,3 +1,4 @@
+import { NextRequest } from "next/server";
 import { RateLimiter } from "@/lib/rateLimit";
 import { fetchCardData } from "@/lib/cardDataFetcher";
 import { parseCardQueryParams, renderCardResponse, renderErrorCardResponse } from "@/lib/cardRenderer";
@@ -10,7 +11,7 @@ const SUCCESS_CACHE = "public, s-maxage=1800, stale-while-revalidate=3600";
 const ERROR_CACHE = "public, s-maxage=60, stale-while-revalidate=120";
 
 export async function GET(
-    request: Request,
+    request: NextRequest,
     { params }: { params: Promise<{ username: string }> }
 ): Promise<Response> {
     const { username } = await params;
@@ -19,7 +20,9 @@ export async function GET(
     const allowedOrigin = process.env.APP_URL || "http://localhost:3000";
     const fontUrl = `${allowedOrigin}/fonts/NotoSans-Regular.ttf`;
 
-    const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+    // In Next.js 15+ request.ip is deprecated/removed in some contexts. We fallback to headers if not present on type.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ip = (request as any).ip ?? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
     const rateLimitResult = rateLimiter.check(ip);
 
     if (!rateLimitResult.success) {
