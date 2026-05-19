@@ -94,7 +94,7 @@ describe("GET /api/card/[username] rate limiting", () => {
         const { renderErrorCardResponse } = await import("@/lib/cardRenderer");
 
         const req1 = new NextRequest("http://localhost/api/card/testuser");
-        req1.headers.set("x-forwarded-for", "127.0.0.1");
+        Object.defineProperty(req1, "ip", { value: "127.0.0.1", writable: true, configurable: true });
 
         // Mock fetchCardData to resolve successfully to avoid error rendering for successful requests
         vi.mocked(fetchCardData).mockResolvedValue({} as unknown as Awaited<ReturnType<typeof fetchCardData>>);
