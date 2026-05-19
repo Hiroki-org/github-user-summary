@@ -11,15 +11,15 @@ const ONE_HOUR_IN_SECONDS = 60 * 60;
 const ONE_DAY_IN_SECONDS = 24 * ONE_HOUR_IN_SECONDS;
 const OG_CACHE_CONTROL = `public, max-age=${ONE_HOUR_IN_SECONDS}, s-maxage=${ONE_DAY_IN_SECONDS}, stale-while-revalidate=${ONE_DAY_IN_SECONDS}`;
 
-type TrustedNextRequest = NextRequest & { ip?: string };
-
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ username: string }> }
 ) {
   const { username } = await params;
 
-  const ip = (request as TrustedNextRequest).ip ?? "unknown";
+  // In Next.js 15+ request.ip is deprecated/removed in some contexts. We fallback to headers if not present on type.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const ip = (request as any).ip ?? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
   const rateLimitResult = rateLimiter.check(ip);
 
   if (!rateLimitResult.success) {

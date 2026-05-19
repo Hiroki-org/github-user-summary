@@ -33,9 +33,7 @@ describe("OG Image Route", () => {
   });
 
   it("should generate image for valid username", async () => {
-    const mockFetch = vi.spyOn(global, "fetch").mockImplementation(async (): Promise<Response> =>
-      new Response(JSON.stringify({ name: "Valid User" }), { status: 200 })
-    );
+    const mockFetch = vi.spyOn(global, "fetch").mockImplementation(() => Promise.resolve(new Response(JSON.stringify({ name: "Valid User" }), { status: 200 })));
 
     const req = new NextRequest("http://localhost/api/og/validuser");
     const res = await GET(req, { params: Promise.resolve({ username: "validuser" }) });
@@ -47,13 +45,11 @@ describe("OG Image Route", () => {
   });
 
   it("should return 429 and Retry-After header when rate limit is exceeded", async () => {
-    const mockFetch = vi.spyOn(global, "fetch").mockImplementation(async (): Promise<Response> =>
-      new Response(JSON.stringify({ name: "Valid User" }), { status: 200 })
-    );
+    const mockFetch = vi.spyOn(global, "fetch").mockImplementation(() => Promise.resolve(new Response(JSON.stringify({ name: "Valid User" }), { status: 200 })));
 
     // Generate more than 50 requests to hit the rate limit (limit is 50 per minute)
     const req = new NextRequest("http://localhost/api/og/validuser");
-    Object.defineProperty(req, "ip", { value: "test-ip", writable: true, configurable: true });
+    req.headers.set("x-forwarded-for", "test-ip");
 
     // Send 50 successful requests
     for (let i = 0; i < 50; i++) {
