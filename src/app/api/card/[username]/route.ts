@@ -12,6 +12,10 @@ const ERROR_CACHE = "public, s-maxage=60, stale-while-revalidate=120";
 
 type TrustedNextRequest = NextRequest & { ip?: string };
 
+function getTrustedClientIp(request: NextRequest): string {
+    return request.headers.get("x-real-ip")?.trim() || (request as TrustedNextRequest).ip || "unknown";
+}
+
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ username: string }> }
@@ -22,7 +26,7 @@ export async function GET(
     const allowedOrigin = process.env.APP_URL || "http://localhost:3000";
     const fontUrl = `${allowedOrigin}/fonts/NotoSans-Regular.ttf`;
 
-    const ip = (request as TrustedNextRequest).ip ?? "unknown";
+    const ip = getTrustedClientIp(request);
     const rateLimitResult = rateLimiter.check(ip);
 
     if (!rateLimitResult.success) {

@@ -13,13 +13,17 @@ const OG_CACHE_CONTROL = `public, max-age=${ONE_HOUR_IN_SECONDS}, s-maxage=${ONE
 
 type TrustedNextRequest = NextRequest & { ip?: string };
 
+function getTrustedClientIp(request: NextRequest): string {
+  return request.headers.get("x-real-ip")?.trim() || (request as TrustedNextRequest).ip || "unknown";
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ username: string }> }
 ) {
   const { username } = await params;
 
-  const ip = (request as TrustedNextRequest).ip ?? "unknown";
+  const ip = getTrustedClientIp(request);
   const rateLimitResult = rateLimiter.check(ip);
 
   if (!rateLimitResult.success) {

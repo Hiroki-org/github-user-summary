@@ -53,7 +53,7 @@ describe("OG Image Route", () => {
 
     // Generate more than 50 requests to hit the rate limit (limit is 50 per minute)
     const req = new NextRequest("http://localhost/api/og/validuser");
-    Object.defineProperty(req, "ip", { value: "test-ip", writable: true, configurable: true });
+    req.headers.set("x-real-ip", "test-ip");
 
     // Send 50 successful requests
     for (let i = 0; i < 50; i++) {
