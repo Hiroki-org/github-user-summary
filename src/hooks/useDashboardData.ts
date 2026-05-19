@@ -1,6 +1,6 @@
 "use client";
 
-import useSWR, { type SWRResponse } from "swr";
+import useSWR from "swr";
 import { useSession } from "next-auth/react";
 
 import type { UserSummary, YearInReviewData } from "@/lib/types";
@@ -15,18 +15,6 @@ type DashboardStatsResponse = {
     heatmap: number[][];
 };
 
-type AuthenticatedFetchResult<T> = {
-    data: T | undefined;
-    isLoading: boolean;
-    error: SWRResponse<T>["error"];
-    mutate: SWRResponse<T>["mutate"];
-};
-
-type AuthenticatedFetchWithSessionResult<T> = AuthenticatedFetchResult<T> & {
-    session: ReturnType<typeof useSession>["data"];
-    status: ReturnType<typeof useSession>["status"];
-};
-
 export const fetcher = async <T>(url: string): Promise<T> => {
     const response = await fetch(url);
     if (!response.ok) {
@@ -36,47 +24,26 @@ export const fetcher = async <T>(url: string): Promise<T> => {
     return response.json() as Promise<T>;
 };
 
-function useAuthenticatedFetch<T>(
-    url: string | null,
-    options: { includeSession: true },
-): AuthenticatedFetchWithSessionResult<T>;
-function useAuthenticatedFetch<T>(
-    url: string | null,
-    options?: { includeSession?: false },
-): AuthenticatedFetchResult<T>;
-function useAuthenticatedFetch<T>(
-    url: string | null,
-    options: { includeSession?: boolean } = {},
-) {
+function useAuthenticatedFetch<T>(url: string | null) {
     const { data: session, status } = useSession();
     const token = session?.accessToken;
     const canFetch = status === "authenticated" && Boolean(token) && url !== null;
 
     const query = canFetch ? url : null;
     const swr = useSWR<T>(query, fetcher);
-    const result = {
+
+    return {
+        session,
+        status,
         data: swr.data,
         isLoading: status === "loading" || swr.isLoading,
         error: swr.error,
         mutate: swr.mutate,
     };
-
-    if (options.includeSession) {
-        return {
-            ...result,
-            session,
-            status,
-        };
-    }
-
-    return result;
 }
 
 export function useDashboardData() {
-    const { session, status, data, isLoading, error, mutate } = useAuthenticatedFetch<DashboardSummaryResponse>(
-        "/api/dashboard/summary",
-        { includeSession: true },
-    );
+    const { session, status, data, isLoading, error, mutate } = useAuthenticatedFetch<DashboardSummaryResponse>("/api/dashboard/summary");
 
     return {
         session,
