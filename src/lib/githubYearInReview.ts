@@ -1,7 +1,9 @@
 import "server-only";
-import { YEAR_IN_REVIEW_QUERY } from "@/lib/graphql/queries";
 
+import { cache } from "react";
+import { YEAR_IN_REVIEW_QUERY } from "@/lib/graphql/queries";
 import { GitHubApiError, RateLimitError, UserNotFoundError } from "@/lib/types";
+import type { YearInReviewData } from "@/lib/types";
 import { headers, handleRateLimit } from "@/lib/github";
 import { buildHourlyHeatmapFromCommitDates, getMostActiveDayFromCalendar, getMostActiveHour } from "@/lib/yearInReviewUtils";
 
@@ -211,7 +213,7 @@ function buildYearInReviewData(
     };
 }
 
-export async function fetchYearInReviewData(username: string, year: number, token?: string) {
+export const fetchYearInReviewData = cache(async function fetchYearInReviewData(username: string, year: number, token?: string): Promise<YearInReviewData> {
     if (!token) {
         throw new GitHubApiError("Year in Review requires authentication token", 401);
     }
@@ -250,7 +252,7 @@ export async function fetchYearInReviewData(username: string, year: number, toke
         }
         throw new GitHubApiError(error instanceof Error ? error.message : "Failed to fetch year in review data", 500);
     }
-}
+});
 
 export async function fetchCommitActivityHeatmap(username: string, year: number, token?: string): Promise<number[][]> {
     if (!token) {
