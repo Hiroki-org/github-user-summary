@@ -71,7 +71,7 @@ export const MOCK_REPOS_GRAPHQL = {
   data: {
     user: {
       repositories: {
-        totalCount: 3,
+        totalCount: 2,
         nodes: [
           {
             name: "repo-a",
@@ -106,17 +106,7 @@ export const MOCK_REPOS_GRAPHQL = {
               nodes: [{ topic: { name: "machine-learning" } }],
             },
           },
-          {
-            name: "forked-repo",
-            description: "A fork",
-            url: "https://github.com/testuser/forked-repo",
-            stargazerCount: 0,
-            forkCount: 0,
-            isFork: true,
-            primaryLanguage: null,
-            languages: { edges: [] },
-            repositoryTopics: { nodes: [] },
-          },
+
         ],
       },
     },

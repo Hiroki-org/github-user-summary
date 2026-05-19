@@ -301,6 +301,20 @@ type RepositoriesResponse = {
  * @throws {UserNotFoundError} ユーザーが存在しない場合
  * @throws {RateLimitError} APIレート制限に達した場合
  */
+
+
+
+type UnifiedRepo = {
+  name: string;
+  description: string | null;
+  url: string;
+  stargazerCount: number;
+  forkCount: number;
+  primaryLanguage: { name: string; color: string } | null;
+  languages: { name: string; bytes: number; color: string }[];
+  topics: string[];
+};
+
 export async function fetchRepositories(
   username: string,
   token?: string
@@ -343,7 +357,7 @@ export async function fetchRepositories(
     throw new UserNotFoundError(username);
   }
 
-  const repos = data.user.repositories.nodes.filter((r) => !r.isFork);
+  const repos = data.user.repositories.nodes;
   return processRepoData(repos);
 }
 
