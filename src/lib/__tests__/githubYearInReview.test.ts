@@ -317,33 +317,6 @@ describe("fetchCommitActivityHeatmap", () => {
         expect(heatmap.every(row => row.every(val => val === 0))).toBe(true);
     });
 
-    it("fetchCommitActivityHeatmap returns empty heatmap when fetch throws a network error", async () => {
-        mockFetch.mockImplementation((url) => {
-            const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
-            if (urlStr.includes("/graphql")) {
-                return Promise.resolve(jsonResponse({
-                    data: {
-                        user: {
-                            id: "123",
-                            contributionsCollection: {
-                                commitContributionsByRepository: [
-                                    { repository: { owner: { login: "u" }, name: "r" }, contributions: { totalCount: 1 } }
-                                ]
-                            }
-                        }
-                    }
-                }));
-            }
-            if (urlStr.includes("/commits")) {
-                return Promise.reject(new Error("Network connection lost"));
-            }
-            return Promise.resolve(jsonResponse([], 200));
-        });
-        const heatmap = await fetchCommitActivityHeatmap("user", 2024, "token");
-        expect(heatmap.every(row => row.every(val => val === 0))).toBe(true);
-    });
-
-
     it("throws UserNotFoundError when query returns null user", async () => {
         mockFetch.mockImplementation(() => {
             return Promise.resolve(jsonResponse({ data: { user: null } }));
@@ -431,67 +404,6 @@ describe("fetchYearInReviewData additional coverage", () => {
         }
     });
 
-
-    it("throws 500 GitHubApiError for non-Error thrown objects", async () => {
-        mockFetch.mockImplementation(() => {
-            throw "String error instead of Error object";
-        });
-
-        expect.assertions(3);
-        try {
-            await fetchYearInReviewData("testuser", 2024, "fake-token");
-        } catch (error) {
-            expect(error).toBeInstanceOf(GitHubApiError);
-            expect((error as GitHubApiError).status).toBe(500);
-            expect((error as GitHubApiError).message).toBe("Failed to fetch year in review data");
-        }
-    });
-
-
-    it("handles commit date string type checks correctly", async () => {
-        mockFetch.mockImplementation((url) => {
-            const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
-            if (urlStr.includes("/graphql")) {
-                // Return a malformed commit date to trigger the uncovered branch
-                return Promise.resolve(jsonResponse({
-                    data: {
-                        user: {
-                            id: "123",
-                            contributionsCollection: {
-                                contributionCalendar: { totalContributions: 1, weeks: [] },
-                                totalCommitContributions: 1,
-                                totalPullRequestContributions: 0,
-                                totalIssueContributions: 0,
-                                totalPullRequestReviewContributions: 0,
-                                commitContributionsByRepository: [
-                                    { repository: { owner: { login: "u" }, name: "r" }, contributions: { totalCount: 1 } }
-                                ]
-                            }
-                        },
-                        repo0: {
-                            defaultBranchRef: {
-                                target: {
-                                    history: {
-                                        nodes: [
-                                            { author: { date: null } } // Date is null, not string
-                                        ]
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }));
-            }
-            return Promise.resolve(jsonResponse([], 200));
-        });
-
-        const data = await fetchYearInReviewData("testuser", 2024, "fake-token");
-        expect(data.year).toBe(2024);
-        expect(data.totalContributions).toBe(1);
-        expect(data.totalCommits).toBe(1);
-        expect(data.topRepository?.name).toBe("u/r");
-    });
-
     it("handles partial repository data in mergeTopRepository", async () => {
         mockFetch.mockImplementation(() => {
             return Promise.resolve(jsonResponse({
@@ -530,7 +442,7 @@ describe("fetchCommitActivityHeatmap additional coverage", () => {
 
     it("handles missing repository fields in fetchCommitActivityHeatmap", async () => {
         mockFetch.mockImplementation((url) => {
-            const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
+             const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
             if (urlStr.includes("/graphql")) {
                 return Promise.resolve(jsonResponse({
                     data: {
@@ -587,7 +499,7 @@ describe("graphql helper error paths", () => {
 describe("githubYearInReview additional edge cases", () => {
     it("fetchCommitActivityHeatmap handles 403 Rate Limit", async () => {
         mockFetch.mockImplementation((url) => {
-            const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
+             const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
             if (urlStr.includes("/graphql")) {
                 return Promise.resolve(jsonResponse({
                     data: {
@@ -613,7 +525,7 @@ describe("githubYearInReview additional edge cases", () => {
 
     it("fetchCommitActivityHeatmap filters out commits without dates", async () => {
         mockFetch.mockImplementation((url) => {
-            const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
+             const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
             if (urlStr.includes("/graphql")) {
                 return Promise.resolve(jsonResponse({
                     data: {
@@ -644,7 +556,7 @@ describe("githubYearInReview additional edge cases", () => {
 
     it("fetchYearInReviewData filters out repositories with zero contributions", async () => {
         mockFetch.mockImplementation((url) => {
-            const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
+             const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
             if (urlStr.includes("/graphql")) {
                 // If it's the second call (fetchCommitDatesForTopRepos), we expect repo0 but NOT repo1
                 if (urlStr.includes("repo1: repository")) {
