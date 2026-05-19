@@ -92,8 +92,12 @@ export function getMostActiveHour(heatmap: number[][]): number {
     return mostActiveHour;
 }
 
-const SAKAMOTO_T = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
-const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+/**
+ * Returns the most active day of the week from the contribution calendar data.
+ *
+ * @param calendar Array of objects containing date and contribution count.
+ * @returns The name of the most active day (e.g., "Monday").
+ */
 
 /**
  * Fast calculation of weekday from YYYY-MM-DD strings using Sakamoto's algorithm.
@@ -102,13 +106,8 @@ const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
  * @returns 0 (Sunday) to 6 (Saturday), or -1 if invalid.
  */
 export function getWeekdayFromDateString(dateString: string): number {
-    const isFullISO = dateString.includes("T") || dateString.endsWith("Z");
-    if (isFullISO || !DATE_ONLY_PATTERN.test(dateString)) {
-        const hasExplicitTimezone = dateString.endsWith("Z") || /[+-]\d{2}:?\d{2}$/.test(dateString);
-        const normalizedDateString = isFullISO
-            ? hasExplicitTimezone ? dateString : `${dateString}Z`
-            : `${dateString}T00:00:00Z`;
-        const date = new Date(normalizedDateString);
+    if (dateString.length < 10 || dateString[4] !== "-" || dateString[7] !== "-") {
+        const date = new Date(dateString.includes("T") ? dateString : `${dateString}T00:00:00Z`);
         return Number.isNaN(date.getTime()) ? -1 : date.getUTCDay();
     }
 
@@ -116,33 +115,21 @@ export function getWeekdayFromDateString(dateString: string): number {
     const mStr = dateString.slice(5, 7);
     const dStr = dateString.slice(8, 10);
 
-    let y = Number(yStr);
-    const m = Number(mStr);
-    const d = Number(dStr);
+    let y = parseInt(yStr, 10);
+    const m = parseInt(mStr, 10);
+    const d = parseInt(dStr, 10);
 
-    if (!Number.isInteger(y) || !Number.isInteger(m) || !Number.isInteger(d) || m < 1 || m > 12) {
+    if (Number.isNaN(y) || Number.isNaN(m) || Number.isNaN(d) || m < 1 || m > 12) {
         return -1;
     }
 
-    const isLeapYear = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
-    const daysInMonth = [31, isLeapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-    if (d < 1 || d > daysInMonth[m - 1]) {
-        return -1;
-    }
-
+    const t = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
     if (m < 3) {
         y -= 1;
     }
-    const result = (y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) + SAKAMOTO_T[m - 1] + d) % 7;
-    return (result + 7) % 7;
+    return (y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) + t[m - 1] + d) % 7;
 }
 
-/**
- * Returns the most active day of the week from the contribution calendar data.
- *
- * @param calendar Array of objects containing date and contribution count.
- * @returns The name of the most active day (e.g., "Monday").
- */
 export function getMostActiveDayFromCalendar(calendar: { date: string; count: number }[]): string {
     const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     const totals = Array.from({ length: 7 }, () => 0);
