@@ -222,12 +222,7 @@ describe("getWeekdayFromDateString", () => {
         expect(getWeekdayFromDateString("2023-04-01")).toBe(6); // April 1st 2023 was a Saturday
     });
 
-    it("falls back to Date fallback in sakamoto when time parsing is partially invalid", () => {
-        // Line 110-111 & 127 in getWeekdayFromDateString. Let's see what these are.
-        // Actually, let's just make sure we hit every edge case.
-
-
-
+    it("falls back to Date parsing for malformed date-only strings", () => {
         expect(getWeekdayFromDateString("2023-XX-01")).toBe(-1);
     });
 
@@ -256,5 +251,9 @@ describe("getWeekdayFromDateString", () => {
         expect(getWeekdayFromDateString("invalid")).toBe(-1);
         expect(getWeekdayFromDateString("2023-13-01")).toBe(-1); // Invalid month
         expect(getWeekdayFromDateString("2023-00-01")).toBe(-1); // Invalid month
+        expect(getWeekdayFromDateString("2023-01-00")).toBe(-1); // Invalid day
+        expect(getWeekdayFromDateString("2023-01-32")).toBe(-1); // Invalid day
+        expect(getWeekdayFromDateString("2023-02-29")).toBe(-1); // Not a leap year
+        expect(getWeekdayFromDateString("2024-02-30")).toBe(-1); // Leap year still has 29 days
     });
 });
