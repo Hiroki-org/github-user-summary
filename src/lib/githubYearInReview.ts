@@ -1,6 +1,6 @@
 import "server-only";
-
 import { YEAR_IN_REVIEW_QUERY } from "@/lib/graphql/queries";
+
 import { GitHubApiError, RateLimitError, UserNotFoundError } from "@/lib/types";
 import { headers, handleRateLimit } from "@/lib/github";
 import { buildHourlyHeatmapFromCommitDates, getMostActiveDayFromCalendar, getMostActiveHour } from "@/lib/yearInReviewUtils";
@@ -274,7 +274,7 @@ export async function fetchCommitActivityHeatmap(username: string, year: number,
     const topRepository = mergeTopRepository(reposResponse.user.contributionsCollection);
 
     if (!topRepository) {
-        return buildHourlyHeatmapFromCommitDates([]);
+        return Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
     }
 
     const [owner, repo] = topRepository.name.split("/");
@@ -284,18 +284,12 @@ export async function fetchCommitActivityHeatmap(username: string, year: number,
     url.searchParams.set("until", to.toISOString());
     url.searchParams.set("per_page", "100");
 
-    let res;
-    try {
-        res = await fetch(url.toString(), { headers: headers(token), cache: "no-store" });
-    } catch {
-        return buildHourlyHeatmapFromCommitDates([]);
-    }
-
+    const res = await fetch(url.toString(), { headers: headers(token), cache: "no-store" });
     if (res.status === 403) {
         handleRateLimit(res);
     }
     if (!res.ok) {
-        return buildHourlyHeatmapFromCommitDates([]);
+        return Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
     }
 
     const commits = (await res.json()) as GitHubCommit[];

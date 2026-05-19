@@ -24,17 +24,33 @@ export const fetcher = async <T>(url: string): Promise<T> => {
     return response.json() as Promise<T>;
 };
 
-function useAuthenticatedFetch<T>(url: string | null) {
+export function useDashboardData() {
     const { data: session, status } = useSession();
     const token = session?.accessToken;
-    const canFetch = status === "authenticated" && Boolean(token) && url !== null;
+    const canFetch = status === "authenticated" && Boolean(token);
 
-    const query = canFetch ? url : null;
-    const swr = useSWR<T>(query, fetcher);
+    const summary = useSWR<DashboardSummaryResponse>(canFetch ? "/api/dashboard/summary" : null, fetcher);
 
     return {
         session,
         status,
+        username: summary.data?.username,
+        summary: summary.data?.summary,
+        isLoading: status === "loading" || summary.isLoading,
+        error: summary.error,
+        mutate: summary.mutate,
+    };
+}
+
+export function useYearInReview(year: number | null) {
+    const { data: session, status } = useSession();
+    const token = session?.accessToken;
+    const canFetch = status === "authenticated" && Boolean(token) && Number.isFinite(year);
+
+    const query = canFetch ? `/api/dashboard/year?year=${year}` : null;
+    const swr = useSWR<YearInReviewData>(query, fetcher);
+
+    return {
         data: swr.data,
         isLoading: status === "loading" || swr.isLoading,
         error: swr.error,
@@ -42,41 +58,19 @@ function useAuthenticatedFetch<T>(url: string | null) {
     };
 }
 
-export function useDashboardData() {
-    const { session, status, data, isLoading, error, mutate } = useAuthenticatedFetch<DashboardSummaryResponse>("/api/dashboard/summary");
-
-    return {
-        session,
-        status,
-        username: data?.username,
-        summary: data?.summary,
-        isLoading,
-        error,
-        mutate,
-    };
-}
-
-export function useYearInReview(year: number | null) {
-    const query = Number.isFinite(year) ? `/api/dashboard/year?year=${year}` : null;
-    const { data, isLoading, error, mutate } = useAuthenticatedFetch<YearInReviewData>(query);
-
-    return {
-        data,
-        isLoading,
-        error,
-        mutate,
-    };
-}
-
 export function useDashboardStats(year: number | null) {
-    const query = Number.isFinite(year) ? `/api/dashboard/stats?year=${year}` : null;
-    const { data, isLoading, error, mutate } = useAuthenticatedFetch<DashboardStatsResponse>(query);
+    const { data: session, status } = useSession();
+    const token = session?.accessToken;
+    const canFetch = status === "authenticated" && Boolean(token) && Number.isFinite(year);
+
+    const query = canFetch ? `/api/dashboard/stats?year=${year}` : null;
+    const swr = useSWR<DashboardStatsResponse>(query, fetcher);
 
     return {
-        year: data?.year,
-        heatmap: data?.heatmap,
-        isLoading,
-        error,
-        mutate,
+        year: swr.data?.year,
+        heatmap: swr.data?.heatmap,
+        isLoading: status === "loading" || swr.isLoading,
+        error: swr.error,
+        mutate: swr.mutate,
     };
 }

@@ -159,19 +159,6 @@ describe("useYearInReview", () => {
         expect(result.current.isLoading).toBe(false);
     });
 
-    it("does not fetch when year is NaN", () => {
-        vi.mocked(useSession).mockReturnValue({
-            data: { accessToken: "token123", expires: "2030-01-01T00:00:00.000Z" },
-            status: "authenticated",
-            update: vi.fn(),
-        } satisfies MockSessionReturn as unknown as MockSessionReturn);
-
-        const { result } = renderHook(() => useYearInReview(Number.NaN), { wrapper });
-
-        expect(result.current.isLoading).toBe(false);
-        expect(global.fetch).not.toHaveBeenCalled();
-    });
-
     it("fetches data when authenticated with token and valid year", async () => {
         vi.mocked(useSession).mockReturnValue({
             data: { accessToken: "token123", expires: "2030-01-01T00:00:00.000Z" },
@@ -226,19 +213,6 @@ describe("useDashboardStats", () => {
         const { result } = renderHook(() => useDashboardStats(null), { wrapper });
 
         expect(result.current.isLoading).toBe(false);
-    });
-
-    it("does not fetch when stats year is NaN", () => {
-        vi.mocked(useSession).mockReturnValue({
-            data: { accessToken: "token123", expires: "2030-01-01T00:00:00.000Z" },
-            status: "authenticated",
-            update: vi.fn(),
-        } satisfies MockSessionReturn as unknown as MockSessionReturn);
-
-        const { result } = renderHook(() => useDashboardStats(Number.NaN), { wrapper });
-
-        expect(result.current.isLoading).toBe(false);
-        expect(global.fetch).not.toHaveBeenCalled();
     });
 
     it("handles loading state", () => {

@@ -2,8 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
     buildHourlyHeatmapFromCommitDates,
     getMostActiveHour,
-    getMostActiveDayFromCalendar,
-    getWeekdayFromDateString,
+    getMostActiveDayFromCalendar
 } from "@/lib/yearInReviewUtils";
 
 describe("buildHourlyHeatmapFromCommitDates", () => {
@@ -210,36 +209,5 @@ describe("buildHourlyHeatmapFromCommitDates - edge cases", () => {
         ];
         const heatmap = buildHourlyHeatmapFromCommitDates(commitDates);
         expect(heatmap[0][10]).toBe(0);
-    });
-});
-
-describe("getWeekdayFromDateString", () => {
-    it("returns the weekday for standard YYYY-MM-DD values", () => {
-        expect(getWeekdayFromDateString("2023-01-01")).toBe(0); // Sunday
-        expect(getWeekdayFromDateString("2023-02-28")).toBe(2); // Tuesday
-        expect(getWeekdayFromDateString("2024-02-29")).toBe(4); // Thursday (leap year)
-        expect(getWeekdayFromDateString("2023-04-01")).toBe(6); // Saturday
-        expect(getWeekdayFromDateString("2023-06-30")).toBe(5); // Friday
-        expect(getWeekdayFromDateString("2023-12-31")).toBe(0); // Sunday
-    });
-
-    it("rejects impossible YYYY-MM-DD values", () => {
-        expect(getWeekdayFromDateString("2023-99-01")).toBe(-1);
-        expect(getWeekdayFromDateString("2023-00-01")).toBe(-1);
-        expect(getWeekdayFromDateString("2023-02-29")).toBe(-1);
-        expect(getWeekdayFromDateString("2023-04-31")).toBe(-1);
-        expect(getWeekdayFromDateString("2023-XX-01")).toBe(-1);
-        expect(getWeekdayFromDateString("YYYY-01-01")).toBe(-1);
-    });
-
-    it("falls back to UTC Date parsing for timestamp strings", () => {
-        expect(getWeekdayFromDateString("2023-01-01T10:00:00Z")).toBe(0);
-        expect(getWeekdayFromDateString("2023-01-02T00:00:00")).toBe(1);
-        expect(getWeekdayFromDateString("2023-01-01T23:00:00-05:00")).toBe(1);
-        expect(getWeekdayFromDateString("2023-01-02T10:00:00+0530")).toBe(1);
-    });
-
-    it("returns -1 for invalid fallback date strings", () => {
-        expect(getWeekdayFromDateString("invalid")).toBe(-1);
     });
 });

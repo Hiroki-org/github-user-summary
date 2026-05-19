@@ -1,13 +1,12 @@
 import { render, waitFor } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import ThemeController from "@/components/ThemeController";
 import * as colorLib from "@/lib/color";
 
 // Hoist variables for use in mocks
-const { mockGetColorAsync, mockDestroy, mockLoggerWarn } = vi.hoisted(() => ({
+const { mockGetColorAsync, mockDestroy } = vi.hoisted(() => ({
   mockGetColorAsync: vi.fn().mockResolvedValue({ value: [100, 150, 200, 255] }),
   mockDestroy: vi.fn(),
-  mockLoggerWarn: vi.fn(),
 }));
 
 // We need to test the component's effect on the DOM via the hook.
@@ -36,15 +35,9 @@ vi.mock("@/lib/color", () => {
   };
 });
 
-vi.mock("@/lib/logger", () => ({
-  logger: {
-    info: vi.fn(),
-    warn: mockLoggerWarn,
-    error: vi.fn(),
-  },
-}));
-
 describe("ThemeController", () => {
+  let consoleSpy: ReturnType<typeof vi.spyOn> | undefined;
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetColorAsync.mockResolvedValue({
@@ -61,6 +54,13 @@ describe("ThemeController", () => {
     document.documentElement.style.removeProperty("--accent");
     document.documentElement.style.removeProperty("--accent-rgb");
     document.documentElement.style.removeProperty("--accent-hover");
+  });
+
+  afterEach(() => {
+    // We don't use resetAllMocks because it clears implementations we want to keep.
+    // clearAllMocks in beforeEach is sufficient for call history.
+    consoleSpy?.mockRestore();
+    consoleSpy = undefined;
   });
 
   it("renders null but sets CSS variables immediately when topLanguageColor is provided", () => {
@@ -116,6 +116,7 @@ describe("ThemeController", () => {
   });
 
   it("handles failure during color extraction", async () => {
+    consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     mockGetColorAsync.mockRejectedValueOnce(new Error("Failed to fetch"));
 
     render(
@@ -132,7 +133,7 @@ describe("ThemeController", () => {
 
     // Wait for the async failure
     await waitFor(() => {
-      expect(mockLoggerWarn).toHaveBeenCalledWith(
+      expect(consoleSpy).toHaveBeenCalledWith(
         "Failed to extract color from avatar, keeping fallback color.",
         expect.any(Error)
       );
