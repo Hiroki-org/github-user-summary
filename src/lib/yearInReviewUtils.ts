@@ -93,7 +93,7 @@ export function getMostActiveHour(heatmap: number[][]): number {
 }
 
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-const EXPLICIT_TIMEZONE_PATTERN = /(?:Z|[+-]\d{2}:\d{2})$/;
+const EXPLICIT_TIMEZONE_PATTERN = /(?:Z|[+-]\d{2}:?\d{2})$/;
 const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 const SAKAMOTO_T = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
 
@@ -102,11 +102,14 @@ function isLeapYear(year: number): boolean {
 }
 
 function getFallbackWeekday(dateString: string): number {
-    const parseInput = dateString.includes("T") && !EXPLICIT_TIMEZONE_PATTERN.test(dateString)
-        ? `${dateString}Z`
-        : dateString.includes("T")
-            ? dateString
-            : `${dateString}T00:00:00Z`;
+    let parseInput: string;
+    if (dateString.includes("T") && !EXPLICIT_TIMEZONE_PATTERN.test(dateString)) {
+        parseInput = `${dateString}Z`;
+    } else if (dateString.includes("T")) {
+        parseInput = dateString;
+    } else {
+        parseInput = `${dateString}T00:00:00Z`;
+    }
     const date = new Date(parseInput);
     return Number.isNaN(date.getTime()) ? -1 : date.getUTCDay();
 }
@@ -130,13 +133,7 @@ export function getWeekdayFromDateString(dateString: string): number {
     const m = parseInt(mStr, 10);
     const d = parseInt(dStr, 10);
 
-    if (
-        Number.isNaN(y) ||
-        Number.isNaN(m) ||
-        Number.isNaN(d) ||
-        m < 1 ||
-        m > 12
-    ) {
+    if (m < 1 || m > 12) {
         return -1;
     }
 
