@@ -134,7 +134,7 @@ describe("ThemeController", () => {
     // Wait for the async failure
     await waitFor(() => {
       expect(consoleSpy).toHaveBeenCalledWith(
-        "Failed to extract color from avatar, keeping fallback color.",
+        "Failed to extract color from avatar, keeping fallback color. This may be expected if the component unmounted.",
         expect.any(Error)
       );
     });
