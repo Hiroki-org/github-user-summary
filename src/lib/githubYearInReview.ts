@@ -1,41 +1,10 @@
 import { cache } from "react";
 import "server-only";
+import { YEAR_IN_REVIEW_QUERY } from "@/lib/graphql/queries";
 
 import { GitHubApiError, RateLimitError, UserNotFoundError } from "@/lib/types";
 import { headers, handleRateLimit } from "@/lib/github";
 import { buildHourlyHeatmapFromCommitDates, getMostActiveDayFromCalendar, getMostActiveHour } from "@/lib/yearInReviewUtils";
-
-
-const YEAR_IN_REVIEW_QUERY = `query($login: String!, $from: DateTime!, $to: DateTime!, $maxRepositories: Int!) {
-    user(login: $login) {
-      id
-      contributionsCollection(from: $from, to: $to) {
-        totalCommitContributions
-        totalPullRequestContributions
-        totalIssueContributions
-        totalPullRequestReviewContributions
-        contributionCalendar {
-          totalContributions
-          weeks {
-            contributionDays {
-              date
-              contributionCount
-            }
-          }
-        }
-        commitContributionsByRepository(maxRepositories: $maxRepositories) { ...repoFields }
-        pullRequestContributionsByRepository(maxRepositories: $maxRepositories) { ...repoFields }
-        issueContributionsByRepository(maxRepositories: $maxRepositories) { ...repoFields }
-      }
-    }
-  }
-  fragment repoFields on ContributionsByRepository {
-    repository {
-      name
-      owner { login }
-    }
-    contributions { totalCount }
-  }`;
 
 const GITHUB_API = "https://api.github.com";
 const GITHUB_GRAPHQL = "https://api.github.com/graphql";
@@ -306,7 +275,7 @@ export async function fetchCommitActivityHeatmap(username: string, year: number,
     const topRepository = mergeTopRepository(reposResponse.user.contributionsCollection);
 
     if (!topRepository) {
-        return buildHourlyHeatmapFromCommitDates([]);
+        return Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
     }
 
     const [owner, repo] = topRepository.name.split("/");
@@ -316,18 +285,12 @@ export async function fetchCommitActivityHeatmap(username: string, year: number,
     url.searchParams.set("until", to.toISOString());
     url.searchParams.set("per_page", "100");
 
-    let res;
-    try {
-        res = await fetch(url.toString(), { headers: headers(token), cache: "no-store" });
-    } catch {
-        return buildHourlyHeatmapFromCommitDates([]);
-    }
-
+    const res = await fetch(url.toString(), { headers: headers(token), cache: "no-store" });
     if (res.status === 403) {
         handleRateLimit(res);
     }
     if (!res.ok) {
-        return buildHourlyHeatmapFromCommitDates([]);
+        return Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
     }
 
     const commits = (await res.json()) as GitHubCommit[];
