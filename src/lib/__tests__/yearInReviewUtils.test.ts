@@ -194,6 +194,12 @@ describe("buildHourlyHeatmapFromCommitDates - edge cases", () => {
         expect(totalCommits).toBe(0);
     });
 
+    it("returns zero contributions for date strings with invalid components", () => {
+        const heatmap = buildHourlyHeatmapFromCommitDates(["2023-XX-XXT10:00:00Z"]);
+        const totalCommits = heatmap.flat().reduce((sum, count) => sum + count, 0);
+        expect(totalCommits).toBe(0);
+    });
+
     it("falls back to full date parsing when timezone offsets don't match fast-path ending conditions", () => {
         const commitDates = [
             "2023-01-01T10:00:00.000Z", // length 24, ends with .000Z
@@ -228,12 +234,6 @@ describe("getWeekdayFromDateString", () => {
 
     it("returns -1 for invalid number components", () => {
         expect(getWeekdayFromDateString("YYYY-01-01")).toBe(-1);
-    });
-
-    it("falls back to full date string processing for heatmap with NaN cache", () => {
-        const heatmap = buildHourlyHeatmapFromCommitDates(["2023-XX-XXT10:00:00Z"]);
-        const totalCommits = heatmap.flat().reduce((sum, count) => sum + count, 0);
-        expect(totalCommits).toBe(0);
     });
 
     it("returns correct weekday for standard YYYY-MM-DD", () => {
