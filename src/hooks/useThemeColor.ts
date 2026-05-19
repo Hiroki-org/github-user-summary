@@ -48,10 +48,7 @@ export function useThemeColor({ avatarUrl, topLanguageColor }: UseThemeColorOpti
         }
       })
       .catch((e) => {
-        logger.warn(
-          "Failed to extract color from avatar, keeping fallback color. This may be expected if the component unmounted.",
-          e,
-        );
+        logger.warn("Failed to extract color from avatar, keeping fallback color.", e);
       });
     }
 

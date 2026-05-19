@@ -2,6 +2,7 @@ import { render, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import ThemeController from "@/components/ThemeController";
 import * as colorLib from "@/lib/color";
+import { logger } from "@/lib/logger";
 
 // Hoist variables for use in mocks
 const { mockGetColorAsync, mockDestroy } = vi.hoisted(() => ({
@@ -116,7 +117,7 @@ describe("ThemeController", () => {
   });
 
   it("handles failure during color extraction", async () => {
-    consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    consoleSpy = vi.spyOn(logger, "warn").mockImplementation(() => {});
     mockGetColorAsync.mockRejectedValueOnce(new Error("Failed to fetch"));
 
     render(
@@ -134,7 +135,7 @@ describe("ThemeController", () => {
     // Wait for the async failure
     await waitFor(() => {
       expect(consoleSpy).toHaveBeenCalledWith(
-        "Failed to extract color from avatar, keeping fallback color. This may be expected if the component unmounted.",
+        "Failed to extract color from avatar, keeping fallback color.",
         expect.any(Error)
       );
     });
