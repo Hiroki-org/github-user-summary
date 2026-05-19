@@ -1,6 +1,6 @@
 import "server-only";
+import { cache } from "react";
 import { REPOSITORIES_QUERY, CONTRIBUTIONS_QUERY } from "@/lib/graphql/queries";
-import { cache } from 'react';
 import { logger } from "@/lib/logger";
 
 import type {
@@ -229,7 +229,7 @@ async function fetchPinnedRepos(username: string, token?: string): Promise<Pinne
  * @throws {UserNotFoundError} ユーザーが存在しない場合
  * @throws {RateLimitError} APIレート制限に達した場合
  */
-export async function fetchUserProfile(
+export const fetchUserProfile = cache(async function fetchUserProfile(
   username: string,
   token?: string
 ): Promise<UserProfile> {
@@ -255,7 +255,7 @@ export async function fetchUserProfile(
     orgs,
     pinnedRepos,
   };
-}
+});
 
 // ===== 2. fetchRepositories =====
 
@@ -466,7 +466,7 @@ type ContributionsResponse = {
  * @throws {UserNotFoundError} ユーザーが見つからない場合
  * @throws {RateLimitError} APIレート制限に達した場合
  */
-export async function fetchContributions(
+export const fetchContributions = cache(async function fetchContributions(
   username: string,
   token?: string
 ): Promise<ContributionData> {
@@ -475,6 +475,8 @@ export async function fetchContributions(
     throw new GitHubApiError("Contributions data requires authentication", 401);
   }
 
+  // React cache() is request-scoped in RSC, so these rolling windows are fixed
+  // only for the current render pass and are recomputed for the next request.
   const now = new Date();
   const oneYearAgo = new Date(now);
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
@@ -536,7 +538,7 @@ export async function fetchContributions(
     mostActiveDay,
     calendar,
   };
-}
+});
 
 // ===== 4.5 fetchStarredRepos =====
 
@@ -551,7 +553,7 @@ type StarredRepo = {
  * @throws {UserNotFoundError} ユーザーが見つからない場合
  * @throws {RateLimitError} APIレート制限に達した場合
  */
-export async function fetchStarredRepos(
+export const fetchStarredRepos = cache(async function fetchStarredRepos(
   username: string,
   token?: string
 ): Promise<InterestsData> {
@@ -605,7 +607,7 @@ export async function fetchStarredRepos(
     topLanguages,
     totalStarred: allStarred.length,
   };
-}
+});
 
 // ===== 5. fetchActivity =====
 
