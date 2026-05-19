@@ -38,19 +38,19 @@ export const fetcher = async <T>(url: string): Promise<T> => {
 
 function useAuthenticatedFetch<T>(
     url: string | null,
-    options: { enabled?: boolean; includeSession: true },
+    options: { includeSession: true },
 ): AuthenticatedFetchWithSessionResult<T>;
 function useAuthenticatedFetch<T>(
     url: string | null,
-    options?: { enabled?: boolean; includeSession?: false },
+    options?: { includeSession?: false },
 ): AuthenticatedFetchResult<T>;
 function useAuthenticatedFetch<T>(
     url: string | null,
-    options: { enabled?: boolean; includeSession?: boolean } = {},
+    options: { includeSession?: boolean } = {},
 ) {
     const { data: session, status } = useSession();
     const token = session?.accessToken;
-    const canFetch = status === "authenticated" && Boolean(token) && url !== null && (options.enabled ?? true);
+    const canFetch = status === "authenticated" && Boolean(token) && url !== null;
 
     const query = canFetch ? url : null;
     const swr = useSWR<T>(query, fetcher);
