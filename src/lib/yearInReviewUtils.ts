@@ -92,24 +92,7 @@ export function getMostActiveHour(heatmap: number[][]): number {
     return mostActiveHour;
 }
 
-const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-const EXPLICIT_TIMEZONE_PATTERN = /(?:Z|[+-]\d{2}:\d{2})$/;
-const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 const SAKAMOTO_T = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
-
-function isLeapYear(year: number): boolean {
-    return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
-}
-
-function getFallbackWeekday(dateString: string): number {
-    const parseInput = dateString.includes("T") && !EXPLICIT_TIMEZONE_PATTERN.test(dateString)
-        ? `${dateString}Z`
-        : dateString.includes("T")
-            ? dateString
-            : `${dateString}T00:00:00Z`;
-    const date = new Date(parseInput);
-    return Number.isNaN(date.getTime()) ? -1 : date.getUTCDay();
-}
 
 /**
  * Fast calculation of weekday from YYYY-MM-DD strings using Sakamoto's algorithm.
@@ -118,8 +101,9 @@ function getFallbackWeekday(dateString: string): number {
  * @returns 0 (Sunday) to 6 (Saturday), or -1 if invalid.
  */
 export function getWeekdayFromDateString(dateString: string): number {
-    if (!DATE_ONLY_PATTERN.test(dateString)) {
-        return getFallbackWeekday(dateString);
+    if (dateString.length < 10 || dateString[4] !== "-" || dateString[7] !== "-") {
+        const date = new Date(dateString.includes("T") ? dateString : `${dateString}T00:00:00Z`);
+        return Number.isNaN(date.getTime()) ? -1 : date.getUTCDay();
     }
 
     const yStr = dateString.slice(0, 4);
@@ -130,34 +114,20 @@ export function getWeekdayFromDateString(dateString: string): number {
     const m = parseInt(mStr, 10);
     const d = parseInt(dStr, 10);
 
+    // Strict validation: length checks and ensuring components are purely numeric
     if (
-        Number.isNaN(y) ||
-        Number.isNaN(m) ||
-        Number.isNaN(d) ||
-        m < 1 ||
-        m > 12
+        Number.isNaN(y) || Number.isNaN(m) || Number.isNaN(d) ||
+        !/^\d{4}$/.test(yStr) || !/^\d{2}$/.test(mStr) || !/^\d{2}$/.test(dStr) ||
+        m < 1 || m > 12 || d < 1 || d > 31
     ) {
         return -1;
     }
 
-    const maxDay = m === 2 && isLeapYear(y) ? 29 : DAYS_IN_MONTH[m - 1];
-    if (d < 1 || d > maxDay) {
-        return -1;
-    }
 
     if (m < 3) {
         y -= 1;
     }
-    return (
-        (
-            y +
-            Math.floor(y / 4) -
-            Math.floor(y / 100) +
-            Math.floor(y / 400) +
-            SAKAMOTO_T[m - 1] +
-            d
-        ) % 7 + 7
-    ) % 7;
+    return ((y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) + SAKAMOTO_T[m - 1] + d) % 7 + 7) % 7;
 }
 
 /**
