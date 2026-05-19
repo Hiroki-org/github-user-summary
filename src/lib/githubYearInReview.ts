@@ -1,11 +1,40 @@
 import "server-only";
 
-import { cache } from "react";
-import { YEAR_IN_REVIEW_QUERY } from "@/lib/graphql/queries";
 import { GitHubApiError, RateLimitError, UserNotFoundError } from "@/lib/types";
-import type { YearInReviewData } from "@/lib/types";
 import { headers, handleRateLimit } from "@/lib/github";
 import { buildHourlyHeatmapFromCommitDates, getMostActiveDayFromCalendar, getMostActiveHour } from "@/lib/yearInReviewUtils";
+
+
+const YEAR_IN_REVIEW_QUERY = `query($login: String!, $from: DateTime!, $to: DateTime!, $maxRepositories: Int!) {
+    user(login: $login) {
+      id
+      contributionsCollection(from: $from, to: $to) {
+        totalCommitContributions
+        totalPullRequestContributions
+        totalIssueContributions
+        totalPullRequestReviewContributions
+        contributionCalendar {
+          totalContributions
+          weeks {
+            contributionDays {
+              date
+              contributionCount
+            }
+          }
+        }
+        commitContributionsByRepository(maxRepositories: $maxRepositories) { ...repoFields }
+        pullRequestContributionsByRepository(maxRepositories: $maxRepositories) { ...repoFields }
+        issueContributionsByRepository(maxRepositories: $maxRepositories) { ...repoFields }
+      }
+    }
+  }
+  fragment repoFields on ContributionsByRepository {
+    repository {
+      name
+      owner { login }
+    }
+    contributions { totalCount }
+  }`;
 
 const GITHUB_API = "https://api.github.com";
 const GITHUB_GRAPHQL = "https://api.github.com/graphql";
@@ -213,7 +242,7 @@ function buildYearInReviewData(
     };
 }
 
-export const fetchYearInReviewData = cache(async function fetchYearInReviewData(username: string, year: number, token?: string): Promise<YearInReviewData> {
+export async function fetchYearInReviewData(username: string, year: number, token?: string) {
     if (!token) {
         throw new GitHubApiError("Year in Review requires authentication token", 401);
     }
@@ -252,7 +281,7 @@ export const fetchYearInReviewData = cache(async function fetchYearInReviewData(
         }
         throw new GitHubApiError(error instanceof Error ? error.message : "Failed to fetch year in review data", 500);
     }
-});
+}
 
 export async function fetchCommitActivityHeatmap(username: string, year: number, token?: string): Promise<number[][]> {
     if (!token) {

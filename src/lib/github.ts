@@ -1,6 +1,5 @@
 import "server-only";
-import { cache } from "react";
-import { REPOSITORIES_QUERY, CONTRIBUTIONS_QUERY } from "@/lib/graphql/queries";
+import { cache } from 'react';
 import { logger } from "@/lib/logger";
 
 import type {
@@ -229,7 +228,7 @@ async function fetchPinnedRepos(username: string, token?: string): Promise<Pinne
  * @throws {UserNotFoundError} ユーザーが存在しない場合
  * @throws {RateLimitError} APIレート制限に達した場合
  */
-export const fetchUserProfile = cache(async function fetchUserProfile(
+export async function fetchUserProfile(
   username: string,
   token?: string
 ): Promise<UserProfile> {
@@ -255,7 +254,7 @@ export const fetchUserProfile = cache(async function fetchUserProfile(
     orgs,
     pinnedRepos,
   };
-});
+}
 
 // ===== 2. fetchRepositories =====
 
@@ -311,7 +310,35 @@ export const fetchRepositories = cache(async function fetchRepositories(
     return fetchRepositoriesREST(username);
   }
 
-  const data = await graphql<RepositoriesResponse>(REPOSITORIES_QUERY, token, { login: username });
+  const query = `query($login: String!) {
+    user(login: $login) {
+      repositories(first: 100, ownerAffiliations: [OWNER, ORGANIZATION_MEMBER, COLLABORATOR], orderBy: {field: STARGAZERS, direction: DESC}, isFork: false, privacy: PUBLIC) {
+        totalCount
+        nodes {
+          name
+          description
+          url
+          stargazerCount
+          forkCount
+          isFork
+          primaryLanguage { name color }
+          languages(first: 10) {
+            edges {
+              size
+              node { name color }
+            }
+          }
+          repositoryTopics(first: 10) {
+            nodes {
+              topic { name }
+            }
+          }
+        }
+      }
+    }
+  }`;
+
+  const data = await graphql<RepositoriesResponse>(query, token, { login: username });
   if (!data.user) {
     throw new UserNotFoundError(username);
   }
@@ -466,7 +493,7 @@ type ContributionsResponse = {
  * @throws {UserNotFoundError} ユーザーが見つからない場合
  * @throws {RateLimitError} APIレート制限に達した場合
  */
-export const fetchContributions = cache(async function fetchContributions(
+export async function fetchContributions(
   username: string,
   token?: string
 ): Promise<ContributionData> {
@@ -475,8 +502,6 @@ export const fetchContributions = cache(async function fetchContributions(
     throw new GitHubApiError("Contributions data requires authentication", 401);
   }
 
-  // React cache() is request-scoped in RSC, so these rolling windows are fixed
-  // only for the current render pass and are recomputed for the next request.
   const now = new Date();
   const oneYearAgo = new Date(now);
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
@@ -484,7 +509,27 @@ export const fetchContributions = cache(async function fetchContributions(
   const sevenDaysAgoStr = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
   const thirtyDaysAgoStr = new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
-  const data = await graphql<ContributionsResponse>(CONTRIBUTIONS_QUERY, token, {
+  const query = `query($login: String!, $from: DateTime!, $to: DateTime!) {
+    user(login: $login) {
+      contributionsCollection(from: $from, to: $to) {
+        totalCommitContributions
+        totalPullRequestContributions
+        totalIssueContributions
+        totalPullRequestReviewContributions
+        contributionCalendar {
+          totalContributions
+          weeks {
+            contributionDays {
+              date
+              contributionCount
+            }
+          }
+        }
+      }
+    }
+  }`;
+
+  const data = await graphql<ContributionsResponse>(query, token, {
     login: username,
     from: oneYearAgo.toISOString(),
     to: now.toISOString(),
@@ -538,7 +583,7 @@ export const fetchContributions = cache(async function fetchContributions(
     mostActiveDay,
     calendar,
   };
-});
+}
 
 // ===== 4.5 fetchStarredRepos =====
 
@@ -553,7 +598,7 @@ type StarredRepo = {
  * @throws {UserNotFoundError} ユーザーが見つからない場合
  * @throws {RateLimitError} APIレート制限に達した場合
  */
-export const fetchStarredRepos = cache(async function fetchStarredRepos(
+export async function fetchStarredRepos(
   username: string,
   token?: string
 ): Promise<InterestsData> {
@@ -607,7 +652,7 @@ export const fetchStarredRepos = cache(async function fetchStarredRepos(
     topLanguages,
     totalStarred: allStarred.length,
   };
-});
+}
 
 // ===== 5. fetchActivity =====
 
