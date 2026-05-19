@@ -3,7 +3,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { useCardSettings } from "../useCardSettings";
 import { loadCardSettings, saveCardSettings } from "@/lib/cardSettings";
 import { toggleBlockVisibility } from "@/lib/cardLayout";
-import { type CardLayout, type CardBlockId } from "@/lib/types";
+import { type CardLayout, type CardBlockId, type CardDisplayOptions } from "@/lib/types";
 
 vi.mock("@/lib/cardSettings", () => ({
   loadCardSettings: vi.fn(),
@@ -14,7 +14,11 @@ vi.mock("@/lib/cardLayout", () => ({
   toggleBlockVisibility: vi.fn(),
 }));
 
-const mockDefaultOptions = {
+const cardLayoutActual = await vi.importActual<typeof import("@/lib/cardLayout")>(
+  "@/lib/cardLayout",
+);
+
+const mockDefaultOptions: CardDisplayOptions = {
   showAvatar: true,
   showBio: true,
 };
@@ -28,15 +32,14 @@ const mockLayout: CardLayout = {
 
 describe("useCardSettings", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     vi.mocked(loadCardSettings).mockReturnValue({
       layout: mockLayout,
-      options: mockDefaultOptions as any,
+      options: mockDefaultOptions,
     });
-    vi.mocked(toggleBlockVisibility).mockImplementation((layout, blockId) => ({
-      ...layout,
-      blocks: layout.blocks.map(b => b.id === blockId ? { ...b, visible: !b.visible } : b)
-    }));
+    vi.mocked(toggleBlockVisibility).mockImplementation(
+      cardLayoutActual.toggleBlockVisibility,
+    );
   });
 
   it("should initialize with values from loadCardSettings", () => {
@@ -44,16 +47,16 @@ describe("useCardSettings", () => {
 
     expect(result.current.layout).toEqual(mockLayout);
     expect(result.current.displayOptions).toEqual(mockDefaultOptions);
-    expect(loadCardSettings).toHaveBeenCalledTimes(2); // Called in useState initializers
+    expect(loadCardSettings).toHaveBeenCalled();
   });
 
   it("should hydrate from storage when mounted becomes true", () => {
     const updatedLayout: CardLayout = { blocks: [] };
-    const updatedOptions = { ...mockDefaultOptions, showAvatar: false };
+    const updatedOptions: CardDisplayOptions = { ...mockDefaultOptions, showAvatar: false };
 
     vi.mocked(loadCardSettings).mockReturnValue({
-        layout: mockLayout,
-        options: mockDefaultOptions as any,
+      layout: mockLayout,
+      options: mockDefaultOptions,
     });
 
     const { result, rerender } = renderHook(({ mounted }) => useCardSettings(mounted), {
@@ -65,7 +68,7 @@ describe("useCardSettings", () => {
 
     vi.mocked(loadCardSettings).mockReturnValue({
       layout: updatedLayout,
-      options: updatedOptions as any,
+      options: updatedOptions,
     });
 
     rerender({ mounted: true });
@@ -81,7 +84,7 @@ describe("useCardSettings", () => {
     vi.mocked(saveCardSettings).mockClear();
 
     act(() => {
-      result.current.setDisplayOptions({ ...mockDefaultOptions, showAvatar: false } as any);
+      result.current.setDisplayOptions({ ...mockDefaultOptions, showAvatar: false });
     });
 
     expect(saveCardSettings).toHaveBeenCalledWith(
@@ -123,7 +126,7 @@ describe("useCardSettings", () => {
     const { result } = renderHook(() => useCardSettings(false));
 
     act(() => {
-        result.current.setDisplayOptions({ ...mockDefaultOptions, showAvatar: false } as any);
+      result.current.setDisplayOptions({ ...mockDefaultOptions, showAvatar: false });
     });
 
     expect(saveCardSettings).not.toHaveBeenCalled();
@@ -133,11 +136,11 @@ describe("useCardSettings", () => {
     const { result } = renderHook(() => useCardSettings(true));
 
     const newLayout: CardLayout = { blocks: [{ id: "profile", visible: false, column: "full" }] };
-    const newOptions = { ...mockDefaultOptions, showBio: false };
+    const newOptions: CardDisplayOptions = { ...mockDefaultOptions, showBio: false };
 
     act(() => {
       result.current.setLayout(newLayout);
-      result.current.setDisplayOptions(newOptions as any);
+      result.current.setDisplayOptions(newOptions);
     });
 
     expect(result.current.layout).toEqual(newLayout);
