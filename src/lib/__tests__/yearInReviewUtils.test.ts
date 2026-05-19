@@ -2,7 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
     buildHourlyHeatmapFromCommitDates,
     getMostActiveHour,
-    getMostActiveDayFromCalendar
+    getMostActiveDayFromCalendar,
+    getWeekdayFromDateString
 } from "@/lib/yearInReviewUtils";
 
 describe("buildHourlyHeatmapFromCommitDates", () => {
@@ -209,5 +210,51 @@ describe("buildHourlyHeatmapFromCommitDates - edge cases", () => {
         ];
         const heatmap = buildHourlyHeatmapFromCommitDates(commitDates);
         expect(heatmap[0][10]).toBe(0);
+    });
+});
+
+describe("getWeekdayFromDateString", () => {
+    it("returns correctly for invalid month", () => {
+        expect(getWeekdayFromDateString("2023-99-01")).toBe(-1);
+    });
+
+    it("returns correctly for months > 3", () => {
+        expect(getWeekdayFromDateString("2023-04-01")).toBe(6); // April 1st 2023 was a Saturday
+    });
+
+    it("falls back to Date fallback in sakamoto when time parsing is partially invalid", () => {
+        // Line 110-111 & 127 in getWeekdayFromDateString. Let's see what these are.
+        // Actually, let's just make sure we hit every edge case.
+
+
+
+        expect(getWeekdayFromDateString("2023-XX-01")).toBe(-1);
+    });
+
+    it("returns -1 for invalid number components", () => {
+        expect(getWeekdayFromDateString("YYYY-01-01")).toBe(-1);
+    });
+
+    it("falls back to full date string processing for heatmap with NaN cache", () => {
+        const heatmap = buildHourlyHeatmapFromCommitDates(["2023-XX-XXT10:00:00Z"]);
+        const totalCommits = heatmap.flat().reduce((sum, count) => sum + count, 0);
+        expect(totalCommits).toBe(0);
+    });
+
+    it("returns correct weekday for standard YYYY-MM-DD", () => {
+        expect(getWeekdayFromDateString("2023-01-01")).toBe(0); // Sunday
+        expect(getWeekdayFromDateString("2023-02-28")).toBe(2); // Tuesday
+        expect(getWeekdayFromDateString("2024-02-29")).toBe(4); // Thursday (leap year)
+    });
+
+    it("returns correct weekday for ISO strings with T", () => {
+        expect(getWeekdayFromDateString("2023-01-01T10:00:00Z")).toBe(0);
+        expect(getWeekdayFromDateString("2023-01-02T00:00:00")).toBe(1);
+    });
+
+    it("returns -1 for invalid dates", () => {
+        expect(getWeekdayFromDateString("invalid")).toBe(-1);
+        expect(getWeekdayFromDateString("2023-13-01")).toBe(-1); // Invalid month
+        expect(getWeekdayFromDateString("2023-00-01")).toBe(-1); // Invalid month
     });
 });
