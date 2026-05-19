@@ -1,4 +1,3 @@
-import { NextRequest } from "next/server";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/cardDataFetcher", () => ({
@@ -24,7 +23,7 @@ describe("GET /api/card/[username] cache headers", () => {
         });
 
         const { GET } = await import("./route");
-        const req = new NextRequest("http://localhost/api/card/alice");
+        const req = new Request("http://localhost/api/card/alice");
         const response = await GET(req, { params: Promise.resolve({ username: "alice" }) });
 
         expect(response.headers.get("Cache-Control")).toBe("public, s-maxage=1800, stale-while-revalidate=3600");
@@ -35,7 +34,7 @@ describe("GET /api/card/[username] cache headers", () => {
         vi.mocked(fetchCardData).mockResolvedValueOnce(null);
 
         const { GET } = await import("./route");
-        const req = new NextRequest("http://localhost/api/card/ghost");
+        const req = new Request("http://localhost/api/card/ghost");
         const response = await GET(req, { params: Promise.resolve({ username: "ghost" }) });
 
         expect(response.status).toBe(404);
@@ -47,7 +46,7 @@ describe("GET /api/card/[username] cache headers", () => {
         vi.mocked(fetchCardData).mockRejectedValueOnce(new Error("API Error"));
 
         const { GET } = await import("./route");
-        const req = new NextRequest("http://localhost/api/card/erroruser");
+        const req = new Request("http://localhost/api/card/erroruser");
         const response = await GET(req, { params: Promise.resolve({ username: "erroruser" }) });
 
         expect(response.status).toBe(503);
@@ -67,7 +66,7 @@ describe("GET /api/card/[username] error responses", () => {
         }
 
         const { GET } = await import("./route");
-        const req = new NextRequest(`http://localhost/api/card/${username}`);
+        const req = new Request(`http://localhost/api/card/${username}`);
         await GET(req, { params: Promise.resolve({ username }) });
 
         expect(renderErrorCardResponse).toHaveBeenCalledWith(expect.objectContaining({
@@ -93,8 +92,11 @@ describe("GET /api/card/[username] rate limiting", () => {
         const { fetchCardData } = await import("@/lib/cardDataFetcher");
         const { renderErrorCardResponse } = await import("@/lib/cardRenderer");
 
-        const req1 = new NextRequest("http://localhost/api/card/testuser");
-        req1.headers.set("x-forwarded-for", "127.0.0.1");
+        const req1 = new Request("http://localhost/api/card/testuser", {
+            headers: {
+                "x-forwarded-for": "127.0.0.1",
+            },
+        });
 
         // Mock fetchCardData to resolve successfully to avoid error rendering for successful requests
         vi.mocked(fetchCardData).mockResolvedValue({} as unknown as Awaited<ReturnType<typeof fetchCardData>>);
