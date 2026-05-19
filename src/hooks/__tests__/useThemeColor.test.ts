@@ -128,7 +128,7 @@ describe("useThemeColor", () => {
     // Check that logger.warn was called
     await waitFor(() => {
       expect(logger.warn).toHaveBeenCalledWith(
-        "Failed to extract color from avatar, keeping fallback color.",
+        "Failed to extract color from avatar, keeping fallback color. This may be expected if the component unmounted.",
         error
       );
     });
