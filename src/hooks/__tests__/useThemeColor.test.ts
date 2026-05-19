@@ -4,6 +4,11 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { useThemeColor } from "../useThemeColor";
 import * as colorLib from "@/lib/color";
 import { FastAverageColor } from "fast-average-color";
+import { logger } from "@/lib/logger";
+
+const { mockLoggerWarn } = vi.hoisted(() => ({
+  mockLoggerWarn: vi.fn(),
+}));
 
 // Mock fast-average-color
 vi.mock("fast-average-color", () => {
@@ -32,6 +37,14 @@ vi.mock("@/lib/color", () => {
   };
 });
 
+vi.mock("@/lib/logger", () => ({
+  logger: {
+    info: vi.fn(),
+    warn: mockLoggerWarn,
+    error: vi.fn(),
+  },
+}));
+
 describe("useThemeColor", () => {
   let mockGetColorAsync: ReturnType<typeof vi.fn>;
   let mockDestroy: ReturnType<typeof vi.fn>;
@@ -54,8 +67,6 @@ describe("useThemeColor", () => {
       value: [100, 150, 200, 255]
     });
 
-    // Suppress console.warn for error tests
-    vi.spyOn(console, "warn").mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -124,9 +135,9 @@ describe("useThemeColor", () => {
       expect(mockGetColorAsync).toHaveBeenCalled();
     });
 
-    // Check that console.warn was called
+    // Check that logger.warn was called
     await waitFor(() => {
-      expect(console.warn).toHaveBeenCalledWith(
+      expect(logger.warn).toHaveBeenCalledWith(
         "Failed to extract color from avatar, keeping fallback color.",
         error
       );
@@ -138,6 +149,27 @@ describe("useThemeColor", () => {
     // adjustAccentColor should only be called once for the fallback, not for the failed avatar
     expect(colorLib.adjustAccentColor).toHaveBeenCalledTimes(1);
     expect(colorLib.adjustAccentColor).toHaveBeenCalledWith("#0000ff");
+  });
+
+  it("should not warn if color extraction fails after unmount", async () => {
+    const error = new Error("Destroyed while loading");
+    let rejectColor!: (error: Error) => void;
+    const colorPromise = new Promise<never>((_, reject) => {
+      rejectColor = reject;
+    });
+    mockGetColorAsync.mockReturnValueOnce(colorPromise);
+
+    const { unmount } = renderHook(() => useThemeColor({
+      topLanguageColor: "#0000ff",
+      avatarUrl: "https://example.com/slow-avatar.jpg"
+    }));
+
+    unmount();
+    rejectColor(error);
+    await expect(colorPromise).rejects.toThrow("Destroyed while loading");
+    await Promise.resolve();
+
+    expect(logger.warn).not.toHaveBeenCalled();
   });
 
   it("should cleanup variables and destroy FastAverageColor on unmount", () => {
