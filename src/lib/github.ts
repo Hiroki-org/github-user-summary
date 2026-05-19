@@ -1,6 +1,7 @@
-import { REPOSITORIES_QUERY, CONTRIBUTIONS_QUERY } from "./graphql/queries";
 import "server-only";
-import { cache } from 'react';
+
+import { cache } from "react";
+import { REPOSITORIES_QUERY, CONTRIBUTIONS_QUERY } from "@/lib/graphql/queries";
 import { logger } from "@/lib/logger";
 
 import type {

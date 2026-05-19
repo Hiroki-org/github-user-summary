@@ -1,12 +1,9 @@
-import { YEAR_IN_REVIEW_QUERY } from "./graphql/queries";
 import "server-only";
 
+import { YEAR_IN_REVIEW_QUERY } from "@/lib/graphql/queries";
 import { GitHubApiError, RateLimitError, UserNotFoundError } from "@/lib/types";
 import { headers, handleRateLimit } from "@/lib/github";
 import { buildHourlyHeatmapFromCommitDates, getMostActiveDayFromCalendar, getMostActiveHour } from "@/lib/yearInReviewUtils";
-
-
-
 
 const GITHUB_API = "https://api.github.com";
 const GITHUB_GRAPHQL = "https://api.github.com/graphql";
