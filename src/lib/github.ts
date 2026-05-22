@@ -685,9 +685,21 @@ export const fetchActivity = cache(async function fetchActivity(
   // Suppress unhandled promise rejections for subsequent pages if we break early or throw
   promises.forEach((p) => p.catch((e) => logger.error("Event fetch promise rejected:", e)));
 
+  // A promise that rejects immediately if a critical error occurs
+  const failFast = Promise.all(
+    promises.map((p) =>
+      p.catch((e) => {
+        if (e instanceof UserNotFoundError || e instanceof RateLimitError) {
+          throw e;
+        }
+        return null;
+      })
+    )
+  ).then(() => new Promise<never>(() => {})); // Never resolves to prevent Promise.race from resolving with nulls
+
   for (const p of promises) {
     try {
-      const events = await p;
+      const events = await Promise.race([p, failFast]);
       allEvents.push(...events);
       if (events.length < 100) break;
     } catch (error) {
