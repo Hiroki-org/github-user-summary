@@ -21,7 +21,8 @@ export async function GET(
     const allowedOrigin = process.env.APP_URL || "http://localhost:3000";
     const fontUrl = `${allowedOrigin}/fonts/NotoSans-Regular.ttf`;
 
-    const ip = request.ip ?? "unknown";
+    const forwarded = request.headers.get("x-forwarded-for");
+    const ip = forwarded ? forwarded.split(",")[0]?.trim() ?? "unknown" : "unknown";
     const rateLimitResult = rateLimiter.check(ip);
 
     if (!rateLimitResult.success) {
