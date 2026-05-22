@@ -9,14 +9,13 @@ import { UserNotFoundError } from "@/lib/types";
 import ShareButtons from "@/components/ShareButtons";
 import CardGenerator from "@/components/CardGenerator";
 import ProfileCard from "@/components/ProfileCard";
-import SkillsCard from "@/components/SkillsCard";
-import ContributionsCard from "@/components/ContributionsCard";
-import ReposCard from "@/components/ReposCard";
-import ActivityCard from "@/components/ActivityCard";
-import InterestsCard from "@/components/InterestsCard";
 import AnimatedWrapper from "@/components/AnimatedWrapper";
 import ThemeController from "@/components/ThemeController";
 import MyPageBanner from "@/components/MyPageBanner";
+
+import BackgroundDecoration from "./components/BackgroundDecoration";
+import ErrorMessages from "./components/ErrorMessages";
+import UserSummaryGrid from "./components/UserSummaryGrid";
 
 type Props = {
   params: Promise<{ username: string }>;
@@ -62,30 +61,11 @@ export default async function UserPage({ params }: Props) {
         topLanguageColor={summary.repositories?.languages[0]?.color}
       />
 
-      {/* Background decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none fixed">
-        <div className="absolute -top-[10%] -right-[10%] w-[60%] h-[60%] rounded-full bg-accent opacity-5 blur-[120px] animate-pulse-slow" />
-        <div
-          className="absolute top-[40%] -left-[10%] w-[50%] h-[50%] rounded-full bg-success opacity-5 blur-[120px] animate-pulse-slow"
-          style={{ animationDelay: "2s" }}
-        />
-      </div>
+      <BackgroundDecoration />
 
       {/* Main */}
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 relative z-10 animate-fade-in">
-        {/* Errors */}
-        {summary.errors.length > 0 && (
-          <div className="mb-6 space-y-2 animate-slide-up">
-            {summary.errors.map((err) => (
-              <div
-                key={err.section}
-                className="rounded-md border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger"
-              >
-                <strong>{err.section}:</strong> {err.message}
-              </div>
-            ))}
-          </div>
-        )}
+        <ErrorMessages errors={summary.errors} />
 
         <MyPageBanner username={username} />
 
@@ -105,43 +85,7 @@ export default async function UserPage({ params }: Props) {
           </AnimatedWrapper>
         )}
 
-        {/* Grid */}
-        <div className="mt-8 grid gap-6 lg:grid-cols-2">
-          {/* Skills */}
-          {summary.repositories && (
-            <AnimatedWrapper delay="0.2s">
-              <SkillsCard repositories={summary.repositories} />
-            </AnimatedWrapper>
-          )}
-
-          {/* Contributions */}
-          {summary.contributions && (
-            <AnimatedWrapper delay="0.3s">
-              <ContributionsCard contributions={summary.contributions} />
-            </AnimatedWrapper>
-          )}
-
-          {/* Repos */}
-          {summary.repositories && (
-            <AnimatedWrapper delay="0.4s">
-              <ReposCard repositories={summary.repositories} />
-            </AnimatedWrapper>
-          )}
-
-          {/* Interests */}
-          {summary.interests && (
-            <AnimatedWrapper delay="0.5s">
-              <InterestsCard interests={summary.interests} />
-            </AnimatedWrapper>
-          )}
-
-          {/* Activity */}
-          {summary.activity && (
-            <AnimatedWrapper delay="0.6s">
-              <ActivityCard activity={summary.activity} />
-            </AnimatedWrapper>
-          )}
-        </div>
+        <UserSummaryGrid summary={summary} />
       </main>
 
       {/* Footer */}
