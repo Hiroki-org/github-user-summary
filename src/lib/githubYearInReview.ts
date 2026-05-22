@@ -196,12 +196,12 @@ async function fetchCommitDatesForTopRepos(
         const dates: string[] = [];
 
         for (let i = 0; i < candidates.length; i++) {
-            const repoData = response[`repo${i}`] as Record<string, unknown> | undefined;
-            const defaultBranchRef = repoData?.defaultBranchRef as Record<string, unknown> | undefined;
-            const target = defaultBranchRef?.target as Record<string, unknown> | undefined;
-            const history = target?.history as Record<string, unknown> | undefined;
-            const historyNodes = (history?.nodes as Array<Record<string, unknown>> | undefined) || [];
-            for (const node of historyNodes) {
+            // @ts-expect-error Optional chaining through unknown type for performance
+            const historyNodes = response[`repo${i}`]?.defaultBranchRef?.target?.history?.nodes as Array<Record<string, unknown>> | undefined;
+            if (!historyNodes) continue;
+
+            for (let j = 0; j < historyNodes.length; j++) {
+                const node = historyNodes[j];
                 const author = node?.author as Record<string, unknown> | undefined;
                 if (typeof author?.date === 'string') {
                     dates.push(author.date);
