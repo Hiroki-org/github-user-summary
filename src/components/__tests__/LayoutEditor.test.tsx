@@ -2,18 +2,23 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import LayoutEditor from "../LayoutEditor";
 import { CardLayout } from "@/lib/types";
-import "@testing-library/jest-dom";
+
+
+type WindowWithMock = Window & typeof globalThis & {
+  triggerDragEnd?: (event: { active: { id: string }, over: { id: string } | null }) => void;
+  mockIsOverId?: string;
+};
 
 // Mock dnd-kit components
 vi.mock("@dnd-kit/core", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@dnd-kit/core")>();
   return {
     ...actual,
-    DndContext: ({ children, onDragEnd }: { children: React.ReactNode; onDragEnd: (event: unknown) => void }) => (
+    DndContext: ({ children, onDragEnd }: { children: React.ReactNode; onDragEnd: (event: { active: { id: string }, over: { id: string } | null }) => void }) => (
       <div data-testid="dnd-context" onClick={() => {
         // Expose a way to trigger onDragEnd via a synthetic event or global for testing
         // We'll attach it to window for easy triggering
-        (window as unknown as { triggerDragEnd: (event: unknown) => void }).triggerDragEnd = onDragEnd;
+        (window as WindowWithMock).triggerDragEnd = onDragEnd;
       }}>
         {children}
       </div>
@@ -22,8 +27,7 @@ vi.mock("@dnd-kit/core", async (importOriginal) => {
     useSensor: vi.fn(() => ({})),
     useDroppable: ({ id }: { id: string }) => ({
       setNodeRef: vi.fn(),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      isOver: (window as any).mockIsOverId === id,
+      isOver: (window as WindowWithMock).mockIsOverId === id,
     }),
     PointerSensor: vi.fn(),
     KeyboardSensor: vi.fn(),
@@ -64,10 +68,8 @@ describe("LayoutEditor", () => {
   beforeEach(() => {
     mockOnLayoutChange = vi.fn();
     mockOnToggleVisibility = vi.fn();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).triggerDragEnd = undefined;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).mockIsOverId = undefined;
+    (window as WindowWithMock).triggerDragEnd = undefined;
+    (window as WindowWithMock).mockIsOverId = undefined;
   });
 
   it("renders blocks in their respective columns", () => {
@@ -119,12 +121,11 @@ describe("LayoutEditor", () => {
     const dndContext = screen.getByTestId("dnd-context");
     fireEvent.click(dndContext);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const triggerDragEnd = (window as any).triggerDragEnd;
+    const triggerDragEnd = (window as WindowWithMock).triggerDragEnd;
     expect(triggerDragEnd).toBeDefined();
 
     // Drag 'avatar' to 'right' column
-    triggerDragEnd({
+    triggerDragEnd?.({
       active: { id: "avatar" },
       over: { id: "right" },
     });
@@ -149,11 +150,10 @@ describe("LayoutEditor", () => {
     const dndContext = screen.getByTestId("dnd-context");
     fireEvent.click(dndContext);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const triggerDragEnd = (window as any).triggerDragEnd;
+    const triggerDragEnd = (window as WindowWithMock).triggerDragEnd;
 
     // Drag 'avatar' over 'topLanguages'
-    triggerDragEnd({
+    triggerDragEnd?.({
       active: { id: "avatar" },
       over: { id: "topLanguages" },
     });
@@ -178,9 +178,8 @@ describe("LayoutEditor", () => {
     const dndContext = screen.getByTestId("dnd-context");
     fireEvent.click(dndContext);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const triggerDragEnd = (window as any).triggerDragEnd;
-    triggerDragEnd({
+    const triggerDragEnd = (window as WindowWithMock).triggerDragEnd;
+    triggerDragEnd?.({
       active: { id: "avatar" },
       over: null,
     });
@@ -200,9 +199,8 @@ describe("LayoutEditor", () => {
     const dndContext = screen.getByTestId("dnd-context");
     fireEvent.click(dndContext);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const triggerDragEnd = (window as any).triggerDragEnd;
-    triggerDragEnd({
+    const triggerDragEnd = (window as WindowWithMock).triggerDragEnd;
+    triggerDragEnd?.({
       active: { id: "avatar" },
       over: { id: "avatar" },
     });
@@ -222,9 +220,8 @@ describe("LayoutEditor", () => {
     const dndContext = screen.getByTestId("dnd-context");
     fireEvent.click(dndContext);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const triggerDragEnd = (window as any).triggerDragEnd;
-    triggerDragEnd({
+    const triggerDragEnd = (window as WindowWithMock).triggerDragEnd;
+    triggerDragEnd?.({
       active: { id: "avatar" },
       over: { id: "non-existent-block" },
     });
@@ -250,11 +247,10 @@ describe("LayoutEditor", () => {
     const dndContext = screen.getByTestId("dnd-context");
     fireEvent.click(dndContext);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const triggerDragEnd = (window as any).triggerDragEnd;
+    const triggerDragEnd = (window as WindowWithMock).triggerDragEnd;
 
     // Drag 'avatar' over 'stats' (downwards)
-    triggerDragEnd({
+    triggerDragEnd?.({
       active: { id: "avatar" },
       over: { id: "stats" },
     });
@@ -278,11 +274,10 @@ describe("LayoutEditor", () => {
     const dndContext = screen.getByTestId("dnd-context");
     fireEvent.click(dndContext);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const triggerDragEnd = (window as any).triggerDragEnd;
+    const triggerDragEnd = (window as WindowWithMock).triggerDragEnd;
 
     // Drag 'avatar' to empty column 'right'
-    triggerDragEnd({
+    triggerDragEnd?.({
       active: { id: "avatar" },
       over: { id: "right" },
     });
