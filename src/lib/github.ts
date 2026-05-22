@@ -707,20 +707,26 @@ export const fetchActivity = cache(async function fetchActivity(
   );
 
   const eventCountMap = new Map<string, number>();
-  const dayCache = new Map<string, number>();
 
   for (const event of allEvents) {
     const createdAt = event.created_at;
-    const datePart = createdAt.slice(0, 10);
 
-    let day = dayCache.get(datePart);
-    if (day === undefined) {
-      day = new Date(datePart).getUTCDay(); // 0=Sun, 6=Sat
-      dayCache.set(datePart, day);
+    // Fast day extraction from YYYY-MM-DD
+    const charCodeZero = '0'.charCodeAt(0);
+    const y = (createdAt.charCodeAt(0) - charCodeZero) * 1000 + (createdAt.charCodeAt(1) - charCodeZero) * 100 + (createdAt.charCodeAt(2) - charCodeZero) * 10 + (createdAt.charCodeAt(3) - charCodeZero);
+    const m = (createdAt.charCodeAt(5) - charCodeZero) * 10 + (createdAt.charCodeAt(6) - charCodeZero);
+    const d = (createdAt.charCodeAt(8) - charCodeZero) * 10 + (createdAt.charCodeAt(9) - charCodeZero);
+
+    // Sakamoto's algorithm for day of week
+    const t = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
+    let sy = y;
+    if (m < 3) {
+      sy -= 1;
     }
+    const day = (sy + Math.floor(sy/4) - Math.floor(sy/100) + Math.floor(sy/400) + t[m-1] + d) % 7;
 
     // Fast hour extraction from YYYY-MM-DDTHH:MM:SSZ
-    const charCodeZero = '0'.charCodeAt(0);
+    // charCodeZero is already defined above
     const hour = (createdAt.charCodeAt(11) - charCodeZero) * 10 + (createdAt.charCodeAt(12) - charCodeZero);
     heatmap[day][hour]++;
 
