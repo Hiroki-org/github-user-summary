@@ -10,6 +10,7 @@ import { SettingsTab } from "./SettingsTab";
 import { ActionButtons } from "./ActionButtons";
 import { useCardSettings } from "@/hooks/useCardSettings";
 import { useCardPreview } from "@/hooks/useCardPreview";
+import { useModalFocus } from "@/hooks/useModalFocus";
 
 interface CardGeneratorModalProps {
   isOpen: boolean;
@@ -27,8 +28,6 @@ export default function CardGeneratorModal({
 
   const cardRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
-  const previousFocusRef = useRef<HTMLElement | null>(null);
-
   useEffect(() => {
     const timer = setTimeout(() => setMounted(true), 0);
     return () => clearTimeout(timer);
@@ -60,30 +59,7 @@ export default function CardGeneratorModal({
     setPreviewSize(null);
   }, [onClose, setPreviewSize, setPreviewUrl]);
 
-  useEffect(() => {
-    if (isOpen) {
-      previousFocusRef.current = document.activeElement as HTMLElement;
-
-      if (modalRef.current) {
-        modalRef.current.focus();
-      }
-
-      const handleKeyDown = (e: globalThis.KeyboardEvent) => {
-        if (e.key === "Escape") {
-          handleClose();
-        }
-      };
-
-      document.addEventListener("keydown", handleKeyDown);
-
-      return () => {
-        document.removeEventListener("keydown", handleKeyDown);
-        if (previousFocusRef.current) {
-          previousFocusRef.current.focus();
-        }
-      };
-    }
-  }, [isOpen, handleClose]);
+  useModalFocus(isOpen, modalRef, handleClose);
 
   if (!isOpen || !mounted) return null;
 
