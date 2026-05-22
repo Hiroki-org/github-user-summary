@@ -22,8 +22,7 @@ vi.mock("@dnd-kit/core", async (importOriginal) => {
     useSensor: vi.fn(() => ({})),
     useDroppable: ({ id }: { id: string }) => ({
       setNodeRef: vi.fn(),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      isOver: (window as any).mockIsOverId === id,
+      isOver: (window as unknown as { mockIsOverId?: string }).mockIsOverId === id,
     }),
     PointerSensor: vi.fn(),
     KeyboardSensor: vi.fn(),
@@ -58,16 +57,16 @@ const defaultLayout: CardLayout = {
 };
 
 describe("LayoutEditor", () => {
+  type MockWindow = typeof window & { triggerDragEnd?: (event: unknown) => void; mockIsOverId?: string; };
+  const mockWindow = window as unknown as MockWindow;
   let mockOnLayoutChange: ReturnType<typeof vi.fn>;
   let mockOnToggleVisibility: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     mockOnLayoutChange = vi.fn();
     mockOnToggleVisibility = vi.fn();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).triggerDragEnd = undefined;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).mockIsOverId = undefined;
+    mockWindow.triggerDragEnd = undefined;
+    mockWindow.mockIsOverId = undefined;
   });
 
   it("renders blocks in their respective columns", () => {
@@ -119,8 +118,7 @@ describe("LayoutEditor", () => {
     const dndContext = screen.getByTestId("dnd-context");
     fireEvent.click(dndContext);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const triggerDragEnd = (window as any).triggerDragEnd;
+    const triggerDragEnd = mockWindow.triggerDragEnd;
     expect(triggerDragEnd).toBeDefined();
 
     // Drag 'avatar' to 'right' column
@@ -149,8 +147,7 @@ describe("LayoutEditor", () => {
     const dndContext = screen.getByTestId("dnd-context");
     fireEvent.click(dndContext);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const triggerDragEnd = (window as any).triggerDragEnd;
+    const triggerDragEnd = mockWindow.triggerDragEnd;
 
     // Drag 'avatar' over 'topLanguages'
     triggerDragEnd({
@@ -178,8 +175,7 @@ describe("LayoutEditor", () => {
     const dndContext = screen.getByTestId("dnd-context");
     fireEvent.click(dndContext);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const triggerDragEnd = (window as any).triggerDragEnd;
+    const triggerDragEnd = mockWindow.triggerDragEnd;
     triggerDragEnd({
       active: { id: "avatar" },
       over: null,
@@ -200,8 +196,7 @@ describe("LayoutEditor", () => {
     const dndContext = screen.getByTestId("dnd-context");
     fireEvent.click(dndContext);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const triggerDragEnd = (window as any).triggerDragEnd;
+    const triggerDragEnd = mockWindow.triggerDragEnd;
     triggerDragEnd({
       active: { id: "avatar" },
       over: { id: "avatar" },
@@ -222,8 +217,7 @@ describe("LayoutEditor", () => {
     const dndContext = screen.getByTestId("dnd-context");
     fireEvent.click(dndContext);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const triggerDragEnd = (window as any).triggerDragEnd;
+    const triggerDragEnd = mockWindow.triggerDragEnd;
     triggerDragEnd({
       active: { id: "avatar" },
       over: { id: "non-existent-block" },
@@ -250,8 +244,7 @@ describe("LayoutEditor", () => {
     const dndContext = screen.getByTestId("dnd-context");
     fireEvent.click(dndContext);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const triggerDragEnd = (window as any).triggerDragEnd;
+    const triggerDragEnd = mockWindow.triggerDragEnd;
 
     // Drag 'avatar' over 'stats' (downwards)
     triggerDragEnd({
@@ -278,8 +271,7 @@ describe("LayoutEditor", () => {
     const dndContext = screen.getByTestId("dnd-context");
     fireEvent.click(dndContext);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const triggerDragEnd = (window as any).triggerDragEnd;
+    const triggerDragEnd = mockWindow.triggerDragEnd;
 
     // Drag 'avatar' to empty column 'right'
     triggerDragEnd({
