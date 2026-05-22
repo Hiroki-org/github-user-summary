@@ -126,7 +126,7 @@ describe("LayoutEditor", () => {
     expect(triggerDragEnd).toBeDefined();
 
     // Drag 'avatar' to 'right' column
-    triggerDragEnd({
+    triggerDragEnd!({
       active: { id: "avatar" },
       over: { id: "right" },
     });
@@ -154,7 +154,7 @@ describe("LayoutEditor", () => {
     const triggerDragEnd = (window as unknown as WindowWithDragState).triggerDragEnd;
 
     // Drag 'avatar' over 'topLanguages'
-    triggerDragEnd({
+    triggerDragEnd!({
       active: { id: "avatar" },
       over: { id: "topLanguages" },
     });
@@ -180,7 +180,7 @@ describe("LayoutEditor", () => {
     fireEvent.click(dndContext);
 
     const triggerDragEnd = (window as unknown as WindowWithDragState).triggerDragEnd;
-    triggerDragEnd({
+    triggerDragEnd!({
       active: { id: "avatar" },
       over: null,
     });
@@ -201,7 +201,7 @@ describe("LayoutEditor", () => {
     fireEvent.click(dndContext);
 
     const triggerDragEnd = (window as unknown as WindowWithDragState).triggerDragEnd;
-    triggerDragEnd({
+    triggerDragEnd!({
       active: { id: "avatar" },
       over: { id: "avatar" },
     });
@@ -222,7 +222,7 @@ describe("LayoutEditor", () => {
     fireEvent.click(dndContext);
 
     const triggerDragEnd = (window as unknown as WindowWithDragState).triggerDragEnd;
-    triggerDragEnd({
+    triggerDragEnd!({
       active: { id: "avatar" },
       over: { id: "non-existent-block" },
     });
@@ -251,7 +251,7 @@ describe("LayoutEditor", () => {
     const triggerDragEnd = (window as unknown as WindowWithDragState).triggerDragEnd;
 
     // Drag 'avatar' over 'stats' (downwards)
-    triggerDragEnd({
+    triggerDragEnd!({
       active: { id: "avatar" },
       over: { id: "stats" },
     });
@@ -278,7 +278,7 @@ describe("LayoutEditor", () => {
     const triggerDragEnd = (window as unknown as WindowWithDragState).triggerDragEnd;
 
     // Drag 'avatar' to empty column 'right'
-    triggerDragEnd({
+    triggerDragEnd!({
       active: { id: "avatar" },
       over: { id: "right" },
     });
