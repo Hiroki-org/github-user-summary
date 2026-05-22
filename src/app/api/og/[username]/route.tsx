@@ -11,30 +11,7 @@ const ONE_HOUR_IN_SECONDS = 60 * 60;
 const ONE_DAY_IN_SECONDS = 24 * ONE_HOUR_IN_SECONDS;
 const OG_CACHE_CONTROL = `public, max-age=${ONE_HOUR_IN_SECONDS}, s-maxage=${ONE_DAY_IN_SECONDS}, stale-while-revalidate=${ONE_DAY_IN_SECONDS}`;
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ username: string }> }
-) {
-  const { username } = await params;
-
-  const forwarded = request.headers.get("x-forwarded-for");
-  const ip = forwarded ? forwarded.split(",").at(-1)?.trim() ?? "unknown" : "unknown";
-  const rateLimitResult = rateLimiter.check(ip);
-
-  if (!rateLimitResult.success) {
-    const retryAfterSec = Math.ceil((rateLimitResult.reset - Date.now()) / 1000);
-    return new Response("Rate limit exceeded", {
-      status: 429,
-      headers: { "Retry-After": String(retryAfterSec > 0 ? retryAfterSec : 0) },
-    });
-  }
-
-  if (!isValidGitHubUsername(username)) {
-    return new Response("Invalid username", { status: 400 });
-  }
-
-
-  // Fetch minimal profile data for the OG image
+async function fetchGitHubProfile(username: string) {
   let name = username;
   let bio = "";
   let avatarUrl = "";
@@ -59,122 +36,167 @@ export async function GET(
     }
   } catch (error) {
     logger.error(`Failed to fetch GitHub profile for OG image: ${username}`, error);
-    // fallback to defaults
   }
 
-  return new ImageResponse(
-    (
+  return { name, bio, avatarUrl, followers, publicRepos };
+}
+
+function OgImageTemplate({
+  username,
+  name,
+  bio,
+  avatarUrl,
+  followers,
+  publicRepos,
+}: {
+  username: string;
+  name: string;
+  bio: string;
+  avatarUrl: string;
+  followers: number;
+  publicRepos: number;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        width: "100%",
+        height: "100%",
+        backgroundColor: "#0d1117",
+        padding: "60px",
+        fontFamily: "sans-serif",
+      }}
+    >
+      {/* Top bar */}
       <div
         style={{
           display: "flex",
-          flexDirection: "column",
-          width: "100%",
-          height: "100%",
-          backgroundColor: "#0d1117",
-          padding: "60px",
-          fontFamily: "sans-serif",
+          alignItems: "center",
+          marginBottom: "40px",
         }}
       >
-        {/* Top bar */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            marginBottom: "40px",
-          }}
-        >
-          {avatarUrl && (
-            <img
-              src={sanitizeUrl(avatarUrl)}
-              alt=""
-              width={120}
-              height={120}
-              style={{
-                borderRadius: "60px",
-                marginRight: "32px",
-                border: "3px solid #30363d",
-              }}
-            />
-          )}
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <div
-              style={{
-                fontSize: "48px",
-                fontWeight: 700,
-                color: "#e6edf3",
-                lineHeight: 1.2,
-              }}
-            >
-              {name}
-            </div>
-            <div
-              style={{
-                fontSize: "28px",
-                color: "#8b949e",
-                marginTop: "4px",
-              }}
-            >
-              @{username}
-            </div>
-          </div>
-        </div>
-
-        {/* Bio */}
-        {bio && (
+        {avatarUrl && (
+          <img
+            src={sanitizeUrl(avatarUrl)}
+            alt=""
+            width={120}
+            height={120}
+            style={{
+              borderRadius: "60px",
+              marginRight: "32px",
+              border: "3px solid #30363d",
+            }}
+          />
+        )}
+        <div style={{ display: "flex", flexDirection: "column" }}>
           <div
             style={{
-              fontSize: "24px",
-              color: "#8b949e",
-              marginBottom: "40px",
-              lineHeight: 1.4,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              maxHeight: "68px",
+              fontSize: "48px",
+              fontWeight: 700,
+              color: "#e6edf3",
+              lineHeight: 1.2,
             }}
           >
-            {bio.length > 120 ? `${bio.slice(0, 120)}…` : bio}
+            {name}
           </div>
-        )}
-
-        {/* Stats */}
-        <div
-          style={{
-            display: "flex",
-            gap: "48px",
-            marginTop: "auto",
-          }}
-        >
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ fontSize: "36px", fontWeight: 700, color: "#58a6ff" }}>
-              {publicRepos.toLocaleString()}
-            </div>
-            <div style={{ fontSize: "18px", color: "#8b949e", marginTop: "4px" }}>
-              Repositories
-            </div>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ fontSize: "36px", fontWeight: 700, color: "#58a6ff" }}>
-              {followers.toLocaleString()}
-            </div>
-            <div style={{ fontSize: "18px", color: "#8b949e", marginTop: "4px" }}>
-              Followers
-            </div>
-          </div>
-        </div>
-
-        {/* Branding */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            marginTop: "32px",
-          }}
-        >
-          <div style={{ fontSize: "20px", color: "#484f58" }}>
-            GitHub User Summary
+          <div
+            style={{
+              fontSize: "28px",
+              color: "#8b949e",
+              marginTop: "4px",
+            }}
+          >
+            @{username}
           </div>
         </div>
       </div>
+
+      {/* Bio */}
+      {bio && (
+        <div
+          style={{
+            fontSize: "24px",
+            color: "#8b949e",
+            marginBottom: "40px",
+            lineHeight: 1.4,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            maxHeight: "68px",
+          }}
+        >
+          {bio.length > 120 ? `${bio.slice(0, 120)}…` : bio}
+        </div>
+      )}
+
+      {/* Stats */}
+      <div
+        style={{
+          display: "flex",
+          gap: "48px",
+          marginTop: "auto",
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={{ fontSize: "36px", fontWeight: 700, color: "#58a6ff" }}>
+            {publicRepos.toLocaleString()}
+          </div>
+          <div style={{ fontSize: "18px", color: "#8b949e", marginTop: "4px" }}>
+            Repositories
+          </div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={{ fontSize: "36px", fontWeight: 700, color: "#58a6ff" }}>
+            {followers.toLocaleString()}
+          </div>
+          <div style={{ fontSize: "18px", color: "#8b949e", marginTop: "4px" }}>
+            Followers
+          </div>
+        </div>
+      </div>
+
+      {/* Branding */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          marginTop: "32px",
+        }}
+      >
+        <div style={{ fontSize: "20px", color: "#484f58" }}>
+          GitHub User Summary
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ username: string }> }
+) {
+  const { username } = await params;
+
+  const ip = request.ip ?? "unknown";
+  const rateLimitResult = rateLimiter.check(ip);
+
+  if (!rateLimitResult.success) {
+    const retryAfterSec = Math.ceil((rateLimitResult.reset - Date.now()) / 1000);
+    return new Response("Rate limit exceeded", {
+      status: 429,
+      headers: { "Retry-After": String(retryAfterSec > 0 ? retryAfterSec : 0) },
+    });
+  }
+
+  if (!isValidGitHubUsername(username)) {
+    return new Response("Invalid username", { status: 400 });
+  }
+
+  const profileData = await fetchGitHubProfile(username);
+
+  return new ImageResponse(
+    (
+      <OgImageTemplate username={username} {...profileData} />
     ),
     {
       width: 1200,
