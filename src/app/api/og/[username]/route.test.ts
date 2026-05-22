@@ -37,7 +37,7 @@ describe("OG Image Route", () => {
       Promise.resolve(new Response(JSON.stringify({ name: "Valid User" }), { status: 200 }))
     );
 
-    const req = new NextRequest("http://localhost/api/og/validuser");
+    const req = new NextRequest("http://localhost/api/og/validuser", { headers: { "x-forwarded-for": "test-ip-valid" } });
     const res = await GET(req, { params: Promise.resolve({ username: "validuser" }) });
 
     expect(res.status).toBe(200);
@@ -52,8 +52,10 @@ describe("OG Image Route", () => {
     );
 
     // Generate more than 50 requests to hit the rate limit (limit is 50 per minute)
-    const req = new NextRequest("http://localhost/api/og/validuser");
-    Object.defineProperty(req, 'ip', { value: 'test-ip' });
+    // We must use a unique IP to not be affected by the rate limit of previous tests.
+    const req = new NextRequest("http://localhost/api/og/validuser", {
+      headers: { "x-forwarded-for": "test-ip-rate-limit" }
+    });
 
     // Send 50 successful requests
     for (let i = 0; i < 50; i++) {
