@@ -19,7 +19,7 @@ export async function GET(
 
   const forwarded = request.headers.get("x-forwarded-for");
   const ip = forwarded ? forwarded.split(",").at(-1)?.trim() ?? "unknown" : "unknown";
-  const rateLimitResult = rateLimiter.check(ip);
+  const rateLimitResult = await rateLimiter.check(ip);
 
   if (!rateLimitResult.success) {
     const retryAfterSec = Math.ceil((rateLimitResult.reset - Date.now()) / 1000);

@@ -1,8 +1,22 @@
+import { Redis } from "@upstash/redis";
+import { Ratelimit } from "@upstash/ratelimit";
 
 export class RateLimiter {
     private cache = new Map<string, { count: number; resetTime: number }>();
+    private upstashRatelimit: Ratelimit | null = null;
 
-    constructor(private limit: number, private windowMs: number) {}
+    constructor(private limit: number, private windowMs: number) {
+        if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+            const redis = new Redis({
+                url: process.env.UPSTASH_REDIS_REST_URL,
+                token: process.env.UPSTASH_REDIS_REST_TOKEN,
+            });
+            this.upstashRatelimit = new Ratelimit({
+                redis: redis,
+                limiter: Ratelimit.slidingWindow(this.limit, `${this.windowMs} ms`),
+            });
+        }
+    }
 
     private cleanup(now: number) {
         for (const [key, record] of this.cache.entries()) {
@@ -12,7 +26,13 @@ export class RateLimiter {
         }
     }
 
-    check(key: string): { success: boolean; reset: number } {
+    async check(key: string): Promise<{ success: boolean; reset: number }> {
+        if (this.upstashRatelimit) {
+            const { success, reset } = await this.upstashRatelimit.limit(key);
+            return { success, reset };
+        }
+
+        // Fallback to in-memory caching
         const now = Date.now();
         this.cleanup(now); // Lazy cleanup
 
