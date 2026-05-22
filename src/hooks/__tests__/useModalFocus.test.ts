@@ -21,19 +21,19 @@ describe("useModalFocus", () => {
 
   test("focuses modalRef when isOpen is true", () => {
     const focusSpy = vi.spyOn(modalRef.current!, "focus");
-    renderHook(() => useModalFocus(true, modalRef, onClose));
+    renderHook(() => useModalFocus(true, modalRef, onClose as unknown as () => void));
     expect(focusSpy).toHaveBeenCalledTimes(1);
   });
 
   test("does not focus modalRef when isOpen is false", () => {
     const focusSpy = vi.spyOn(modalRef.current!, "focus");
-    renderHook(() => useModalFocus(false, modalRef, onClose));
+    renderHook(() => useModalFocus(false, modalRef, onClose as unknown as () => void));
     expect(focusSpy).not.toHaveBeenCalled();
   });
 
   test("adds and removes keydown event listener based on isOpen", () => {
-    const { unmount, rerender } = renderHook(
-      ({ isOpen }) => useModalFocus(isOpen, modalRef, onClose),
+    const { unmount } = renderHook(
+      ({ isOpen }) => useModalFocus(isOpen, modalRef, onClose as unknown as () => void),
       { initialProps: { isOpen: true } }
     );
 
@@ -44,10 +44,10 @@ describe("useModalFocus", () => {
   });
 
   test("calls onClose when Escape key is pressed", () => {
-    renderHook(() => useModalFocus(true, modalRef, onClose));
+    renderHook(() => useModalFocus(true, modalRef, onClose as unknown as () => void));
 
     const eventListenerCall = addEventListenerSpy.mock.calls.find(
-      (call) => call[0] === "keydown"
+      (call: unknown[]) => call[0] === "keydown"
     );
     const handler = eventListenerCall![1] as EventListener;
 
