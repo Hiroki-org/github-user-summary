@@ -9,7 +9,6 @@ interface WindowWithDragState extends Window {
   mockIsOverId?: string;
 }
 
-
 // Mock dnd-kit components
 vi.mock("@dnd-kit/core", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@dnd-kit/core")>();
