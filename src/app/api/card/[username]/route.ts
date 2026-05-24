@@ -1,5 +1,3 @@
-import { NextRequest } from "next/server";
-
 import { RateLimiter } from "@/lib/rateLimit";
 import { fetchCardData } from "@/lib/cardDataFetcher";
 import { parseCardQueryParams, renderCardResponse, renderErrorCardResponse } from "@/lib/cardRenderer";
@@ -10,6 +8,8 @@ const rateLimiter = new RateLimiter(50, 60 * 1000); // 50 requests per minute
 
 const SUCCESS_CACHE = "public, s-maxage=1800, stale-while-revalidate=3600";
 const ERROR_CACHE = "public, s-maxage=60, stale-while-revalidate=120";
+
+import { NextRequest } from "next/server";
 
 export async function GET(
     request: NextRequest,
