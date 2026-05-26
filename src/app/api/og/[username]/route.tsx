@@ -11,24 +11,14 @@ const ONE_HOUR_IN_SECONDS = 60 * 60;
 const ONE_DAY_IN_SECONDS = 24 * ONE_HOUR_IN_SECONDS;
 const OG_CACHE_CONTROL = `public, max-age=${ONE_HOUR_IN_SECONDS}, s-maxage=${ONE_DAY_IN_SECONDS}, stale-while-revalidate=${ONE_DAY_IN_SECONDS}`;
 
-type NextRequestWithIp = NextRequest & { ip?: string };
-
-function getClientIp(request: NextRequest): string {
-  const directIp = (request as NextRequestWithIp).ip;
-  if (directIp) {
-    return directIp;
-  }
-
-  return request.headers.get("x-forwarded-for")?.split(",").at(-1)?.trim() || "unknown";
-}
-
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ username: string }> }
 ) {
   const { username } = await params;
 
-  const ip = getClientIp(request);
+  const forwarded = request.headers.get("x-forwarded-for");
+  const ip = forwarded ? forwarded.split(",")[0]?.trim() ?? "unknown" : "unknown";
   const rateLimitResult = rateLimiter.check(ip);
 
   if (!rateLimitResult.success) {

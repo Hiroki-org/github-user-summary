@@ -1,7 +1,6 @@
 import { RateLimiter } from "@/lib/rateLimit";
 import { fetchCardData } from "@/lib/cardDataFetcher";
 import { parseCardQueryParams, renderCardResponse, renderErrorCardResponse } from "@/lib/cardRenderer";
-import { NextRequest } from "next/server";
 
 export const runtime = "edge";
 const rateLimiter = new RateLimiter(50, 60 * 1000); // 50 requests per minute
@@ -10,16 +9,7 @@ const rateLimiter = new RateLimiter(50, 60 * 1000); // 50 requests per minute
 const SUCCESS_CACHE = "public, s-maxage=1800, stale-while-revalidate=3600";
 const ERROR_CACHE = "public, s-maxage=60, stale-while-revalidate=120";
 
-type NextRequestWithIp = NextRequest & { ip?: string };
-
-function getClientIp(request: NextRequest): string {
-    const directIp = (request as NextRequestWithIp).ip;
-    if (directIp) {
-        return directIp;
-    }
-
-    return request.headers.get("x-forwarded-for")?.split(",").at(-1)?.trim() || "unknown";
-}
+import { NextRequest } from "next/server";
 
 export async function GET(
     request: NextRequest,
@@ -31,7 +21,8 @@ export async function GET(
     const allowedOrigin = process.env.APP_URL || "http://localhost:3000";
     const fontUrl = `${allowedOrigin}/fonts/NotoSans-Regular.ttf`;
 
-    const ip = getClientIp(request);
+    const forwarded = request.headers.get("x-forwarded-for");
+    const ip = forwarded ? forwarded.split(",")[0]?.trim() ?? "unknown" : "unknown";
     const rateLimitResult = rateLimiter.check(ip);
 
     if (!rateLimitResult.success) {

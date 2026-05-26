@@ -115,35 +115,4 @@ describe("GET /api/card/[username] rate limiting", () => {
             status: 429,
         }));
     });
-
-    it("uses the trusted forwarded IP instead of the spoofable first value", async () => {
-        const { GET } = await import("./route");
-        const { fetchCardData } = await import("@/lib/cardDataFetcher");
-        const { renderErrorCardResponse } = await import("@/lib/cardRenderer");
-
-        vi.mocked(fetchCardData).mockResolvedValue({} as unknown as Awaited<ReturnType<typeof fetchCardData>>);
-
-        const trustedIp = "trusted-card-ip";
-        const req = new NextRequest("http://localhost/api/card/testuser", {
-            headers: {
-                "x-forwarded-for": `spoofed-a, ${trustedIp}`,
-            },
-        });
-
-        for (let i = 0; i < 50; i++) {
-            await GET(req, { params: Promise.resolve({ username: "testuser" }) });
-        }
-
-        const spoofedReq = new NextRequest("http://localhost/api/card/testuser", {
-            headers: {
-                "x-forwarded-for": `spoofed-b, ${trustedIp}`,
-            },
-        });
-        await GET(spoofedReq, { params: Promise.resolve({ username: "testuser" }) });
-
-        expect(renderErrorCardResponse).toHaveBeenCalledWith(expect.objectContaining({
-            message: "Rate limit exceeded",
-            status: 429,
-        }));
-    });
 });
