@@ -72,4 +72,27 @@ describe("OG Image Route", () => {
     // fetch should only have been called 50 times (not on the 51st)
     expect(mockFetch).toHaveBeenCalledTimes(50);
   });
+
+  it("rate limits by the trusted forwarded IP instead of the spoofable first value", async () => {
+    const mockFetch = vi.spyOn(global, "fetch").mockImplementation(() =>
+      Promise.resolve(new Response(JSON.stringify({ name: "Valid User" }), { status: 200 }))
+    );
+
+    const trustedIp = "trusted-og-ip";
+    const req = new NextRequest("http://localhost/api/og/validuser", {
+      headers: { "x-forwarded-for": `spoofed-a, ${trustedIp}` },
+    });
+
+    for (let i = 0; i < 50; i++) {
+      await GET(req, { params: Promise.resolve({ username: "validuser" }) });
+    }
+
+    const spoofedReq = new NextRequest("http://localhost/api/og/validuser", {
+      headers: { "x-forwarded-for": `spoofed-b, ${trustedIp}` },
+    });
+    const res = await GET(spoofedReq, { params: Promise.resolve({ username: "validuser" }) });
+
+    expect(res.status).toBe(429);
+    expect(mockFetch).toHaveBeenCalledTimes(50);
+  });
 });
