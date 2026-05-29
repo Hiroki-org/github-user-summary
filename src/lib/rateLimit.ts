@@ -28,8 +28,12 @@ export class RateLimiter {
 
     async check(key: string): Promise<{ success: boolean; reset: number }> {
         if (this.upstashRatelimit) {
-            const { success, reset } = await this.upstashRatelimit.limit(key);
-            return { success, reset };
+            try {
+                const { success, reset } = await this.upstashRatelimit.limit(key);
+                return { success, reset };
+            } catch (error) {
+                console.warn("Upstash rate limit check failed; falling back to in-memory limiter.", error);
+            }
         }
 
         // Fallback to in-memory caching
