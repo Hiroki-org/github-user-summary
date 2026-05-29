@@ -21,7 +21,6 @@ export default defineConfig({
         "src/components/LanguageChart.tsx",
         "src/components/SkillsCard.tsx",
         "src/components/LayoutEditor.tsx",
-        "src/hooks/useModalFocus.ts",
       ],
       thresholds: {
         lines: 80,

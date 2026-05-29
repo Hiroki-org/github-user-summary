@@ -57,4 +57,20 @@ describe("useModalFocus", () => {
     handler(new KeyboardEvent("keydown", { key: "Enter" }));
     expect(onClose).toHaveBeenCalledTimes(1); // Should not increase
   });
+
+  test("restores focus to the previously active element on cleanup", () => {
+    const previousElement = document.createElement("button");
+    document.body.appendChild(previousElement);
+    previousElement.focus();
+    const previousFocusSpy = vi.spyOn(previousElement, "focus");
+
+    const { unmount } = renderHook(() =>
+      useModalFocus(true, modalRef, onClose as unknown as () => void)
+    );
+
+    unmount();
+
+    expect(previousFocusSpy).toHaveBeenCalledTimes(1);
+    previousElement.remove();
+  });
 });
