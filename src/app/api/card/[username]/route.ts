@@ -20,7 +20,7 @@ export async function GET(
     const fontUrl = `${allowedOrigin}/fonts/NotoSans-Regular.ttf`;
 
     const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-    const rateLimitResult = rateLimiter.check(ip);
+    const rateLimitResult = await rateLimiter.check(ip);
 
     if (!rateLimitResult.success) {
         return renderErrorCardResponse({

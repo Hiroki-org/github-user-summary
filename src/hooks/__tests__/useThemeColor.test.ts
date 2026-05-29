@@ -6,15 +6,12 @@ import * as colorLib from "@/lib/color";
 import { FastAverageColor } from "fast-average-color";
 
 // Mock fast-average-color
-interface MockFastAverageColor {
-  getColorAsync: ReturnType<typeof vi.fn>;
-  destroy: ReturnType<typeof vi.fn>;
-}
 vi.mock("fast-average-color", () => {
   const mockGetColorAsync = vi.fn();
   const mockDestroy = vi.fn();
   return {
-    FastAverageColor: vi.fn().mockImplementation(function(this: MockFastAverageColor) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    FastAverageColor: vi.fn().mockImplementation(function(this: any) {
       this.getColorAsync = mockGetColorAsync;
       this.destroy = mockDestroy;
       return this;
