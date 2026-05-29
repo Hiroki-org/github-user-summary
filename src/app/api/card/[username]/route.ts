@@ -9,10 +9,8 @@ const rateLimiter = new RateLimiter(50, 60 * 1000); // 50 requests per minute
 const SUCCESS_CACHE = "public, s-maxage=1800, stale-while-revalidate=3600";
 const ERROR_CACHE = "public, s-maxage=60, stale-while-revalidate=120";
 
-import { NextRequest } from "next/server";
-
 export async function GET(
-    request: NextRequest,
+    request: Request,
     { params }: { params: Promise<{ username: string }> }
 ): Promise<Response> {
     const { username } = await params;
@@ -21,8 +19,7 @@ export async function GET(
     const allowedOrigin = process.env.APP_URL || "http://localhost:3000";
     const fontUrl = `${allowedOrigin}/fonts/NotoSans-Regular.ttf`;
 
-    const forwarded = request.headers.get("x-forwarded-for");
-    const ip = forwarded ? forwarded.split(",")[0]?.trim() ?? "unknown" : "unknown";
+    const ip = request.headers.get("x-forwarded-for") ?? "unknown";
     const rateLimitResult = rateLimiter.check(ip);
 
     if (!rateLimitResult.success) {
