@@ -682,15 +682,15 @@ export const fetchActivity = cache(async function fetchActivity(
     )
   );
 
-  // Suppress unhandled promise rejections for subsequent pages if we break early or throw
-  promises.forEach((p) => p.catch((e) => logger.error("Event fetch promise rejected:", e)));
-
-  for (const p of promises) {
-    try {
-      const events = await p;
+  const results = await Promise.allSettled(promises);
+  for (const result of results) {
+    if (result.status === "fulfilled") {
+      const events = result.value;
       allEvents.push(...events);
       if (events.length < 100) break;
-    } catch (error) {
+    } else {
+      const error = result.reason;
+      logger.error("Event fetch promise rejected:", error);
       if (
         error instanceof UserNotFoundError ||
         error instanceof RateLimitError
