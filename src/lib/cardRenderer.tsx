@@ -30,6 +30,7 @@ function getFontData(fontUrl?: string, allowedOrigin?: string): Promise<ArrayBuf
     const pending = fetch(targetUrl, {
       cache: "force-cache",
       signal: controller.signal,
+      redirect: "error",
     })
       .then((response) => {
         if (!response.ok) {
