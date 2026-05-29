@@ -427,20 +427,9 @@ function processRepoData(repos: RepoNode[]): RepositoryData {
   }
 
   const totalBytes = Array.from(languageMap.values()).reduce((a, b) => a + b.bytes, 0);
-  const topLanguages: { name: string; bytes: number; color: string }[] = [];
-  for (const [name, data] of languageMap.entries()) {
-    if (topLanguages.length < 10) {
-      topLanguages.push({ name, ...data });
-      topLanguages.sort((a, b) => b.bytes - a.bytes);
-    } else if (data.bytes > topLanguages[9].bytes) {
-      let i = 8;
-      while (i >= 0 && topLanguages[i].bytes < data.bytes) {
-        topLanguages[i + 1] = topLanguages[i];
-        i--;
-      }
-      topLanguages[i + 1] = { name, ...data };
-    }
-  }
+  const topLanguages = Array.from(languageMap, ([name, data]) => ({ name, ...data }))
+    .sort((a, b) => b.bytes - a.bytes)
+    .slice(0, 10);
 
   const languages: LanguageStats[] = topLanguages.map(({ name, bytes, color }) => ({
     name,
@@ -746,21 +735,9 @@ export const fetchActivity = cache(async function fetchActivity(
  * 配列の作成とソートを最小限に抑えることでパフォーマンスを向上させます
  */
 function getTopK(map: Map<string, number>, k: number = 10): { name: string; count: number }[] {
-  const top: { name: string; count: number }[] = [];
-  for (const [name, count] of map.entries()) {
-    if (top.length < k) {
-      top.push({ name, count });
-      top.sort((a, b) => b.count - a.count);
-    } else if (count > top[k - 1].count) {
-      let i = k - 2;
-      while (i >= 0 && top[i].count < count) {
-        top[i + 1] = top[i];
-        i--;
-      }
-      top[i + 1] = { name, count };
-    }
-  }
-  return top;
+  return Array.from(map, ([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, k);
 }
 
 /**
