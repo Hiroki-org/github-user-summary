@@ -123,3 +123,34 @@ export function getMostActiveDayFromCalendar(calendar: { date: string; count: nu
 
     return weekdayNames[maxDay];
 }
+
+
+/**
+ * Calculates the day of the week from a YYYY-MM-DD date string using Sakamoto's algorithm.
+ *
+ * @param dateString The date string to parse.
+ * @returns The day of the week (0-6) or null if invalid.
+ */
+export function getWeekdayFromDateString(dateString: string): number | null {
+    if (dateString.length !== 10 || dateString[4] !== '-' || dateString[7] !== '-') {
+        const d = new Date(dateString + "T00:00:00Z");
+        const day = d.getUTCDay();
+        return Number.isNaN(day) ? null : day;
+    }
+
+    let y = parseInt(dateString.slice(0, 4), 10);
+    const m = parseInt(dateString.slice(5, 7), 10);
+    const d = parseInt(dateString.slice(8, 10), 10);
+
+    if (Number.isNaN(y) || Number.isNaN(m) || Number.isNaN(d) || m < 1 || m > 12 || d < 1 || d > 31) {
+        const fallback = new Date(dateString + "T00:00:00Z");
+        const day = fallback.getUTCDay();
+        return Number.isNaN(day) ? null : day;
+    }
+
+    const t = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
+    if (m < 3) {
+        y -= 1;
+    }
+    return (y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) + t[m - 1] + d) % 7;
+}

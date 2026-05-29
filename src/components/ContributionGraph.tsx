@@ -1,4 +1,5 @@
 import HeatmapLegend from "./HeatmapLegend";
+import { getWeekdayFromDateString } from "@/lib/yearInReviewUtils";
 import type { ContributionData } from "@/lib/types";
 
 type Props = {
@@ -35,10 +36,16 @@ function processCalendarData(calendar: ContributionData["calendar"]) {
   // Group entries by week columns
   const entries = calendar
     .map((d) => {
-      const date = new Date(d.date + "T00:00:00");
-      return { ...d, dateObj: date, dayOfWeek: date.getDay() };
+      const dayOfWeek = getWeekdayFromDateString(d.date) ?? 0;
+      let month = 0;
+      if (d.date.length >= 7 && d.date[4] === "-") {
+          month = parseInt(d.date.slice(5, 7), 10) - 1;
+      } else {
+          month = new Date(d.date + "T00:00:00").getMonth();
+      }
+      return { ...d, month, dayOfWeek };
     })
-    .sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 
   const weeks: (typeof entries)[] = [];
   let currentWeek: typeof entries = [];
@@ -57,8 +64,8 @@ function processCalendarData(calendar: ContributionData["calendar"]) {
   let lastMonth = -1;
   weeks.forEach((week, wIdx) => {
     const firstEntry = week[0];
-    const month = firstEntry.dateObj.getMonth();
-    if (month !== lastMonth) {
+    const month = firstEntry.month;
+    if (month !== lastMonth && !Number.isNaN(month)) {
       monthLabels.push({
         label: MONTHS[month],
         x: DAY_LABEL_WIDTH + wIdx * STEP,
