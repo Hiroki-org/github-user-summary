@@ -4,15 +4,10 @@ export function useModalFocus(
   isOpen: boolean,
   modalRef: React.RefObject<HTMLElement | null>,
   onClose: () => void
-): void {
+) {
   const previousFocusRef = useRef<HTMLElement | null>(null);
-  const onCloseRef = useRef(onClose);
 
-  useEffect((): void => {
-    onCloseRef.current = onClose;
-  }, [onClose]);
-
-  useEffect((): (() => void) | void => {
+  useEffect(() => {
     if (isOpen) {
       previousFocusRef.current = document.activeElement as HTMLElement;
 
@@ -20,20 +15,20 @@ export function useModalFocus(
         modalRef.current.focus();
       }
 
-      const handleKeyDown = (e: globalThis.KeyboardEvent): void => {
+      const handleKeyDown = (e: globalThis.KeyboardEvent) => {
         if (e.key === "Escape") {
-          onCloseRef.current();
+          onClose();
         }
       };
 
       document.addEventListener("keydown", handleKeyDown);
 
-      return (): void => {
+      return () => {
         document.removeEventListener("keydown", handleKeyDown);
         if (previousFocusRef.current) {
           previousFocusRef.current.focus();
         }
       };
     }
-  }, [isOpen]);
+  }, [isOpen, onClose, modalRef]);
 }

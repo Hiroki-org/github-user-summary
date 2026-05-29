@@ -59,7 +59,7 @@ export default function CardGeneratorModal({
     setPreviewSize(null);
   }, [onClose, setPreviewSize, setPreviewUrl]);
 
-  useModalFocus(isOpen && mounted, modalRef, handleClose);
+  useModalFocus(isOpen, modalRef, handleClose);
 
   if (!isOpen || !mounted) return null;
 
