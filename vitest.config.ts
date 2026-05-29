@@ -21,7 +21,7 @@ export default defineConfig({
         "src/components/LanguageChart.tsx",
         "src/components/SkillsCard.tsx",
         "src/components/LayoutEditor.tsx",
-        "src/lib/github.ts"
+        "src/lib/github.ts",
       ],
       thresholds: {
         lines: 80,

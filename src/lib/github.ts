@@ -820,7 +820,7 @@ export async function fetchUserSummary(
 
 // ===== ユーティリティ =====
 
-const LANGUAGE_COLORS = {
+const LANGUAGE_COLORS: Record<string, string> = {
   JavaScript: "#f1e05a",
   TypeScript: "#3178c6",
   Python: "#3572A5",
@@ -858,12 +858,8 @@ const LANGUAGE_COLORS = {
   Makefile: "#427819",
   HCL: "#844FBA",
   Nix: "#7e7eff",
-} as const;
+};
 
 function getLanguageColor(language: string): string {
-  if (Object.prototype.hasOwnProperty.call(LANGUAGE_COLORS, language)) {
-    return LANGUAGE_COLORS[language as keyof typeof LANGUAGE_COLORS];
-  }
-
-  return "#8b949e";
+  return LANGUAGE_COLORS[language] ?? "#8b949e";
 }

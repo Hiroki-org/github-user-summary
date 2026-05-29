@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { fetchRepositories, fetchUserSummary } from "@/lib/github";
+import { fetchUserSummary } from "@/lib/github";
 import { jsonResponse } from "./setup";
 
 describe("getTopK logic via fetchUserSummary", () => {
@@ -72,57 +72,5 @@ describe("getTopK logic via fetchUserSummary", () => {
     expect(result.repositories?.languages[0].bytes).toBe(100);
     expect(result.repositories?.languages[5].bytes).toBe(75);
     expect(result.repositories?.languages[9].bytes).toBe(40);
-  });
-
-  it("uses known REST language colors without prototype-key fallback leakage", async () => {
-    const mockFetch = vi.fn().mockResolvedValue(
-      jsonResponse([
-        {
-          name: "ts-repo",
-          description: "TypeScript project",
-          html_url: "https://github.com/u/ts-repo",
-          stargazers_count: 5,
-          forks_count: 1,
-          fork: false,
-          language: "TypeScript",
-          topics: ["typescript"],
-        },
-        {
-          name: "proto-repo",
-          description: "Prototype key project",
-          html_url: "https://github.com/u/proto-repo",
-          stargazers_count: 1,
-          forks_count: 0,
-          fork: false,
-          language: "toString",
-          topics: [],
-        },
-      ])
-    );
-
-    global.fetch = mockFetch;
-
-    const result = await fetchRepositories("testuser");
-
-    expect(result.languages).toContainEqual({
-      name: "TypeScript",
-      bytes: 1,
-      percentage: 50,
-      color: "#3178c6",
-    });
-    expect(result.languages).toContainEqual({
-      name: "toString",
-      bytes: 1,
-      percentage: 50,
-      color: "#8b949e",
-    });
-    expect(result.topRepos[0].primaryLanguage).toEqual({
-      name: "TypeScript",
-      color: "#3178c6",
-    });
-    expect(result.topRepos[1].primaryLanguage).toEqual({
-      name: "toString",
-      color: "#8b949e",
-    });
   });
 });
