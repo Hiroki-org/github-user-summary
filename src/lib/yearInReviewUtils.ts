@@ -133,8 +133,10 @@ export function getMostActiveDayFromCalendar(calendar: { date: string; count: nu
  */
 export function getWeekdayFromDateString(dateString: string): number | null {
     if (dateString.length !== 10 || dateString[4] !== '-' || dateString[7] !== '-') {
-        const d = new Date(dateString + "T00:00:00Z");
-        const day = d.getUTCDay();
+        // Fallback for non-standard formats (e.g. already contains T)
+        // Original logic in ContributionGraph used new Date(d.date + "T00:00:00") which parses in local TZ
+        const d = new Date(dateString.includes('T') ? dateString : dateString + "T00:00:00");
+        const day = d.getDay();
         return Number.isNaN(day) ? null : day;
     }
 
@@ -143,8 +145,8 @@ export function getWeekdayFromDateString(dateString: string): number | null {
     const d = parseInt(dateString.slice(8, 10), 10);
 
     if (Number.isNaN(y) || Number.isNaN(m) || Number.isNaN(d) || m < 1 || m > 12 || d < 1 || d > 31) {
-        const fallback = new Date(dateString + "T00:00:00Z");
-        const day = fallback.getUTCDay();
+        const fallback = new Date(dateString + "T00:00:00");
+        const day = fallback.getDay();
         return Number.isNaN(day) ? null : day;
     }
 

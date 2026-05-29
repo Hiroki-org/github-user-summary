@@ -2,7 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
     buildHourlyHeatmapFromCommitDates,
     getMostActiveHour,
-    getMostActiveDayFromCalendar
+    getMostActiveDayFromCalendar,
+    getWeekdayFromDateString
 } from "@/lib/yearInReviewUtils";
 
 describe("buildHourlyHeatmapFromCommitDates", () => {
@@ -209,5 +210,26 @@ describe("buildHourlyHeatmapFromCommitDates - edge cases", () => {
         ];
         const heatmap = buildHourlyHeatmapFromCommitDates(commitDates);
         expect(heatmap[0][10]).toBe(0);
+    });
+});
+
+describe("getWeekdayFromDateString", () => {
+    it("returns correct weekday for standard YYYY-MM-DD strings", () => {
+        expect(getWeekdayFromDateString("2023-01-01")).toBe(0); // Sunday
+        expect(getWeekdayFromDateString("2023-01-02")).toBe(1); // Monday
+        expect(getWeekdayFromDateString("2023-02-28")).toBe(2); // Tuesday
+        expect(getWeekdayFromDateString("2024-02-29")).toBe(4); // Thursday (Leap year)
+    });
+
+    it("returns correct weekday using fallback for non-standard lengths", () => {
+        expect(getWeekdayFromDateString("2023-01-01T00:00:00Z")).toBe(0);
+        expect(getWeekdayFromDateString("invalid")).toBeNull();
+    });
+
+    it("returns null for invalid standard format numbers", () => {
+        expect(getWeekdayFromDateString("2023-13-01")).toBeNull();
+        expect(getWeekdayFromDateString("2023-00-01")).toBeNull();
+        expect(getWeekdayFromDateString("2023-01-32")).toBeNull();
+        expect(getWeekdayFromDateString("2023-01-00")).toBeNull();
     });
 });
