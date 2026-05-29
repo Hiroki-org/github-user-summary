@@ -13,11 +13,11 @@ const { mockGetColorAsync, mockDestroy } = vi.hoisted(() => ({
 // The hook uses fast-average-color, which we need to mock so it doesn't try to fetch real images in tests.
 vi.mock("fast-average-color", () => {
   return {
-    FastAverageColor: vi.fn().mockImplementation(function() {
-      return {
-        getColorAsync: mockGetColorAsync,
-        destroy: mockDestroy,
-      };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    FastAverageColor: vi.fn().mockImplementation(function(this: any) {
+      this.getColorAsync = mockGetColorAsync;
+      this.destroy = mockDestroy;
+      return this;
     }),
   };
 });
@@ -44,7 +44,8 @@ describe("ThemeController", () => {
       value: [100, 150, 200, 255]
     });
     // Ensure adjustAccentColor mock implementation is restored
-    vi.mocked(colorLib.adjustAccentColor).mockImplementation((color) => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (colorLib.adjustAccentColor as any).mockImplementation((color: any) => ({
       accent: `mock-accent-${color}`,
       accentRgb: `mock-rgb-${color}`,
       accentHover: `mock-hover-${color}`,
