@@ -71,7 +71,7 @@ export default function CardGeneratorModal({
         tabIndex={0}
         onClick={handleClose}
         onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " " || e.key === "Escape") {
+          if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
             handleClose();
           }
