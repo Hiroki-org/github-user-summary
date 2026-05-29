@@ -4,7 +4,7 @@ import { NextRequest } from "next/server";
 import { logger } from "@/lib/logger";
 import { isValidGitHubUsername, sanitizeUrl } from "@/lib/validators";
 import { RateLimiter } from "@/lib/rateLimit";
-import { getClientIp } from "@/lib/apiUtils";
+import { getClientIp } from "@/lib/rateLimit";
 
 export const runtime = "edge";
 const rateLimiter = new RateLimiter(50, 60 * 1000);

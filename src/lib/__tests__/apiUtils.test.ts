@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { handleErrorResponse, getAuthenticatedUser, getClientIp } from '../apiUtils';
+import { handleErrorResponse, getAuthenticatedUser } from '../apiUtils';
 import { NextResponse } from 'next/server';
 import { getServerSession } from "next-auth";
 
@@ -95,48 +95,6 @@ describe('apiUtils', () => {
       const result = await getAuthenticatedUser();
 
       expect(result).toBeNull();
-    });
-  });
-
-  describe('getClientIp', () => {
-    it('should return x-real-ip if present', () => {
-      const req = new Request('http://localhost', {
-        headers: {
-          'x-real-ip': '1.2.3.4',
-          'x-forwarded-for': '5.6.7.8, 9.10.11.12'
-        }
-      });
-      expect(getClientIp(req)).toBe('1.2.3.4');
-    });
-
-    it('should return first ip from x-forwarded-for if x-real-ip is absent', () => {
-      const req = new Request('http://localhost', {
-        headers: {
-          'x-forwarded-for': '5.6.7.8, 9.10.11.12'
-        }
-      });
-      expect(getClientIp(req)).toBe('5.6.7.8');
-    });
-
-    it('should trim whitespace from extracted ip', () => {
-      const reqReal = new Request('http://localhost', {
-        headers: {
-          'x-real-ip': '  1.2.3.4  '
-        }
-      });
-      expect(getClientIp(reqReal)).toBe('1.2.3.4');
-
-      const reqForwarded = new Request('http://localhost', {
-        headers: {
-          'x-forwarded-for': '  5.6.7.8  , 9.10.11.12'
-        }
-      });
-      expect(getClientIp(reqForwarded)).toBe('5.6.7.8');
-    });
-
-    it('should return "unknown" if neither header is present', () => {
-      const req = new Request('http://localhost');
-      expect(getClientIp(req)).toBe('unknown');
     });
   });
 });
