@@ -1,6 +1,7 @@
 import { RateLimiter } from "@/lib/rateLimit";
 import { fetchCardData } from "@/lib/cardDataFetcher";
 import { parseCardQueryParams, renderCardResponse, renderErrorCardResponse } from "@/lib/cardRenderer";
+import { getClientIp } from "@/lib/apiUtils";
 
 export const runtime = "edge";
 const rateLimiter = new RateLimiter(50, 60 * 1000); // 50 requests per minute
@@ -19,7 +20,7 @@ export async function GET(
     const allowedOrigin = process.env.APP_URL || "http://localhost:3000";
     const fontUrl = `${allowedOrigin}/fonts/NotoSans-Regular.ttf`;
 
-    const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+    const ip = getClientIp(request);
     const rateLimitResult = await rateLimiter.check(ip);
 
     if (!rateLimitResult.success) {
