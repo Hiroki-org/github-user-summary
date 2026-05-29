@@ -18,7 +18,7 @@ export async function GET(
   const { username } = await params;
 
   const forwarded = request.headers.get("x-forwarded-for");
-  const ip = forwarded ? forwarded.split(",")[0]?.trim() ?? "unknown" : "unknown";
+  const ip = forwarded ? forwarded.split(",").at(-1)?.trim() ?? "unknown" : "unknown";
   const rateLimitResult = rateLimiter.check(ip);
 
   if (!rateLimitResult.success) {
