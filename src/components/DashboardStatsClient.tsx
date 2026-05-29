@@ -131,10 +131,14 @@ export default function DashboardStatsClient() {
     total: 0,
   }));
 
-  for (const day of summary.contributions?.calendar ?? []) {
-    const date = new Date(`${day.date}T00:00:00Z`);
-    const month = date.getUTCMonth();
-    contributionMonthly[month].total += day.count;
+  for (let i = 0; i < (summary.contributions?.calendar?.length ?? 0); i++) {
+    const day = summary.contributions!.calendar[i];
+    const dateStr = day.date;
+    // Extract month from YYYY-MM-DD
+    const month = ((dateStr.charCodeAt(5) - 48) * 10 + (dateStr.charCodeAt(6) - 48)) - 1;
+    if (month >= 0 && month <= 11) {
+      contributionMonthly[month].total += day.count;
+    }
   }
 
   return (
