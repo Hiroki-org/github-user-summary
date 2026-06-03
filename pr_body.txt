@@ -1,0 +1,8 @@
+🎯 **What:** The testing gap addressed
+A missing test file for `src/app/dashboard/year/page.tsx` was identified. I've added a test that ensures `DashboardYearPage` successfully renders the inner `DashboardYearClient` component. Additionally, I added the page to the `vitest.config.ts` coverage tracking configuration.
+
+📊 **Coverage:** What scenarios are now tested
+- Validates the rendering of the `DashboardYearClient` component within `DashboardYearPage`.
+
+✨ **Result:** The improvement in test coverage
+Test coverage tracking has been updated to include `src/app/dashboard/year/page.tsx` and we now have a working regression test for the basic rendering path of the layout component.
