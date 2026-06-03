@@ -11,7 +11,7 @@ import { isTrustedFontUrl } from "@/lib/validators";
 export * from "./cardOptions";
 
 const DEFAULT_FONT_URL =
-  "https://cdn.jsdelivr.net/gh/googlefonts/noto-fonts@main/hinted/ttf/NotoSans/NotoSans-Regular.ttf";
+  "https://cdn.jsdelivr.net/gh/googlefonts/noto-fonts@ffebf8c1ee449e544955a7e813c54f9b73848eac/hinted/ttf/NotoSans/NotoSans-Regular.ttf";
 const FONT_FETCH_TIMEOUT_MS = 5000;
 const MAX_FONT_CACHE_SIZE = 10;
 
