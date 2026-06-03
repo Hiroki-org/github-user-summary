@@ -13,7 +13,8 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "lcov"],
       include: [
-        "src/lib/**/*.ts",
+        "src/app/providers.tsx",
+"src/lib/**/*.ts",
         "src/hooks/**/*.ts",
         "src/components/ThemeController.tsx",
         "src/components/ReadmeCardUrlSection.tsx",
