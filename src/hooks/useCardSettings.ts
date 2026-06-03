@@ -26,7 +26,6 @@ export function useCardSettings(mounted: boolean) {
     
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLayout((prev) => JSON.stringify(prev) !== JSON.stringify(storedLayout) ? storedLayout : prev);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDisplayOptions((prev) => JSON.stringify(prev) !== JSON.stringify(storedOptions) ? storedOptions : prev);
     
     setIsHydrated(true);
