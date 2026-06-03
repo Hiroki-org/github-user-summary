@@ -61,7 +61,8 @@ export function useCardPreview(
               image ? { width: image.width, height: image.height } : null,
             );
           }
-        } catch {
+        } catch (err) {
+          logger.error("Failed to generate preview image", err);
           if (!isCancelled) {
             setPreviewUrl(null);
             setPreviewSize(null);
