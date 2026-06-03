@@ -4,6 +4,7 @@ import { NextRequest } from "next/server";
 import { logger } from "@/lib/logger";
 import { isValidGitHubUsername, sanitizeUrl } from "@/lib/validators";
 import { RateLimiter } from "@/lib/rateLimit";
+import { getClientIp } from "@/lib/rateLimit";
 
 export const runtime = "edge";
 const rateLimiter = new RateLimiter(50, 60 * 1000);
@@ -17,8 +18,7 @@ export async function GET(
 ) {
   const { username } = await params;
 
-  const forwarded = request.headers.get("x-forwarded-for");
-  const ip = forwarded ? forwarded.split(",").at(-1)?.trim() ?? "unknown" : "unknown";
+  const ip = getClientIp(request);
   const rateLimitResult = await rateLimiter.check(ip);
 
   if (!rateLimitResult.success) {

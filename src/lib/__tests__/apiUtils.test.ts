@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { handleErrorResponse, getAuthenticatedUser } from '../apiUtils';
+import { handleErrorResponse, getAuthenticatedUser } from '@/lib/apiUtils';
 import { NextResponse } from 'next/server';
 import { getServerSession } from "next-auth";
 
