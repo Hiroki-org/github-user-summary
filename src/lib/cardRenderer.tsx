@@ -11,7 +11,7 @@ import { isTrustedFontUrl } from "@/lib/validators";
 export * from "./cardOptions";
 
 const DEFAULT_FONT_URL =
-  "https://cdn.jsdelivr.net/gh/googlefonts/noto-fonts@main/hinted/ttf/NotoSans/NotoSans-Regular.ttf";
+  "https://cdn.jsdelivr.net/gh/googlefonts/noto-fonts@ffebf8c1ee449e544955a7e813c54f9b73848eac/hinted/ttf/NotoSans/NotoSans-Regular.ttf";
 const FONT_FETCH_TIMEOUT_MS = 5000;
 const MAX_FONT_CACHE_SIZE = 10;
 
@@ -30,6 +30,7 @@ function getFontData(fontUrl?: string, allowedOrigin?: string): Promise<ArrayBuf
     const pending = fetch(targetUrl, {
       cache: "force-cache",
       signal: controller.signal,
+      redirect: "error",
     })
       .then((response) => {
         if (!response.ok) {
