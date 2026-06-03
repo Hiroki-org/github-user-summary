@@ -125,8 +125,8 @@ describe("OG Image Route", () => {
   it("should handle rate limit where reset time is in the past", async () => {
     vi.spyOn(RateLimiter.prototype, 'check').mockResolvedValue({
       success: false,
-      limit: 50,
-      remaining: 0,
+
+
       reset: Date.now() - 10000 // Reset time in the past
     });
 
