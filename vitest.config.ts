@@ -19,6 +19,7 @@ export default defineConfig({
         "src/components/ReadmeCardUrlSection.tsx",
         "src/components/BusinessCard.tsx",
         "src/components/LanguageChart.tsx",
+        "src/components/SettingsTab.tsx",
         "src/components/SkillsCard.tsx",
         "src/components/LayoutEditor.tsx",
         "src/lib/rateLimit.ts",
