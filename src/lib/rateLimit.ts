@@ -51,3 +51,27 @@ export class RateLimiter {
         return { success: true, reset: record.resetTime };
     }
 }
+
+function isValidIp(value: string): boolean {
+    const ipv4Segment = "(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)";
+    const ipv4 = new RegExp(`^${ipv4Segment}(\\.${ipv4Segment}){3}$`);
+    if (ipv4.test(value)) return true;
+
+    if (!value.includes(":")) return false;
+    try {
+        new URL(`http://[${value}]`);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+export function getClientIp(request: Request): string {
+    const forwardedFor = request.headers.get("x-forwarded-for");
+    if (!forwardedFor) return "unknown";
+
+    const proxyObservedIp = forwardedFor.split(",").at(-1)?.trim();
+    if (proxyObservedIp && isValidIp(proxyObservedIp)) return proxyObservedIp;
+
+    return "unknown";
+}

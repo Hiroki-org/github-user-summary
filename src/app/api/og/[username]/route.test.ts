@@ -53,7 +53,7 @@ describe("OG Image Route", () => {
 
     // Generate more than 50 requests to hit the rate limit (limit is 50 per minute)
     const req = new NextRequest("http://localhost/api/og/validuser", {
-      headers: { "x-forwarded-for": "test-ip" }
+      headers: { "x-forwarded-for": "203.0.113.10" }
     });
 
     // Send 50 successful requests
