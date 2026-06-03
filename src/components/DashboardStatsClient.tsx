@@ -132,25 +132,9 @@ export default function DashboardStatsClient() {
   }));
 
   for (const day of summary.contributions?.calendar ?? []) {
-    let month = 0;
-    // Fast path for standard YYYY-MM-DD date strings
-    if (day.date.length >= 10 && day.date.charCodeAt(4) === 45 && day.date.charCodeAt(7) === 45) {
-      const m1 = day.date.charCodeAt(5) - 48;
-      const m2 = day.date.charCodeAt(6) - 48;
-      month = m1 * 10 + m2 - 1; // 0-indexed month
-
-      // Basic validation
-      if (month < 0 || month > 11) {
-        month = new Date(`${day.date}T00:00:00Z`).getUTCMonth();
-      }
-    } else {
-      month = new Date(`${day.date}T00:00:00Z`).getUTCMonth();
-    }
-
-    // Safety check just in case the month is somehow out of bounds or NaN
-    if (month >= 0 && month <= 11 && !Number.isNaN(month)) {
-      contributionMonthly[month].total += day.count;
-    }
+    const date = new Date(`${day.date}T00:00:00Z`);
+    const month = date.getUTCMonth();
+    contributionMonthly[month].total += day.count;
   }
 
   return (
