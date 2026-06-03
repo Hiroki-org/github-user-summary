@@ -22,6 +22,7 @@ export default defineConfig({
         "src/components/SkillsCard.tsx",
         "src/components/LayoutEditor.tsx",
         "src/lib/rateLimit.ts",
+        "src/app/[username]/components/ErrorMessages.tsx",
       ],
       thresholds: {
         lines: 80,
