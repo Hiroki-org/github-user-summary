@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { RateLimiter } from "../rateLimit";
-import { Ratelimit } from "@upstash/ratelimit";
+import { getClientIp, RateLimiter } from "@/lib/rateLimit";
 
 vi.mock("@upstash/redis", () => {
     return {
@@ -97,50 +96,72 @@ describe("RateLimiter", () => {
     });
 });
 
-import { getClientIp } from "../rateLimit";
-
 describe("getClientIp", () => {
-    it("should return x-real-ip if present", () => {
-
-        const req = new Request("http://localhost", {
-            headers: {
-                "x-real-ip": "1.2.3.4",
-                "x-forwarded-for": "5.6.7.8, 9.10.11.12"
-            }
-        });
-        expect(getClientIp(req)).toBe("1.2.3.4");
-    });
-
-    it("should return first ip from x-forwarded-for if x-real-ip is absent", () => {
-
+    it("returns the right-most x-forwarded-for IP", () => {
         const req = new Request("http://localhost", {
             headers: {
                 "x-forwarded-for": "5.6.7.8, 9.10.11.12"
             }
         });
-        expect(getClientIp(req)).toBe("5.6.7.8");
+        expect(getClientIp(req)).toBe("9.10.11.12");
     });
 
-    it("should trim whitespace from extracted ip", () => {
-
-        const reqReal = new Request("http://localhost", {
+    it("trims whitespace from the selected x-forwarded-for IP", () => {
+        const req = new Request("http://localhost", {
             headers: {
-                "x-real-ip": "  1.2.3.4  "
+                "x-forwarded-for": "  5.6.7.8  ,   9.10.11.12  "
             }
         });
-        expect(getClientIp(reqReal)).toBe("1.2.3.4");
-
-        const reqForwarded = new Request("http://localhost", {
-            headers: {
-                "x-forwarded-for": "  5.6.7.8  , 9.10.11.12"
-            }
-        });
-        expect(getClientIp(reqForwarded)).toBe("5.6.7.8");
+        expect(getClientIp(req)).toBe("9.10.11.12");
     });
 
-    it("should return 'unknown' if neither header is present", () => {
+    it("accepts IPv6 x-forwarded-for values", () => {
+        const req = new Request("http://localhost", {
+            headers: {
+                "x-forwarded-for": "2001:db8::1"
+            }
+        });
+        expect(getClientIp(req)).toBe("2001:db8::1");
+    });
 
+    it("does not trust x-real-ip when x-forwarded-for is absent", () => {
+        const req = new Request("http://localhost", {
+            headers: {
+                "x-real-ip": "1.2.3.4"
+            }
+        });
+        expect(getClientIp(req)).toBe("unknown");
+    });
+
+    it("returns unknown if neither header is present", () => {
         const req = new Request("http://localhost");
+        expect(getClientIp(req)).toBe("unknown");
+    });
+
+    it("returns unknown for whitespace-only x-forwarded-for", () => {
+        const req = new Request("http://localhost", {
+            headers: {
+                "x-forwarded-for": "   "
+            }
+        });
+        expect(getClientIp(req)).toBe("unknown");
+    });
+
+    it("returns unknown when the right-most x-forwarded-for token is empty", () => {
+        const req = new Request("http://localhost", {
+            headers: {
+                "x-forwarded-for": "5.6.7.8,   "
+            }
+        });
+        expect(getClientIp(req)).toBe("unknown");
+    });
+
+    it("returns unknown when the right-most x-forwarded-for token is invalid", () => {
+        const req = new Request("http://localhost", {
+            headers: {
+                "x-forwarded-for": "5.6.7.8, not-an-ip"
+            }
+        });
         expect(getClientIp(req)).toBe("unknown");
     });
 });
