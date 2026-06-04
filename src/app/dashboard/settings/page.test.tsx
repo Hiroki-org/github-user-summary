@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import DashboardSettingsPage from './page';
 
@@ -9,8 +9,8 @@ vi.mock('@/components/DashboardSettingsClient', () => ({
 
 describe('DashboardSettingsPage', () => {
   it('renders without crashing', () => {
-    const { container } = render(<DashboardSettingsPage />);
-    expect(container).toBeInTheDocument();
+    render(<DashboardSettingsPage />);
+    expect(screen.getByTestId('mock-dashboard-settings-client')).toBeInTheDocument();
   });
 
   it('renders the DashboardSettingsClient component', () => {
