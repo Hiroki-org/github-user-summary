@@ -77,11 +77,11 @@ describe("useCardPreview", () => {
         return 1;
     });
 
-    // Suppress console.error from testing-library
-    vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
+    vi.useRealTimers();
+
     if (originalClipboard === undefined) {
       // @ts-expect-error test cleanup
       delete navigator.clipboard;
@@ -178,6 +178,11 @@ describe("useCardPreview", () => {
 
     expect(result.current.previewUrl).toBeNull();
     expect(result.current.previewSize).toBeNull();
+
+    await waitFor(() => {
+      expect(toPng).toHaveBeenCalledTimes(2);
+      expect(result.current.previewUrl).toBe("data:image/png;base64,mockdata");
+    });
   });
 
   it("handles download", async () => {
@@ -230,7 +235,7 @@ describe("useCardPreview", () => {
     vi.mocked(navigator.clipboard.write).mockResolvedValue(undefined);
 
     const { result } = renderHook(() =>
-      useCardPreview(true, mockCardRef, mockSummary, mockLayout, mockDisplayOptions)
+      useCardPreview(false, mockCardRef, mockSummary, mockLayout, mockDisplayOptions)
     );
 
     await act(async () => {
@@ -243,7 +248,7 @@ describe("useCardPreview", () => {
     expect(result.current.copyStatus).toBe("copied");
 
     // Advance timers to reset copyStatus
-    act(() => {
+    await act(async () => {
       vi.advanceTimersByTime(2000);
     });
 
@@ -256,7 +261,7 @@ describe("useCardPreview", () => {
     vi.mocked(toBlob).mockRejectedValue(error);
 
     const { result } = renderHook(() =>
-      useCardPreview(true, mockCardRef, mockSummary, mockLayout, mockDisplayOptions)
+      useCardPreview(false, mockCardRef, mockSummary, mockLayout, mockDisplayOptions)
     );
 
     await act(async () => {
@@ -271,7 +276,7 @@ describe("useCardPreview", () => {
       vi.mocked(toBlob).mockResolvedValue(null);
 
       const { result } = renderHook(() =>
-      useCardPreview(true, mockCardRef, mockSummary, mockLayout, mockDisplayOptions)
+      useCardPreview(false, mockCardRef, mockSummary, mockLayout, mockDisplayOptions)
     );
 
     await act(async () => {
@@ -289,7 +294,7 @@ describe("useCardPreview", () => {
     vi.mocked(navigator.clipboard.write).mockRejectedValue(clipboardError);
 
     const { result } = renderHook(() =>
-      useCardPreview(true, mockCardRef, mockSummary, mockLayout, mockDisplayOptions)
+      useCardPreview(false, mockCardRef, mockSummary, mockLayout, mockDisplayOptions)
     );
 
     await act(async () => {
@@ -303,7 +308,7 @@ describe("useCardPreview", () => {
   it("does nothing in handleCopy if cardRef is null", async () => {
       const nullRef = { current: null };
       const { result } = renderHook(() =>
-      useCardPreview(true, nullRef, mockSummary, mockLayout, mockDisplayOptions)
+      useCardPreview(false, nullRef, mockSummary, mockLayout, mockDisplayOptions)
     );
 
     await act(async () => {
