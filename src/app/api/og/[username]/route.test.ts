@@ -1,14 +1,17 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { GET } from "./route";
 import { NextRequest } from "next/server";
 import { ReactElement } from "react";
 import { logger } from "@/lib/logger";
 import { RateLimiter } from "@/lib/rateLimit";
 
+const imageResponseElements = vi.hoisted(() => [] as ReactElement[]);
+
 vi.mock("next/og", () => {
   return {
     ImageResponse: class {
       constructor(element: ReactElement, options?: { headers?: Record<string, string>, width?: number, height?: number }) {
+        imageResponseElements.push(element);
         const response = new Response("Mock ImageResponse");
         if (options?.headers) {
           Object.entries(options.headers).forEach(([key, value]) => {
@@ -22,7 +25,10 @@ vi.mock("next/og", () => {
 });
 
 describe("OG Image Route", () => {
-  vi.spyOn(logger, "error").mockImplementation(() => {});
+  beforeEach(() => {
+    imageResponseElements.length = 0;
+    vi.spyOn(logger, "error").mockImplementation(() => {});
+  });
 
   afterEach(() => {
     vi.restoreAllMocks();
@@ -82,6 +88,10 @@ describe("OG Image Route", () => {
     expect(res.status).toBe(200);
     expect(await res.text()).toBe("Mock ImageResponse");
     expect(mockFetch).toHaveBeenCalledWith("https://api.github.com/users/validuser", expect.any(Object));
+
+    const renderedText = collectText(imageResponseElements[0]).join("");
+    expect(renderedText).toContain(`${"A".repeat(120)}…`);
+    expect(renderedText).not.toContain(longBio);
   });
 
   it("should handle null values from github response", async () => {
@@ -140,3 +150,19 @@ describe("OG Image Route", () => {
     expect(res.headers.get("Retry-After")).toBe("0");
   });
 });
+
+function collectText(node: unknown): string[] {
+  if (node === null || node === undefined || typeof node === "boolean") {
+    return [];
+  }
+  if (typeof node === "string" || typeof node === "number") {
+    return [String(node)];
+  }
+  if (Array.isArray(node)) {
+    return node.flatMap(collectText);
+  }
+  if (typeof node === "object" && "props" in node) {
+    return collectText((node as ReactElement<{ children?: unknown }>).props.children);
+  }
+  return [];
+}
