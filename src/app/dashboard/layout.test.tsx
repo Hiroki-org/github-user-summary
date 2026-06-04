@@ -5,6 +5,9 @@ import DashboardLayout from "./layout";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { Session } from "next-auth";
+import { authOptions } from "@/lib/auth";
+
+const imageProps = vi.hoisted(() => [] as Array<{ src: string; alt: string }>);
 
 vi.mock("next-auth", () => ({
   getServerSession: vi.fn(),
@@ -27,15 +30,19 @@ vi.mock("next/link", () => ({
 }));
 
 vi.mock("next/image", () => ({
-  default: ({ src, alt }: { src: string; alt: string }) => (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt={alt} data-testid="mock-image" />
-  ),
+  default: ({ src, alt }: { src: string; alt: string }) => {
+    imageProps.push({ src, alt });
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={src || undefined} alt={alt} data-testid="mock-image" />
+    );
+  },
 }));
 
 describe("DashboardLayout", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    imageProps.length = 0;
   });
 
   it("redirects to '/' if session is missing", async () => {
@@ -64,6 +71,7 @@ describe("DashboardLayout", () => {
 
     render(await DashboardLayout({ children: <div data-testid="test-child">Test Content</div> }));
 
+    expect(getServerSession).toHaveBeenCalledWith(authOptions);
     expect(screen.getByText("Signed in as")).toBeInTheDocument();
     expect(screen.getByText("Test User")).toBeInTheDocument();
     expect(screen.getByTestId("mock-image")).toHaveAttribute("src", "https://example.com/image.png");
@@ -85,5 +93,18 @@ describe("DashboardLayout", () => {
     render(await DashboardLayout({ children: <div data-testid="test-child">Test Content</div> }));
 
     expect(screen.getByText("test@example.com")).toBeInTheDocument();
+  });
+
+  it("uses default image alt and empty src if user image is missing", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({
+      accessToken: "mock-token",
+      user: { email: "test@example.com" },
+    } as unknown as Session);
+
+    render(await DashboardLayout({ children: <div data-testid="test-child">Test Content</div> }));
+
+    expect(screen.getByText("test@example.com")).toBeInTheDocument();
+    expect(imageProps.at(-1)).toEqual({ src: "", alt: "Signed in user" });
+    expect(screen.getByTestId("mock-image")).not.toHaveAttribute("src");
   });
 });
