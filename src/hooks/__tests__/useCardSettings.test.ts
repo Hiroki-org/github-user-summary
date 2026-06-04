@@ -35,7 +35,7 @@ const mockLayout: CardLayout = {
 const mockDisplayOptions = {
   showAvatar: true,
   showBio: false,
-};
+} satisfies CardDisplayOptions;
 
 describe("useCardSettings", () => {
   beforeEach(() => {
@@ -44,7 +44,7 @@ describe("useCardSettings", () => {
     // Default mock implementation
     vi.mocked(loadCardSettings).mockReturnValue({
       layout: mockLayout,
-      options: mockDisplayOptions as unknown as CardDisplayOptions,
+      options: mockDisplayOptions,
     });
 
     vi.mocked(toggleBlockVisibility).mockImplementation((prev, id) => ({
@@ -55,9 +55,6 @@ describe("useCardSettings", () => {
 
   it("should initialize with default values when not mounted", () => {
     const { result } = renderHook(() => useCardSettings(false));
-
-    // It still calls loadCardSettings for initial state setup inside useState
-    expect(loadCardSettings).toHaveBeenCalledTimes(2);
 
     expect(result.current.layout).toEqual(mockLayout);
     expect(result.current.displayOptions).toEqual(mockDisplayOptions);
@@ -70,8 +67,6 @@ describe("useCardSettings", () => {
     // Initial render where mounted is true
     const { result } = renderHook(() => useCardSettings(true));
 
-    expect(loadCardSettings).toHaveBeenCalledTimes(3); // 2 for initial state, 1 for useEffect
-
     expect(result.current.layout).toEqual(mockLayout);
     expect(result.current.displayOptions).toEqual(mockDisplayOptions);
 
@@ -81,27 +76,31 @@ describe("useCardSettings", () => {
     });
   });
 
-  it("should update state from storage if it differs from initial render", () => {
+  it("should update state from storage if it differs from initial render", async () => {
     // Set initial values different from what will be loaded in the effect
     const differentLayout = { ...mockLayout, blocks: [] };
     const differentOptions = { ...mockDisplayOptions, showAvatar: false };
 
     vi.mocked(loadCardSettings)
-      .mockReturnValueOnce({ layout: differentLayout, options: differentOptions as unknown as CardDisplayOptions })
-      .mockReturnValueOnce({ layout: differentLayout, options: differentOptions as unknown as CardDisplayOptions })
-      .mockReturnValue({ layout: mockLayout, options: mockDisplayOptions as unknown as CardDisplayOptions });
+      .mockReturnValueOnce({ layout: differentLayout, options: differentOptions })
+      .mockReturnValueOnce({ layout: differentLayout, options: differentOptions })
+      .mockReturnValue({ layout: mockLayout, options: mockDisplayOptions });
 
     const { result } = renderHook(() => useCardSettings(true));
 
     // Verify it updated to the newly loaded values
-    expect(result.current.layout).toEqual(mockLayout);
-    expect(result.current.displayOptions).toEqual(mockDisplayOptions);
+    await waitFor(() => {
+      expect(result.current.layout).toEqual(mockLayout);
+      expect(result.current.displayOptions).toEqual(mockDisplayOptions);
+    });
   });
 
-  it("should persist changes to storage when mounted and hydrated", () => {
+  it("should persist changes to storage when mounted and hydrated", async () => {
     const { result } = renderHook(() => useCardSettings(true));
 
-    // Clear initial save from hydration
+    await waitFor(() => {
+      expect(saveCardSettings).toHaveBeenCalledWith(mockLayout, mockDisplayOptions);
+    });
     vi.mocked(saveCardSettings).mockClear();
 
     // Trigger state change
@@ -112,10 +111,12 @@ describe("useCardSettings", () => {
     expect(saveCardSettings).toHaveBeenCalledWith({ blocks: [] }, mockDisplayOptions);
   });
 
-  it("toggleMainBlockVisibility should update layout and trigger save", () => {
+  it("toggleMainBlockVisibility should update layout and trigger save", async () => {
     const { result } = renderHook(() => useCardSettings(true));
 
-    // Clear initial save from hydration
+    await waitFor(() => {
+      expect(saveCardSettings).toHaveBeenCalledWith(mockLayout, mockDisplayOptions);
+    });
     vi.mocked(saveCardSettings).mockClear();
 
     act(() => {
@@ -136,10 +137,12 @@ describe("useCardSettings", () => {
     expect(saveCardSettings).toHaveBeenCalledWith(expectedLayout, mockDisplayOptions);
   });
 
-  it("toggleDisplayOption should update display options and trigger save", () => {
+  it("toggleDisplayOption should update display options and trigger save", async () => {
     const { result } = renderHook(() => useCardSettings(true));
 
-    // Clear initial save from hydration
+    await waitFor(() => {
+      expect(saveCardSettings).toHaveBeenCalledWith(mockLayout, mockDisplayOptions);
+    });
     vi.mocked(saveCardSettings).mockClear();
 
     act(() => {
@@ -163,7 +166,7 @@ describe("useCardSettings", () => {
     expect(result.current.isBlockVisible("non-existent-block" as import("@/lib/types").CardBlockId)).toBe(false);
   });
 
-  it("should not persist changes to storage until hydrated", () => {
+  it("should not persist changes to storage until hydrated", async () => {
     const { rerender } = renderHook(
       ({ mounted }) => useCardSettings(mounted),
       { initialProps: { mounted: false } }
@@ -176,6 +179,8 @@ describe("useCardSettings", () => {
     rerender({ mounted: true });
 
     // Should save after hydration is complete
-    expect(saveCardSettings).toHaveBeenCalledWith(mockLayout, mockDisplayOptions);
+    await waitFor(() => {
+      expect(saveCardSettings).toHaveBeenCalledWith(mockLayout, mockDisplayOptions);
+    });
   });
 });

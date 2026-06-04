@@ -23,12 +23,21 @@ export function useCardSettings(mounted: boolean) {
     }
 
     const { layout: storedLayout, options: storedOptions } = loadCardSettings();
-    
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLayout((prev) => JSON.stringify(prev) !== JSON.stringify(storedLayout) ? storedLayout : prev);
-    setDisplayOptions((prev) => JSON.stringify(prev) !== JSON.stringify(storedOptions) ? storedOptions : prev);
-    
-    setIsHydrated(true);
+
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) {
+        return;
+      }
+
+      setLayout((prev) => JSON.stringify(prev) !== JSON.stringify(storedLayout) ? storedLayout : prev);
+      setDisplayOptions((prev) => JSON.stringify(prev) !== JSON.stringify(storedOptions) ? storedOptions : prev);
+      setIsHydrated(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [mounted, isHydrated]);
 
   // Persist changes to storage
