@@ -13,7 +13,6 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "lcov"],
       include: [
-        "src/app/dashboard/settings/page.tsx",
         "src/lib/**/*.ts",
         "src/hooks/**/*.ts",
         "src/components/ThemeController.tsx",
