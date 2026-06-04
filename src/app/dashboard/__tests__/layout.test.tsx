@@ -1,4 +1,4 @@
-import { vi, describe, it, expect } from 'vitest';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import DashboardLayout from '../layout';
 import { getServerSession } from 'next-auth';
@@ -29,11 +29,15 @@ vi.mock('@/lib/auth', () => ({
 }));
 
 describe('DashboardLayout', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('redirects to / when there is no session', async () => {
     vi.mocked(getServerSession).mockResolvedValueOnce(null);
 
     await expect(DashboardLayout({ children: <div data-testid="child" /> })).rejects.toThrow('NEXT_REDIRECT');
-    expect(redirect).toHaveBeenCalledWith('/');
+    expect(redirect).toHaveBeenLastCalledWith('/');
   });
 
   it('redirects to / when session has no accessToken', async () => {
@@ -41,7 +45,7 @@ describe('DashboardLayout', () => {
     vi.mocked(getServerSession).mockResolvedValueOnce({ user: { name: 'Test' } } as any);
 
     await expect(DashboardLayout({ children: <div data-testid="child" /> })).rejects.toThrow('NEXT_REDIRECT');
-    expect(redirect).toHaveBeenCalledWith('/');
+    expect(redirect).toHaveBeenLastCalledWith('/');
   });
 
   it('renders correctly when session and accessToken are present', async () => {
