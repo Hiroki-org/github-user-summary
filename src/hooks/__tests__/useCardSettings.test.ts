@@ -179,3 +179,12 @@ describe("useCardSettings", () => {
     expect(saveCardSettings).toHaveBeenCalledWith(mockLayout, mockDisplayOptions);
   });
 });
+
+  it("should handle same values seamlessly", () => {
+    const { result } = renderHook(() => useCardSettings(true));
+    // Trigger update with same layout
+    act(() => {
+      result.current.setLayout(mockLayout);
+    });
+    expect(result.current.layout).toEqual(mockLayout);
+  });
