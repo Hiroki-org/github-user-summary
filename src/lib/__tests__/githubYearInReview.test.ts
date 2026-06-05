@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
 import { getMostActiveDayFromCalendar, getMostActiveHour } from "@/lib/yearInReviewUtils";
 import { fetchYearInReviewData, fetchCommitActivityHeatmap } from "@/lib/githubYearInReview";
+import { logger } from "@/lib/logger";
 import { GitHubApiError, RateLimitError, UserNotFoundError } from "@/lib/types";
 
 // "server-only" を事前にモック
@@ -213,7 +214,7 @@ describe("fetchYearInReviewData success paths", () => {
 
     it("falls back to empty array if fetchCommitDatesForTopRepos batch query fails", async () => {
         let callCount = 0;
-        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const loggerSpy = vi.spyOn(logger, 'error').mockImplementation(() => {});
         mockFetch.mockImplementation((url: string | URL | Request) => {
             const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
             if (urlStr.includes("/graphql")) {
@@ -254,10 +255,13 @@ describe("fetchYearInReviewData success paths", () => {
             return Promise.resolve(jsonResponse([], 200));
         });
 
-        const data = await fetchYearInReviewData("testuser", 2024, "fake-token");
-        expect(data.year).toBe(2024);
-        expect(consoleSpy).toHaveBeenCalled();
-        consoleSpy.mockRestore();
+        try {
+            const data = await fetchYearInReviewData("testuser", 2024, "fake-token");
+            expect(data.year).toBe(2024);
+            expect(loggerSpy).toHaveBeenCalled();
+        } finally {
+            loggerSpy.mockRestore();
+        }
     });
 });
 

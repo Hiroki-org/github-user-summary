@@ -3,6 +3,7 @@ import "server-only";
 import { GitHubApiError, RateLimitError, UserNotFoundError } from "@/lib/types";
 import { headers, handleRateLimit } from "@/lib/github";
 import { buildHourlyHeatmapFromCommitDates, getMostActiveDayFromCalendar, getMostActiveHour } from "@/lib/yearInReviewUtils";
+import { logger } from "@/lib/logger";
 
 
 const YEAR_IN_REVIEW_QUERY = `query($login: String!, $from: DateTime!, $to: DateTime!, $maxRepositories: Int!) {
@@ -212,7 +213,7 @@ async function fetchCommitDatesForTopRepos(
         return dates;
     } catch (error) {
         // Fallback to empty array on failure, matching original behavior somewhat
-        console.error("Failed to fetch commit dates via GraphQL:", error);
+        logger.error("Failed to fetch commit dates via GraphQL:", error);
         return [];
     }
 }
