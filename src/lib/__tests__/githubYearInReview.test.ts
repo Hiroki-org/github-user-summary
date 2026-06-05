@@ -214,7 +214,7 @@ describe("fetchYearInReviewData success paths", () => {
 
     it("falls back to empty array if fetchCommitDatesForTopRepos batch query fails", async () => {
         let callCount = 0;
-        const consoleSpy = vi.spyOn(logger, 'error').mockImplementation(() => {});
+        const loggerSpy = vi.spyOn(logger, 'error').mockImplementation(() => {});
         mockFetch.mockImplementation((url: string | URL | Request) => {
             const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
             if (urlStr.includes("/graphql")) {
@@ -257,8 +257,8 @@ describe("fetchYearInReviewData success paths", () => {
 
         const data = await fetchYearInReviewData("testuser", 2024, "fake-token");
         expect(data.year).toBe(2024);
-        expect(consoleSpy).toHaveBeenCalled();
-        consoleSpy.mockRestore();
+        expect(loggerSpy).toHaveBeenCalled();
+        loggerSpy.mockRestore();
     });
 });
 
