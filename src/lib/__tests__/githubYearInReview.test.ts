@@ -255,10 +255,13 @@ describe("fetchYearInReviewData success paths", () => {
             return Promise.resolve(jsonResponse([], 200));
         });
 
-        const data = await fetchYearInReviewData("testuser", 2024, "fake-token");
-        expect(data.year).toBe(2024);
-        expect(loggerSpy).toHaveBeenCalled();
-        loggerSpy.mockRestore();
+        try {
+            const data = await fetchYearInReviewData("testuser", 2024, "fake-token");
+            expect(data.year).toBe(2024);
+            expect(loggerSpy).toHaveBeenCalled();
+        } finally {
+            loggerSpy.mockRestore();
+        }
     });
 });
 
