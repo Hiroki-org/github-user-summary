@@ -139,6 +139,42 @@ function mergeTopRepository(data: NonNullable<YearInReviewResponse["user"]>["con
     return top;
 }
 
+
+function buildRepoFragment(index: number) {
+    return `
+        repo${index}: repository(owner: $owner${index}, name: $name${index}) {
+            defaultBranchRef {
+                target {
+                    ... on Commit {
+                        history(author: { id: $authorId }, since: $since, until: $until, first: 100) {
+                            nodes {
+                                author {
+                                    date
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    `;
+}
+
+function extractCommitDatesFromRepoData(repoData?: Record<string, unknown>): string[] {
+    const dates: string[] = [];
+    const defaultBranchRef = repoData?.defaultBranchRef as Record<string, unknown> | undefined;
+    const target = defaultBranchRef?.target as Record<string, unknown> | undefined;
+    const history = target?.history as Record<string, unknown> | undefined;
+    const historyNodes = (history?.nodes as Array<Record<string, unknown>> | undefined) || [];
+    for (const node of historyNodes) {
+        const author = node?.author as Record<string, unknown> | undefined;
+        if (typeof author?.date === 'string') {
+            dates.push(author.date);
+        }
+    }
+    return dates;
+}
+
 async function fetchCommitDatesForTopRepos(
     authorId: string,
     token: string,
@@ -163,23 +199,7 @@ async function fetchCommitDatesForTopRepos(
     };
 
     candidates.forEach((repo, index) => {
-        fragments.push(`
-            repo${index}: repository(owner: $owner${index}, name: $name${index}) {
-                defaultBranchRef {
-                    target {
-                        ... on Commit {
-                            history(author: { id: $authorId }, since: $since, until: $until, first: 100) {
-                                nodes {
-                                    author {
-                                        date
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        `);
+        fragments.push(buildRepoFragment(index));
         variables[`owner${index}`] = repo.repository.owner.login;
         variables[`name${index}`] = repo.repository.name;
     });
@@ -198,16 +218,8 @@ async function fetchCommitDatesForTopRepos(
 
         for (let i = 0; i < candidates.length; i++) {
             const repoData = response[`repo${i}`] as Record<string, unknown> | undefined;
-            const defaultBranchRef = repoData?.defaultBranchRef as Record<string, unknown> | undefined;
-            const target = defaultBranchRef?.target as Record<string, unknown> | undefined;
-            const history = target?.history as Record<string, unknown> | undefined;
-            const historyNodes = (history?.nodes as Array<Record<string, unknown>> | undefined) || [];
-            for (const node of historyNodes) {
-                const author = node?.author as Record<string, unknown> | undefined;
-                if (typeof author?.date === 'string') {
-                    dates.push(author.date);
-                }
-            }
+            const repoDates = extractCommitDatesFromRepoData(repoData);
+            dates.push(...repoDates);
         }
 
         return dates;
