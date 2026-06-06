@@ -1,5 +1,5 @@
 import "server-only";
-import { cache } from 'react';
+import { cache } from "react";
 import { logger } from "@/lib/logger";
 
 import type {
@@ -13,11 +13,7 @@ import type {
   TopRepo,
   PinnedRepo,
 } from "./types";
-import {
-  UserNotFoundError,
-  RateLimitError,
-  GitHubApiError,
-} from "./types";
+import { UserNotFoundError, RateLimitError, GitHubApiError } from "./types";
 
 // ===== ヘルパー =====
 
@@ -40,8 +36,14 @@ export function headers(token?: string): HeadersInit {
 
 export function handleRateLimit(res: Response): never {
   const resetHeader = res.headers.get("X-RateLimit-Reset");
-  const resetTimestamp = resetHeader ? Number.parseInt(resetHeader, 10) : Math.floor(Date.now() / 1000) + 3600;
-  throw new RateLimitError(Number.isFinite(resetTimestamp) ? resetTimestamp : Math.floor(Date.now() / 1000) + 3600);
+  const resetTimestamp = resetHeader
+    ? Number.parseInt(resetHeader, 10)
+    : Math.floor(Date.now() / 1000) + 3600;
+  throw new RateLimitError(
+    Number.isFinite(resetTimestamp)
+      ? resetTimestamp
+      : Math.floor(Date.now() / 1000) + 3600,
+  );
 }
 
 async function handleResponse<T>(res: Response): Promise<T> {
@@ -58,8 +60,10 @@ async function handleResponse<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-
-function calculateStreaks(calendar: { count: number }[]): { longestStreak: number; currentStreak: number } {
+function calculateStreaks(calendar: { count: number }[]): {
+  longestStreak: number;
+  currentStreak: number;
+} {
   let longestStreak = 0;
   let currentStreak = 0;
   let streak = 0;
@@ -88,8 +92,18 @@ function calculateStreaks(calendar: { count: number }[]): { longestStreak: numbe
   return { longestStreak, currentStreak };
 }
 
-function calculateMostActiveDay(calendar: { date: string; count: number }[]): string {
-  const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+function calculateMostActiveDay(
+  calendar: { date: string; count: number }[],
+): string {
+  const weekdayNames = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
   const weekdayTotals = Array.from({ length: 7 }, () => 0);
 
   for (const day of calendar) {
@@ -102,15 +116,23 @@ function calculateMostActiveDay(calendar: { date: string; count: number }[]): st
 
   const maxWeekdayTotal = Math.max(...weekdayTotals);
   return maxWeekdayTotal > 0
-    ? weekdayNames[weekdayTotals.findIndex((count) => count === maxWeekdayTotal)]
+    ? weekdayNames[
+        weekdayTotals.findIndex((count) => count === maxWeekdayTotal)
+      ]
     : "";
 }
 
-async function graphql<T>(query: string, token?: string, variables?: Record<string, unknown>): Promise<T> {
+async function graphql<T>(
+  query: string,
+  token?: string,
+  variables?: Record<string, unknown>,
+): Promise<T> {
   if (!token) {
     throw new GitHubApiError("GraphQL API requires authentication token", 401);
   }
-  const body: { query: string; variables?: Record<string, unknown> } = { query };
+  const body: { query: string; variables?: Record<string, unknown> } = {
+    query,
+  };
   if (variables) {
     body.variables = variables;
   }
@@ -128,7 +150,10 @@ async function graphql<T>(query: string, token?: string, variables?: Record<stri
     const body = await res.text().catch(() => "Unknown error");
     throw new GitHubApiError(body, res.status);
   }
-  const json = (await res.json()) as { data?: T; errors?: { message: string }[] };
+  const json = (await res.json()) as {
+    data?: T;
+    errors?: { message: string }[];
+  };
   if (json.errors && json.errors.length > 0) {
     throw new GitHubApiError(json.errors[0].message, 422);
   }
@@ -200,26 +225,42 @@ const PINNED_REPOS_QUERY = `query($login: String!) {
   }
 }`;
 
-async function fetchBasicProfile(username: string, token?: string): Promise<GitHubUser> {
+async function fetchBasicProfile(
+  username: string,
+  token?: string,
+): Promise<GitHubUser> {
   return restGet<GitHubUser>(`/users/${encodeURIComponent(username)}`, token);
 }
 
-async function fetchOrganizations(username: string, token?: string): Promise<GitHubOrg[]> {
-  return restGet<GitHubOrg[]>(`/users/${encodeURIComponent(username)}/orgs`, token);
+async function fetchOrganizations(
+  username: string,
+  token?: string,
+): Promise<GitHubOrg[]> {
+  return restGet<GitHubOrg[]>(
+    `/users/${encodeURIComponent(username)}/orgs`,
+    token,
+  );
 }
 
-async function fetchPinnedRepos(username: string, token?: string): Promise<PinnedRepo[]> {
+async function fetchPinnedRepos(
+  username: string,
+  token?: string,
+): Promise<PinnedRepo[]> {
   if (!token) return [];
 
-  const pinned = await graphql<PinnedItemsResponse>(PINNED_REPOS_QUERY, token, { login: username }).catch(() => null);
+  const pinned = await graphql<PinnedItemsResponse>(PINNED_REPOS_QUERY, token, {
+    login: username,
+  }).catch(() => null);
 
-  return pinned?.user?.pinnedItems?.nodes?.map((n) => ({
-    name: n.name,
-    description: n.description,
-    url: n.url,
-    stargazerCount: n.stargazerCount,
-    primaryLanguage: n.primaryLanguage,
-  })) ?? [];
+  return (
+    pinned?.user?.pinnedItems?.nodes?.map((n) => ({
+      name: n.name,
+      description: n.description,
+      url: n.url,
+      stargazerCount: n.stargazerCount,
+      primaryLanguage: n.primaryLanguage,
+    })) ?? []
+  );
 }
 
 /**
@@ -230,7 +271,7 @@ async function fetchPinnedRepos(username: string, token?: string): Promise<Pinne
  */
 export async function fetchUserProfile(
   username: string,
-  token?: string
+  token?: string,
 ): Promise<UserProfile> {
   const [profile, orgs, pinnedRepos] = await Promise.all([
     fetchBasicProfile(username, token),
@@ -303,7 +344,7 @@ type RepositoriesResponse = {
  */
 export const fetchRepositories = cache(async function fetchRepositories(
   username: string,
-  token?: string
+  token?: string,
 ): Promise<RepositoryData> {
   // GraphQL は認証必須。token がない場合は REST フォールバック
   if (!token) {
@@ -338,7 +379,9 @@ export const fetchRepositories = cache(async function fetchRepositories(
     }
   }`;
 
-  const data = await graphql<RepositoriesResponse>(query, token, { login: username });
+  const data = await graphql<RepositoriesResponse>(query, token, {
+    login: username,
+  });
   if (!data.user) {
     throw new UserNotFoundError(username);
   }
@@ -347,7 +390,9 @@ export const fetchRepositories = cache(async function fetchRepositories(
   return processRepoData(repos);
 });
 
-async function fetchRepositoriesREST(username: string): Promise<RepositoryData> {
+async function fetchRepositoriesREST(
+  username: string,
+): Promise<RepositoryData> {
   type RESTRepo = {
     name: string;
     description: string | null;
@@ -360,7 +405,7 @@ async function fetchRepositoriesREST(username: string): Promise<RepositoryData> 
   };
 
   const repos = await restGet<RESTRepo[]>(
-    `/users/${encodeURIComponent(username)}/repos?per_page=100&sort=stars&direction=desc&type=all`
+    `/users/${encodeURIComponent(username)}/repos?per_page=100&sort=stars&direction=desc&type=all`,
   );
 
   const nonFork = repos.filter((r) => !r.fork);
@@ -370,7 +415,10 @@ async function fetchRepositoriesREST(username: string): Promise<RepositoryData> 
 
   for (const repo of nonFork) {
     if (repo.language) {
-      languageRepoCount.set(repo.language, (languageRepoCount.get(repo.language) ?? 0) + 1);
+      languageRepoCount.set(
+        repo.language,
+        (languageRepoCount.get(repo.language) ?? 0) + 1,
+      );
     }
     for (const topic of repo.topics ?? []) {
       const normalized = topic.trim();
@@ -379,13 +427,21 @@ async function fetchRepositoriesREST(username: string): Promise<RepositoryData> 
     }
   }
 
-  const totalRepoCount = Array.from(languageRepoCount.values()).reduce((a, b) => a + b, 0);
-  const languages: LanguageStats[] = getTopK(languageRepoCount, 10).map(({ name, count }) => ({
-    name,
-    bytes: count,
-    percentage: totalRepoCount > 0 ? Math.round((count / totalRepoCount) * 1000) / 10 : 0,
-    color: getLanguageColor(name),
-  }));
+  const totalRepoCount = Array.from(languageRepoCount.values()).reduce(
+    (a, b) => a + b,
+    0,
+  );
+  const languages: LanguageStats[] = getTopK(languageRepoCount, 10).map(
+    ({ name, count }) => ({
+      name,
+      bytes: count,
+      percentage:
+        totalRepoCount > 0
+          ? Math.round((count / totalRepoCount) * 1000) / 10
+          : 0,
+      color: getLanguageColor(name),
+    }),
+  );
 
   const topRepos: TopRepo[] = nonFork.slice(0, 5).map((r) => ({
     name: r.name,
@@ -413,7 +469,10 @@ function processRepoData(repos: RepoNode[]): RepositoryData {
       if (existing) {
         existing.bytes += edge.size;
       } else {
-        languageMap.set(edge.node.name, { bytes: edge.size, color: edge.node.color });
+        languageMap.set(edge.node.name, {
+          bytes: edge.size,
+          color: edge.node.color,
+        });
       }
     }
 
@@ -426,7 +485,10 @@ function processRepoData(repos: RepoNode[]): RepositoryData {
     }
   }
 
-  const totalBytes = Array.from(languageMap.values()).reduce((a, b) => a + b.bytes, 0);
+  const totalBytes = Array.from(languageMap.values()).reduce(
+    (a, b) => a + b.bytes,
+    0,
+  );
   const topLanguages: { name: string; bytes: number; color: string }[] = [];
   for (const [name, data] of languageMap.entries()) {
     if (topLanguages.length < 10) {
@@ -442,12 +504,15 @@ function processRepoData(repos: RepoNode[]): RepositoryData {
     }
   }
 
-  const languages: LanguageStats[] = topLanguages.map(({ name, bytes, color }) => ({
-    name,
-    bytes,
-    percentage: totalBytes > 0 ? Math.round((bytes / totalBytes) * 1000) / 10 : 0,
-    color,
-  }));
+  const languages: LanguageStats[] = topLanguages.map(
+    ({ name, bytes, color }) => ({
+      name,
+      bytes,
+      percentage:
+        totalBytes > 0 ? Math.round((bytes / totalBytes) * 1000) / 10 : 0,
+      color,
+    }),
+  );
 
   const topRepos: TopRepo[] = repos.slice(0, 5).map((r) => ({
     name: r.name,
@@ -495,7 +560,7 @@ type ContributionsResponse = {
  */
 export async function fetchContributions(
   username: string,
-  token?: string
+  token?: string,
 ): Promise<ContributionData> {
   if (!token) {
     // GraphQL 必須なので、token なしの場合はデフォルト値を返す
@@ -506,8 +571,12 @@ export async function fetchContributions(
   const oneYearAgo = new Date(now);
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
-  const sevenDaysAgoStr = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-  const thirtyDaysAgoStr = new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const sevenDaysAgoStr = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0];
+  const thirtyDaysAgoStr = new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0];
 
   const query = `query($login: String!, $from: DateTime!, $to: DateTime!) {
     user(login: $login) {
@@ -543,9 +612,8 @@ export async function fetchContributions(
     w.contributionDays.map((d) => ({
       date: d.date,
       count: d.contributionCount,
-    }))
+    })),
   );
-
 
   calendar.sort((a, b) => a.date.localeCompare(b.date));
 
@@ -600,7 +668,7 @@ type StarredRepo = {
  */
 export async function fetchStarredRepos(
   username: string,
-  token?: string
+  token?: string,
 ): Promise<InterestsData> {
   const allStarred: StarredRepo[] = [];
 
@@ -613,7 +681,7 @@ export async function fetchStarredRepos(
           Accept: "application/vnd.github+json",
         },
         next: { revalidate: 300 },
-      }
+      },
     );
 
   const [res1, res2] = await Promise.all([fetchPage(1), fetchPage(2)]);
@@ -639,7 +707,10 @@ export async function fetchStarredRepos(
     }
 
     if (repo.language) {
-      languageCounts.set(repo.language, (languageCounts.get(repo.language) ?? 0) + 1);
+      languageCounts.set(
+        repo.language,
+        (languageCounts.get(repo.language) ?? 0) + 1,
+      );
     }
   }
 
@@ -670,24 +741,45 @@ type GitHubEvent = {
  */
 export const fetchActivity = cache(async function fetchActivity(
   username: string,
-  token?: string
+  token?: string,
 ): Promise<ActivityData> {
   const pages = [1, 2, 3];
   const allEvents: GitHubEvent[] = [];
 
+  let criticalReject: (reason?: unknown) => void;
+  const criticalErrorPromise = new Promise<never>((_, reject) => {
+    criticalReject = reject;
+  });
+  // Prevent unhandled promise rejection warnings for the race condition
+  criticalErrorPromise.catch(() => {});
+
   const promises = pages.map((page) =>
     restGet<GitHubEvent[]>(
       `/users/${encodeURIComponent(username)}/events/public?per_page=100&page=${page}`,
-      token
-    )
+      token,
+    ).catch((error) => {
+      if (
+        error instanceof UserNotFoundError ||
+        error instanceof RateLimitError
+      ) {
+        criticalReject(error);
+      }
+      throw error;
+    }),
   );
 
   // Suppress unhandled promise rejections for subsequent pages if we break early or throw
-  promises.forEach((p) => p.catch((e) => logger.error("Event fetch promise rejected:", e)));
+  promises.forEach((p) =>
+    p.catch((e) => {
+      if (!(e instanceof UserNotFoundError) && !(e instanceof RateLimitError)) {
+        logger.error("Event fetch promise rejected:", e);
+      }
+    }),
+  );
 
   for (const p of promises) {
     try {
-      const events = await p;
+      const events = await Promise.race([p, criticalErrorPromise]);
       allEvents.push(...events);
       if (events.length < 100) break;
     } catch (error) {
@@ -703,7 +795,7 @@ export const fetchActivity = cache(async function fetchActivity(
 
   // 曜日×時間帯ヒートマップ (7×24)
   const heatmap: number[][] = Array.from({ length: 7 }, () =>
-    Array.from({ length: 24 }, () => 0)
+    Array.from({ length: 24 }, () => 0),
   );
 
   const eventCountMap = new Map<string, number>();
@@ -720,8 +812,10 @@ export const fetchActivity = cache(async function fetchActivity(
     }
 
     // Fast hour extraction from YYYY-MM-DDTHH:MM:SSZ
-    const charCodeZero = '0'.charCodeAt(0);
-    const hour = (createdAt.charCodeAt(11) - charCodeZero) * 10 + (createdAt.charCodeAt(12) - charCodeZero);
+    const charCodeZero = "0".charCodeAt(0);
+    const hour =
+      (createdAt.charCodeAt(11) - charCodeZero) * 10 +
+      (createdAt.charCodeAt(12) - charCodeZero);
     heatmap[day][hour]++;
 
     eventCountMap.set(event.type, (eventCountMap.get(event.type) ?? 0) + 1);
@@ -740,12 +834,14 @@ export const fetchActivity = cache(async function fetchActivity(
 
 // ===== 6. fetchUserSummary =====
 
-
 /**
  * 効率的に Map から上位 K 件を抽出するヘルパー関数
  * 配列の作成とソートを最小限に抑えることでパフォーマンスを向上させます
  */
-function getTopK(map: Map<string, number>, k: number = 10): { name: string; count: number }[] {
+function getTopK(
+  map: Map<string, number>,
+  k: number = 10,
+): { name: string; count: number }[] {
   const top: { name: string; count: number }[] = [];
   for (const [name, count] of map.entries()) {
     if (top.length < k) {
@@ -769,12 +865,15 @@ function getTopK(map: Map<string, number>, k: number = 10): { name: string; coun
 function processResult<T>(
   result: PromiseSettledResult<T>,
   section: string,
-  errors: { section: string; message: string }[]
+  errors: { section: string; message: string }[],
 ): T | null {
   if (result.status === "fulfilled") {
     return result.value;
   }
-  errors.push({ section, message: result.reason?.message ?? String(result.reason ?? "Unknown error") });
+  errors.push({
+    section,
+    message: result.reason?.message ?? String(result.reason ?? "Unknown error"),
+  });
   return null;
 }
 
@@ -785,7 +884,7 @@ function processResult<T>(
  */
 export async function fetchUserSummary(
   username: string,
-  token?: string
+  token?: string,
 ): Promise<UserSummary> {
   const [
     profileResult,
@@ -802,7 +901,10 @@ export async function fetchUserSummary(
   ]);
 
   // profileが404の場合はUserNotFoundErrorを再スロー
-  if (profileResult.status === "rejected" && profileResult.reason instanceof UserNotFoundError) {
+  if (
+    profileResult.status === "rejected" &&
+    profileResult.reason instanceof UserNotFoundError
+  ) {
     throw profileResult.reason;
   }
 
