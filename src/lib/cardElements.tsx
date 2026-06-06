@@ -7,6 +7,8 @@ import type {
 } from "./cardOptions";
 import { resolveBlockLayout } from "./cardOptions";
 
+const MAX_BIO_LENGTH = 110;
+
 export type ThemePalette = {
   bg: string;
   panel: string;
@@ -98,8 +100,8 @@ function createBioBlock(data: CardData, theme: ThemePalette): ReactElement {
         </div>
         {data.profile.bio ? (
           <div style={{ color: theme.subtext, fontSize: 13, maxWidth: 470 }}>
-            {data.profile.bio.length > 110
-              ? `${data.profile.bio.slice(0, 110)}...`
+            {data.profile.bio.length > MAX_BIO_LENGTH
+              ? `${data.profile.bio.slice(0, MAX_BIO_LENGTH)}...`
               : data.profile.bio}
           </div>
         ) : null}
