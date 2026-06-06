@@ -1,0 +1,13 @@
+🎯 **What:** The code health issue addressed
+Replaced the use of magic numbers (`404`, `504`) in `src/lib/cardDataFetcher.ts` with explicit, descriptive constants. We introduced a new `HTTP_STATUS` constant object in `src/lib/types.ts` that includes common HTTP status codes and exported it for general application usage.
+
+💡 **Why:** How this improves maintainability
+Magic numbers obscure the meaning of code by hiding intent behind arbitrary numbers. By extracting these into a centralized `HTTP_STATUS` constant object, the code's readability and maintainability are significantly improved. It provides better context, avoids typos, and standardizes how status codes are referenced across the application.
+
+✅ **Verification:** How you confirmed the change is safe
+- Executed `npm run lint` and resolved any new issues (there were none).
+- Ran the full Vitest suite (`npm run test`) and confirmed that all 551 tests across 71 files passed successfully.
+- Manually verified the changes in both `src/lib/types.ts` and `src/lib/cardDataFetcher.ts`.
+
+✨ **Result:** The improvement achieved
+The `fetchCardData` and `getJson` logic in `src/lib/cardDataFetcher.ts` is cleaner and easier to understand at a glance, with a robust baseline for other files to adopt standard HTTP status code references in the future.

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { GitHubApiError } from "@/lib/types";
+import { GitHubApiError, HTTP_STATUS } from "@/lib/types";
 
 type GitHubUser = {
     login: string;
@@ -89,15 +89,15 @@ async function getJson<T>(url: string): Promise<{ status: number; data: T | null
         });
     } catch (error) {
         if ((error as Error).name === "AbortError") {
-            throw new GitHubApiError("GitHub API request timed out", 504);
+            throw new GitHubApiError("GitHub API request timed out", HTTP_STATUS.GATEWAY_TIMEOUT);
         }
         throw error;
     } finally {
         clearTimeout(timeoutId);
     }
 
-    if (response.status === 404) {
-        return { status: 404, data: null };
+    if (response.status === HTTP_STATUS.NOT_FOUND) {
+        return { status: HTTP_STATUS.NOT_FOUND, data: null };
     }
 
     if (!response.ok) {
@@ -229,7 +229,7 @@ export async function fetchCardData(username: string): Promise<CardData | null> 
         getJson<GitHubRepo[]>(reposUrl),
     ]);
 
-    if (!profileResult.data || profileResult.status === 404) {
+    if (!profileResult.data || profileResult.status === HTTP_STATUS.NOT_FOUND) {
         return null;
     }
 
