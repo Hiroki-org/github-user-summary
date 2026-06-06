@@ -135,7 +135,7 @@ describe("cardElements utility functions", () => {
       mockData.profile.bio = longBio;
 
       const element = createBlock("bio", mockData, mockTheme, new Set()) as React.ReactElement;
-      const bioDiv = element.props.children[1].props.children[2];
+      const bioDiv = (element as React.ReactElement<any>).props.children[1].props.children[2];
       const renderedText = bioDiv.props.children;
       expect(renderedText).toBe("A".repeat(MAX_BIO_LENGTH) + "...");
     });
@@ -145,7 +145,7 @@ describe("cardElements utility functions", () => {
       mockData.profile.bio = shortBio;
 
       const element = createBlock("bio", mockData, mockTheme, new Set()) as React.ReactElement;
-      const bioDiv = element.props.children[1].props.children[2];
+      const bioDiv = (element as React.ReactElement<any>).props.children[1].props.children[2];
       const renderedText = bioDiv.props.children;
       expect(renderedText).toBe(shortBio);
     });
