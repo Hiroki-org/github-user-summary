@@ -24,6 +24,14 @@ import {
 const GITHUB_API = "https://api.github.com";
 const GITHUB_GRAPHQL = "https://api.github.com/graphql";
 
+const HTTP_STATUS = {
+  BAD_REQUEST: 400,
+  UNAUTHORIZED: 401,
+  FORBIDDEN: 403,
+  NOT_FOUND: 404,
+} as const;
+
+
 export function headers(token?: string): HeadersInit {
   const h: HeadersInit = {
     Accept: "application/vnd.github+json",
@@ -31,7 +39,7 @@ export function headers(token?: string): HeadersInit {
   };
   if (token) {
     if (!/^[A-Za-z0-9_=-]+$/.test(token)) {
-      throw new GitHubApiError("Invalid token format", 400);
+      throw new GitHubApiError("Invalid token format", HTTP_STATUS.BAD_REQUEST);
     }
     h.Authorization = `Bearer ${token}`;
   }
@@ -45,10 +53,10 @@ export function handleRateLimit(res: Response): never {
 }
 
 async function handleResponse<T>(res: Response): Promise<T> {
-  if (res.status === 404) {
+  if (res.status === HTTP_STATUS.NOT_FOUND) {
     throw new UserNotFoundError("unknown");
   }
-  if (res.status === 403) {
+  if (res.status === HTTP_STATUS.FORBIDDEN) {
     handleRateLimit(res);
   }
   if (!res.ok) {
@@ -108,7 +116,7 @@ function calculateMostActiveDay(calendar: { date: string; count: number }[]): st
 
 async function graphql<T>(query: string, token?: string, variables?: Record<string, unknown>): Promise<T> {
   if (!token) {
-    throw new GitHubApiError("GraphQL API requires authentication token", 401);
+    throw new GitHubApiError("GraphQL API requires authentication token", HTTP_STATUS.UNAUTHORIZED);
   }
   const body: { query: string; variables?: Record<string, unknown> } = { query };
   if (variables) {
@@ -121,7 +129,7 @@ async function graphql<T>(query: string, token?: string, variables?: Record<stri
     body: JSON.stringify(body),
     next: { revalidate: 300 },
   });
-  if (res.status === 403) {
+  if (res.status === HTTP_STATUS.FORBIDDEN) {
     handleRateLimit(res);
   }
   if (!res.ok) {
@@ -499,7 +507,7 @@ export async function fetchContributions(
 ): Promise<ContributionData> {
   if (!token) {
     // GraphQL 必須なので、token なしの場合はデフォルト値を返す
-    throw new GitHubApiError("Contributions data requires authentication", 401);
+    throw new GitHubApiError("Contributions data requires authentication", HTTP_STATUS.UNAUTHORIZED);
   }
 
   const now = new Date();
