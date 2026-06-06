@@ -1,3 +1,4 @@
+import { logger } from "./logger";
 /**
  * Validates a GitHub username.
  * Rules:
@@ -64,8 +65,8 @@ function getTrustedFontOrigins(): Set<string> {
       if (configuredOrigin.startsWith("https://")) {
         origins.add(configuredOrigin);
       }
-    } catch {
-      // Ignore invalid deployment configuration and fall back to the fixed allowlist.
+    } catch (err) {
+      logger.warn("Invalid APP_URL deployment configuration. Falling back to fixed allowlist.", err);
     }
   }
 
@@ -121,7 +122,8 @@ export function isTrustedFontUrl(url: string, allowedOrigin?: string): boolean {
     }
 
     return false;
-  } catch {
+  } catch (err) {
+    logger.warn("Invalid URL provided to isTrustedFontUrl.", err);
     return false;
   }
 }
