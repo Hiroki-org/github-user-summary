@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getDefaultCardSettings, loadCardSettings, saveCardSettings } from "../cardSettings";
 import { DEFAULT_CARD_LAYOUT, CardLayout, CardDisplayOptions } from "../types";
+import { logger } from "../logger";
 import { CardBlockType } from "../cardOptions";
 import { normalizeCardLayout } from "../cardLayout";
 
@@ -155,10 +156,24 @@ describe("cardSettings", () => {
         });
 
     describe("saveCardSettings", () => {
+        let loggerErrorSpy: ReturnType<typeof vi.spyOn>;
+
+        beforeEach(() => {
+            loggerErrorSpy = vi.spyOn(logger, "error").mockImplementation(() => {});
+        });
+
         it("does nothing when window is undefined", () => {
             vi.stubGlobal("window", undefined);
             saveCardSettings(DEFAULT_CARD_LAYOUT, getDefaultCardSettings().options);
             expect(setItemMock).not.toHaveBeenCalled();
+        });
+
+        it("logs an error if saving to localStorage fails", () => {
+            setItemMock.mockImplementation(() => {
+                throw new Error("Quota Exceeded");
+            });
+            saveCardSettings(DEFAULT_CARD_LAYOUT, getDefaultCardSettings().options);
+            expect(loggerErrorSpy).toHaveBeenCalledWith("Failed to save card settings to localStorage", expect.any(Error));
         });
 
         it("saves settings to localStorage", () => {
