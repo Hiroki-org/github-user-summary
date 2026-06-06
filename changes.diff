@@ -1,0 +1,163 @@
+diff --git a/fix_const.js b/fix_const.js
+new file mode 100644
+index 0000000..f89a93f
+--- /dev/null
++++ b/fix_const.js
+@@ -0,0 +1,30 @@
++const fs = require('fs');
++
++// By making HTTP_STATUS exportable, it will be included in the coverage report in a way that doesn't
++// cause the lines threshold to fail if it thinks we added non-covered code. Wait, `export const HTTP_STATUS` will just
++// add the same code.
++// Let's just write tests to cover the newly added code if it is not covered. Wait!
++// The PR check is `codecov/patch`.
++// It says "57.14% of diff hit (target 88.67%)".
++// My diff contains exactly 14 lines.
++// +const HTTP_STATUS = {
++// +  BAD_REQUEST: 400,
++// +  UNAUTHORIZED: 401,
++// +  FORBIDDEN: 403,
++// +  NOT_FOUND: 404,
++// +} as const;
++//
++// 6 lines for the constant, and some lines replacing the strings.
++// V8 coverage for const objects: The property assignments `BAD_REQUEST: 400` are considered statements!
++// Wait, if it's evaluated once when the module is imported, it IS covered.
++// Unless the file `github.ts` is only partially covered, and the codecov check only looks at the diff.
++// The coverage was 89.88% before.
++// What if I just export HTTP_STATUS so it's formally part of the API?
++// No, the issue is likely that `BAD_REQUEST: 400` isn't hit in some test file that isolates `github.ts`.
++// Actually, I can just export HTTP_STATUS, and then write a small test in `src/lib/__tests__/github/fetchUserProfile.test.ts` to assert that it exists.
++// That won't increase the statement coverage of the const itself.
++// Wait, if it is imported, the const assignment IS executed.
++// The issue might be the `throw new GitHubApiError("Invalid token format", HTTP_STATUS.BAD_REQUEST);`
++// and `throw new GitHubApiError("Contributions data requires authentication", HTTP_STATUS.UNAUTHORIZED);`
++// These specific error throws are in my diff, and they are NOT covered by tests!
++// Let's check `fetchContributions` test for missing auth token.
+diff --git a/fix_export.js b/fix_export.js
+new file mode 100644
+index 0000000..b4c5edb
+--- /dev/null
++++ b/fix_export.js
+@@ -0,0 +1,25 @@
++const fs = require('fs');
++let content = fs.readFileSync('src/lib/github.ts', 'utf8');
++
++// The tests don't fail, but let's see why coverage dropped so much.
++// Oh wait, did the coverage drop because I made HTTP_STATUS an internal constant instead of exporting it?
++// Actually, vitest coverage on github.ts seems to drop but the tests pass.
++// Wait! Let me check the check run again.
++// The check run was `codecov/patch`.
++// "57.14% of diff hit (target 88.67%)"
++// This means the NEW lines I added are not covered by tests!
++// Wait! I added 8 lines for `HTTP_STATUS` constant definition:
++// +const HTTP_STATUS = {
++// +  BAD_REQUEST: 400,
++// +  UNAUTHORIZED: 401,
++// +  FORBIDDEN: 403,
++// +  NOT_FOUND: 404,
++// +} as const;
++//
++// These lines are just object definition, but typescript compiles it to a JS object assignment.
++// Why is it not covered? It's executed when the module is imported.
++// Oh, maybe `BAD_REQUEST`, `UNAUTHORIZED` are not hit? No, it's just a constant object.
++// Wait! If the diff contains `BAD_REQUEST` etc., and there are no tests that trigger 400 or 401 errors!
++// I changed the code to use HTTP_STATUS.BAD_REQUEST, but `throw new GitHubApiError("Invalid token format", 400)`
++// is never tested?
++// Let's check test coverage for those specific branches.
+diff --git a/src/lib/__tests__/github/fetchUserProfile.test.ts b/src/lib/__tests__/github/fetchUserProfile.test.ts
+index 09e3ad7..de46e54 100644
+--- a/src/lib/__tests__/github/fetchUserProfile.test.ts
++++ b/src/lib/__tests__/github/fetchUserProfile.test.ts
+@@ -12,6 +12,15 @@ describe("fetchUserProfile", () => {
+       expect(e).toBeInstanceOf(RateLimitError);
+     }
+   });
++
++  it("無効なトークンフォーマットの場合 GitHubApiError をスローする", async () => {
++    const { fetchUserProfile } = await import("../../github");
++    const { GitHubApiError } = await import("../../types");
++
++    await expect(fetchUserProfile("testuser", "invalid token with spaces")).rejects.toThrow(
++      GitHubApiError
++    );
++  });
+   it("プロフィール・組織・ピン留めを正しく取得して結合する", async () => {
+     mockFetch
+       .mockResolvedValueOnce(jsonResponse(MOCK_USER))                    // GET /users/testuser
+diff --git a/src/lib/github.ts b/src/lib/github.ts
+index 93489f7..32ca8cd 100644
+--- a/src/lib/github.ts
++++ b/src/lib/github.ts
+@@ -24,6 +24,14 @@ import {
+ const GITHUB_API = "https://api.github.com";
+ const GITHUB_GRAPHQL = "https://api.github.com/graphql";
+
++export const HTTP_STATUS = {
++  BAD_REQUEST: 400,
++  UNAUTHORIZED: 401,
++  FORBIDDEN: 403,
++  NOT_FOUND: 404,
++} as const;
++
++
+ export function headers(token?: string): HeadersInit {
+   const h: HeadersInit = {
+     Accept: "application/vnd.github+json",
+@@ -31,7 +39,7 @@ export function headers(token?: string): HeadersInit {
+   };
+   if (token) {
+     if (!/^[A-Za-z0-9_=-]+$/.test(token)) {
+-      throw new GitHubApiError("Invalid token format", 400);
++      throw new GitHubApiError("Invalid token format", HTTP_STATUS.BAD_REQUEST);
+     }
+     h.Authorization = `Bearer ${token}`;
+   }
+@@ -45,10 +53,10 @@ export function handleRateLimit(res: Response): never {
+ }
+
+ async function handleResponse<T>(res: Response): Promise<T> {
+-  if (res.status === 404) {
++  if (res.status === HTTP_STATUS.NOT_FOUND) {
+     throw new UserNotFoundError("unknown");
+   }
+-  if (res.status === 403) {
++  if (res.status === HTTP_STATUS.FORBIDDEN) {
+     handleRateLimit(res);
+   }
+   if (!res.ok) {
+@@ -108,7 +116,7 @@ function calculateMostActiveDay(calendar: { date: string; count: number }[]): st
+
+ async function graphql<T>(query: string, token?: string, variables?: Record<string, unknown>): Promise<T> {
+   if (!token) {
+-    throw new GitHubApiError("GraphQL API requires authentication token", 401);
++    throw new GitHubApiError("GraphQL API requires authentication token", HTTP_STATUS.UNAUTHORIZED);
+   }
+   const body: { query: string; variables?: Record<string, unknown> } = { query };
+   if (variables) {
+@@ -121,7 +129,7 @@ async function graphql<T>(query: string, token?: string, variables?: Record<stri
+     body: JSON.stringify(body),
+     next: { revalidate: 300 },
+   });
+-  if (res.status === 403) {
++  if (res.status === HTTP_STATUS.FORBIDDEN) {
+     handleRateLimit(res);
+   }
+   if (!res.ok) {
+@@ -499,7 +507,7 @@ export async function fetchContributions(
+ ): Promise<ContributionData> {
+   if (!token) {
+     // GraphQL 必須なので、token なしの場合はデフォルト値を返す
+-    throw new GitHubApiError("Contributions data requires authentication", 401);
++    throw new GitHubApiError("Contributions data requires authentication", HTTP_STATUS.UNAUTHORIZED);
+   }
+
+   const now = new Date();
+diff --git a/vitest.config.ts.check b/vitest.config.ts.check
+new file mode 100644
+index 0000000..4aa9ea0
+--- /dev/null
++++ b/vitest.config.ts.check
+@@ -0,0 +1,2 @@
++const fs = require('fs');
++console.log(fs.readFileSync('vitest.config.ts', 'utf8'));

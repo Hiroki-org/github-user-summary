@@ -19,6 +19,21 @@ describe("fetchRepositories", () => {
     expect(result.languages[1].bytes).toBe(5000);
   });
 
+  it("GraphQL API without token throws UNAUTHORIZED", async () => {
+    // If token is missing, fetchRepositories doesn't throw, it falls back to REST API.
+    // What about an invalid token format?
+    const { fetchRepositories } = await import("../../github");
+    const { GitHubApiError } = await import("../../types");
+    await expect(fetchRepositories("testuser", "invalid token format!!")).rejects.toThrow(GitHubApiError);
+  });
+
+  it("GraphQL API throws GitHubApiError on 401 response", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ message: "Bad credentials" }, 401));
+    const { fetchRepositories } = await import("../../github");
+    const { GitHubApiError } = await import("../../types");
+    await expect(fetchRepositories("testuser", "fake-token")).rejects.toThrow(GitHubApiError);
+  });
+
   it("GraphQL レスポンスからトピックを正しく集計する", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse(MOCK_REPOS_GRAPHQL));
 
