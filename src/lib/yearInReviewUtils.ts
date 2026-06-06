@@ -1,3 +1,6 @@
+const HOURS_IN_DAY = 24;
+const DAYS_IN_WEEK = 7;
+
 /**
  * Builds a 7x24 hourly heatmap (7 days x 24 hours) from an array of commit date strings.
  *
@@ -5,7 +8,7 @@
  * @returns A 2D array representing the heatmap [day][hour].
  */
 export function buildHourlyHeatmapFromCommitDates(commitDates: string[]): number[][] {
-    const heatmap = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
+    const heatmap = Array.from({ length: DAYS_IN_WEEK }, () => Array.from({ length: HOURS_IN_DAY }, () => 0));
 
     // Performance Optimization: Cache weekday calculations to avoid expensive Date parsing in the loop
     const dayCache = new Map<string, number>();
@@ -45,7 +48,7 @@ export function buildHourlyHeatmapFromCommitDates(commitDates: string[]): number
         const hour = h1 * 10 + h2;
 
         // Ensure hour is within valid range and handle potential timezone offsets
-        if (hour < 0 || hour > 23 || !dateString.endsWith("Z")) {
+        if (hour < 0 || hour > HOURS_IN_DAY - 1 || !dateString.endsWith("Z")) {
             parseFallbackDate(dateString, heatmap);
             continue;
         }
@@ -71,17 +74,17 @@ function parseFallbackDate(dateString: string, heatmap: number[][]): void {
 export function getMostActiveHour(heatmap: number[][]): number {
     const isValidHeatmap =
         Array.isArray(heatmap) &&
-        heatmap.length === 7 &&
-        heatmap.every((row) => Array.isArray(row) && row.length === 24 && row.every((count) => Number.isFinite(count)));
+        heatmap.length === DAYS_IN_WEEK &&
+        heatmap.every((row) => Array.isArray(row) && row.length === HOURS_IN_DAY && row.every((count) => Number.isFinite(count)));
 
     if (!isValidHeatmap) {
         return 0;
     }
     let maxCount = -1;
     let mostActiveHour = 0;
-    for (let hour = 0; hour < 24; hour += 1) {
+    for (let hour = 0; hour < HOURS_IN_DAY; hour += 1) {
         let total = 0;
-        for (let day = 0; day < 7; day += 1) {
+        for (let day = 0; day < DAYS_IN_WEEK; day += 1) {
             total += heatmap[day][hour];
         }
         if (total > maxCount) {
@@ -100,7 +103,7 @@ export function getMostActiveHour(heatmap: number[][]): number {
  */
 export function getMostActiveDayFromCalendar(calendar: { date: string; count: number }[]): string {
     const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    const totals = Array.from({ length: 7 }, () => 0);
+    const totals = Array.from({ length: DAYS_IN_WEEK }, () => 0);
 
     for (const day of calendar) {
         if (day.count <= 0) {
