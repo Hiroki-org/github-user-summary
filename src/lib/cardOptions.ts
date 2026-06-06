@@ -30,6 +30,10 @@ export const VALID_BLOCKS: CardBlockType[] = [
 ];
 export const VALID_LAYOUT_SLOTS: CardLayoutSlot[] = ["left", "right", "full"];
 
+export const DEFAULT_WIDTH = 600;
+export const MIN_WIDTH = 320;
+export const MAX_WIDTH = 1400;
+
 function toList(csv: string | null): string[] {
   if (!csv) {
     return [];
@@ -42,11 +46,11 @@ function toList(csv: string | null): string[] {
 
 function parseWidth(raw: string | null): number {
   if (!raw) {
-    return 600;
+    return DEFAULT_WIDTH;
   }
   const value = Number.parseInt(raw, 10);
-  if (!Number.isFinite(value) || value < 320 || value > 1400) {
-    return 600;
+  if (!Number.isFinite(value) || value < MIN_WIDTH || value > MAX_WIDTH) {
+    return DEFAULT_WIDTH;
   }
   return value;
 }
