@@ -206,4 +206,14 @@ describe("isTrustedFontUrl", () => {
       isTrustedFontUrl("https://localhost:3000/fonts/NotoSans-Regular.ttf", "https://localhost:3000"),
     ).toBe(false);
   });
+  it("handles invalid APP_URL gracefully and falls back to allowlist", () => {
+    process.env.APP_URL = "invalid-url";
+    expect(
+      isTrustedFontUrl(
+        "https://github-user-summary.vercel.app/fonts/NotoSans-Regular.ttf",
+        "https://github-user-summary.vercel.app"
+      )
+    ).toBe(true);
+  });
+
 });
