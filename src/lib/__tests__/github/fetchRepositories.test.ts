@@ -19,6 +19,13 @@ describe("fetchRepositories", () => {
     expect(result.languages[1].bytes).toBe(5000);
   });
 
+  it("GraphQL API throws RateLimitError on 403 response", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ message: "API rate limit exceeded" }, 403, { "X-RateLimit-Reset": "1700000000" }));
+    const { fetchRepositories } = await import("../../github");
+    const { RateLimitError } = await import("../../types");
+    await expect(fetchRepositories("testuser", "fake-token")).rejects.toThrow(RateLimitError);
+  });
+
   it("GraphQL API without token throws UNAUTHORIZED", async () => {
     // If token is missing, fetchRepositories doesn't throw, it falls back to REST API.
     // What about an invalid token format?

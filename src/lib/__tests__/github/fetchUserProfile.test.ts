@@ -13,25 +13,21 @@ describe("fetchUserProfile", () => {
     }
   });
 
-  it("GraphQL query fails when forbidden due to bad token", async () => {
-    mockFetch
-      .mockResolvedValueOnce(jsonResponse(MOCK_USER))                    // GET /users/testuser
-      .mockResolvedValueOnce(jsonResponse(MOCK_ORGS))                    // GET /users/testuser/orgs
-      .mockResolvedValueOnce(jsonResponse(null, 401));                   // POST graphql
-
-    const { fetchUserProfile } = await import("../../github");
+  it("GraphQL API without token throws UNAUTHORIZED correctly through API error", async () => {
+    const { fetchContributions } = await import("../../github");
     const { GitHubApiError } = await import("../../types");
-
-    // We actually expect the API to not fail entirely if just GraphQL fails in fetchUserProfile
-    // fetchUserProfile swallows graphql errors or returns empty pinnedRepos?
-    // Let's just test graphql method directly or catch the correct error.
-    // Wait, fetchUserProfile graphql is:
-    // const data = await graphql<PinnedReposResponse>(query, token, { login: username }).catch(() => null);
-    // Ah, it catches and returns null! So it won't throw GitHubApiError!
-    // That's why it resolved with pinnedRepos: []
-    // Let's just remove this test.
-
+    await expect(fetchContributions("testuser")).rejects.toThrow(GitHubApiError);
   });
+
+  it("HTTP_STATUS object contains correct status codes", async () => {
+    const { HTTP_STATUS } = await import("../../github");
+    expect(HTTP_STATUS.BAD_REQUEST).toBe(400);
+    expect(HTTP_STATUS.UNAUTHORIZED).toBe(401);
+    expect(HTTP_STATUS.FORBIDDEN).toBe(403);
+    expect(HTTP_STATUS.NOT_FOUND).toBe(404);
+  });
+
+
 
   it("無効なトークンフォーマットの場合 GitHubApiError をスローする", async () => {
     const { fetchUserProfile } = await import("../../github");
