@@ -90,7 +90,6 @@ describe("getMostActiveHour", () => {
     });
 
     it("returns 0 if a row is not an array", () => {
-        // @ts-expect-error Intentionally invalid input
         const heatmap: number[][] = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
         // @ts-expect-error Intentionally invalid input
         heatmap[0] = "not-an-array";
