@@ -212,6 +212,62 @@ describe("fetchYearInReviewData success paths", () => {
         expect(data.topRepository).toBeNull();
     });
 
+
+
+
+
+    it("falls back to empty array and logs error if fetchCommitDatesForTopRepos throws an exception", async () => {
+        let callCount = 0;
+        const loggerSpy = vi.spyOn(logger, 'error').mockImplementation(() => {});
+        mockFetch.mockImplementation((url: string | URL | Request) => {
+            const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
+            if (urlStr.includes("/graphql")) {
+                callCount++;
+                if (callCount === 1) {
+                    // combined query
+                    return Promise.resolve(jsonResponse({
+                        data: {
+                            user: {
+                                id: "MDQ6VXNlcjEyMzQ1",
+                                contributionsCollection: {
+                                    totalCommitContributions: 10,
+                                    totalPullRequestContributions: 0,
+                                    totalIssueContributions: 0,
+                                    totalPullRequestReviewContributions: 0,
+                                    contributionCalendar: {
+                                        totalContributions: 10,
+                                        weeks: []
+                                    },
+                                    commitContributionsByRepository: [
+                                        {
+                                            repository: { owner: { login: "user1" }, name: "repo1" },
+                                            contributions: { totalCount: 10 }
+                                        }
+                                    ],
+                                    pullRequestContributionsByRepository: [],
+                                    issueContributionsByRepository: []
+                                }
+                            }
+                        }
+                    }));
+                }
+                if (callCount === 2) {
+                    // Fail the batch query by throwing an error directly
+                    throw new Error("Simulated network failure for commit dates");
+                }
+            }
+            return Promise.resolve(jsonResponse([], 200));
+        });
+
+        try {
+            const data = await fetchYearInReviewData("testuser", 2024, "fake-token");
+            expect(data.year).toBe(2024);
+            expect(loggerSpy).toHaveBeenCalledWith("Failed to fetch commit dates via GraphQL:", expect.any(Error));
+        } finally {
+            loggerSpy.mockRestore();
+        }
+    });
+
     it("falls back to empty array if fetchCommitDatesForTopRepos batch query fails", async () => {
         let callCount = 0;
         const loggerSpy = vi.spyOn(logger, 'error').mockImplementation(() => {});
