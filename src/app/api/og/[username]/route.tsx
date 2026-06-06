@@ -11,6 +11,7 @@ const rateLimiter = new RateLimiter(50, 60 * 1000);
 const ONE_HOUR_IN_SECONDS = 60 * 60;
 const ONE_DAY_IN_SECONDS = 24 * ONE_HOUR_IN_SECONDS;
 const OG_CACHE_CONTROL = `public, max-age=${ONE_HOUR_IN_SECONDS}, s-maxage=${ONE_DAY_IN_SECONDS}, stale-while-revalidate=${ONE_DAY_IN_SECONDS}`;
+const MAX_BIO_LENGTH = 120;
 
 export async function GET(
   request: NextRequest,
@@ -132,7 +133,7 @@ export async function GET(
               maxHeight: "68px",
             }}
           >
-            {bio.length > 120 ? `${bio.slice(0, 120)}…` : bio}
+            {bio.length > MAX_BIO_LENGTH ? `${bio.slice(0, MAX_BIO_LENGTH)}…` : bio}
           </div>
         )}
 
