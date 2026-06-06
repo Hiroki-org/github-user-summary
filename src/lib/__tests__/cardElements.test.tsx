@@ -1,5 +1,7 @@
+import React from "react";
 import { describe, it, expect } from "vitest";
-import { estimateHeight, levelColor } from "../cardElements";
+import { estimateHeight, levelColor, createBlock, MAX_BIO_LENGTH } from "../cardElements";
+import type { CardData } from "../cardDataFetcher";
 import type { CardRenderOptions } from "../cardOptions";
 
 describe("cardElements utility functions", () => {
@@ -105,6 +107,47 @@ describe("cardElements utility functions", () => {
       expect(levelColor(8, 10, mockTheme)).toBe("#15803d");
       expect(levelColor(10, 10, mockTheme)).toBe("#15803d");
       expect(levelColor(15, 10, mockTheme)).toBe("#15803d"); // > 1
+    });
+  });
+
+  describe("createBlock - bio", () => {
+    const mockTheme = {
+      bg: "#fff",
+      panel: "#f8f9fa",
+      text: "#000",
+      subtext: "#666",
+      border: "#ccc",
+      success: "#0f0",
+      accent: "#3b82f6",
+    };
+
+    const mockData = {
+      profile: {
+        avatarUrl: "https://example.com/avatar.png",
+        name: "Test User",
+        login: "testuser",
+        bio: "",
+      }
+    } as unknown as CardData;
+
+    it("truncates bio if it exceeds MAX_BIO_LENGTH", () => {
+      const longBio = "A".repeat(MAX_BIO_LENGTH + 10);
+      mockData.profile.bio = longBio;
+
+      const element = createBlock("bio", mockData, mockTheme, new Set()) as React.ReactElement;
+      const bioDiv = element.props.children[1].props.children[2];
+      const renderedText = bioDiv.props.children;
+      expect(renderedText).toBe("A".repeat(MAX_BIO_LENGTH) + "...");
+    });
+
+    it("does not truncate bio if it is within MAX_BIO_LENGTH", () => {
+      const shortBio = "A".repeat(MAX_BIO_LENGTH);
+      mockData.profile.bio = shortBio;
+
+      const element = createBlock("bio", mockData, mockTheme, new Set()) as React.ReactElement;
+      const bioDiv = element.props.children[1].props.children[2];
+      const renderedText = bioDiv.props.children;
+      expect(renderedText).toBe(shortBio);
     });
   });
 });

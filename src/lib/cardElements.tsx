@@ -7,7 +7,7 @@ import type {
 } from "./cardOptions";
 import { resolveBlockLayout } from "./cardOptions";
 
-const MAX_BIO_LENGTH = 110;
+export const MAX_BIO_LENGTH = 110;
 
 export type ThemePalette = {
   bg: string;
