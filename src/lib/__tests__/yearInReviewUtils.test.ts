@@ -78,6 +78,31 @@ describe("buildHourlyHeatmapFromCommitDates", () => {
 
 
 describe("getMostActiveHour", () => {
+    it("returns 0 if heatmap does not have 7 rows", () => {
+        const heatmap = Array.from({ length: 6 }, () => Array.from({ length: 24 }, () => 0));
+        expect(getMostActiveHour(heatmap)).toBe(0);
+    });
+
+    it("returns 0 if a row does not have 24 hours", () => {
+        const heatmap = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
+        heatmap[0] = Array.from({ length: 23 }, () => 0);
+        expect(getMostActiveHour(heatmap)).toBe(0);
+    });
+
+    it("returns 0 if a row is not an array", () => {
+        // @ts-expect-error Intentionally invalid input
+        const heatmap: number[][] = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
+        // @ts-expect-error Intentionally invalid input
+        heatmap[0] = "not-an-array";
+        expect(getMostActiveHour(heatmap)).toBe(0);
+    });
+
+    it("returns 0 if an element in a row is not finite", () => {
+        const heatmap = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
+        heatmap[0][0] = NaN;
+        expect(getMostActiveHour(heatmap)).toBe(0);
+    });
+
     it("returns 0 if heatmap is malformed (not 7x24 matrix)", () => {
         expect(getMostActiveHour([])).toBe(0);
         expect(getMostActiveHour([[1,2,3]])).toBe(0);
@@ -176,6 +201,18 @@ describe("getMostActiveDayFromCalendar", () => {
 });
 
 describe("buildHourlyHeatmapFromCommitDates - edge cases", () => {
+    it("falls back to full date parsing when fast path check fails", () => {
+        const commitDates = ["2023-01-01T10:00:00+00:00"]; // Invalid timezone ending format for fast path, uses T but not Z
+        const heatmap = buildHourlyHeatmapFromCommitDates(commitDates);
+        expect(heatmap[0][10]).toBe(1);
+    });
+
+    it("falls back to full date parsing when new Date parsing fails", () => {
+        const commitDates = ["2023-13-45T10:00:00Z"]; // Invalid date part
+        const heatmap = buildHourlyHeatmapFromCommitDates(commitDates);
+        expect(heatmap.flat().reduce((sum, count) => sum + count, 0)).toBe(0);
+    });
+
     it("falls back to full string parsing for unparseable hour data", () => {
         const heatmap = buildHourlyHeatmapFromCommitDates(["2023-01-01TX0:00:00Z"]);
         const totalCommits = heatmap.flat().reduce((sum, count) => sum + count, 0);
@@ -209,5 +246,11 @@ describe("buildHourlyHeatmapFromCommitDates - edge cases", () => {
         ];
         const heatmap = buildHourlyHeatmapFromCommitDates(commitDates);
         expect(heatmap[0][10]).toBe(0);
+    });
+
+    it("falls back to full date parsing when timezone check fails parsing", () => {
+        const commitDates = ["2023-01-01T10:00:00+XX:XX"];
+        const heatmap = buildHourlyHeatmapFromCommitDates(commitDates);
+        expect(heatmap.flat().reduce((sum, count) => sum + count, 0)).toBe(0);
     });
 });
