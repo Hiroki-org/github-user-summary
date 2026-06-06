@@ -114,10 +114,7 @@ function calculateMostActiveDay(calendar: { date: string; count: number }[]): st
     : "";
 }
 
-async function graphql<T>(query: string, token?: string, variables?: Record<string, unknown>): Promise<T> {
-  if (!token) {
-    throw new GitHubApiError("GraphQL API requires authentication token", HTTP_STATUS.UNAUTHORIZED);
-  }
+async function graphql<T>(query: string, token: string, variables?: Record<string, unknown>): Promise<T> {
   const body: { query: string; variables?: Record<string, unknown> } = { query };
   if (variables) {
     body.variables = variables;
