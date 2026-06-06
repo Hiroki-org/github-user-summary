@@ -15,10 +15,10 @@ vi.mock("@/lib/cardLayout", () => ({
 }));
 
 describe("useCardSettings", () => {
-  const mockDefaultLayout = {
+  const mockDefaultLayout: import("@/lib/types").CardLayout = {
     blocks: [
-      { id: "profile", visible: true, column: "full" },
-      { id: "stats", visible: false, column: "left" },
+      { id: "profile" as import("@/lib/types").CardBlockId, visible: true, column: "full" },
+      { id: "stats" as import("@/lib/types").CardBlockId, visible: false, column: "left" },
     ],
   };
 
@@ -30,10 +30,8 @@ describe("useCardSettings", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(cardSettingsLib.loadCardSettings).mockReturnValue({
-      // @ts-expect-error - mock data
-      layout: mockDefaultLayout,
-      // @ts-expect-error - mock data
-      options: mockDefaultOptions,
+            layout: mockDefaultLayout,
+            options: mockDefaultOptions,
     });
   });
 
@@ -89,7 +87,7 @@ describe("useCardSettings", () => {
   });
 
   it("should call saveCardSettings when state changes after hydration", () => {
-    const { result, rerender } = renderHook(
+    const { result } = renderHook(
       ({ mounted }) => useCardSettings(mounted),
       { initialProps: { mounted: true } }
     );
@@ -99,8 +97,7 @@ describe("useCardSettings", () => {
 
     // Trigger state change
     act(() => {
-      // @ts-expect-error - mock data
-      result.current.setDisplayOptions({ showAvatar: false, showBio: false });
+            result.current.setDisplayOptions({ showAvatar: false, showBio: false });
     });
 
     expect(cardSettingsLib.saveCardSettings).toHaveBeenCalledTimes(1);
@@ -114,11 +111,10 @@ describe("useCardSettings", () => {
     const { result } = renderHook(() => useCardSettings(true));
 
     const mockToggledLayout = { blocks: [] };
-    vi.mocked(cardLayoutLib.toggleBlockVisibility).mockReturnValue(mockToggledLayout as any);
+    vi.mocked(cardLayoutLib.toggleBlockVisibility).mockReturnValue(mockToggledLayout as unknown as import("@/lib/types").CardLayout);
 
     act(() => {
-      // @ts-expect-error - mock data
-      result.current.toggleMainBlockVisibility("profile");
+            result.current.toggleMainBlockVisibility("profile");
     });
 
     expect(cardLayoutLib.toggleBlockVisibility).toHaveBeenCalledWith(mockDefaultLayout, "profile");
@@ -129,15 +125,13 @@ describe("useCardSettings", () => {
     const { result } = renderHook(() => useCardSettings(true));
 
     act(() => {
-      // @ts-expect-error - mock data
-      result.current.toggleDisplayOption("showAvatar");
+            result.current.toggleDisplayOption("showAvatar");
     });
 
     expect(result.current.displayOptions.showAvatar).toBe(false);
 
     act(() => {
-      // @ts-expect-error - mock data
-      result.current.toggleDisplayOption("showBio");
+            result.current.toggleDisplayOption("showBio");
     });
 
     expect(result.current.displayOptions.showBio).toBe(true);
@@ -146,11 +140,8 @@ describe("useCardSettings", () => {
   it("isBlockVisible should return true for visible blocks and false for hidden/unknown", () => {
     const { result } = renderHook(() => useCardSettings(true));
 
-    // @ts-expect-error - mock data
-    expect(result.current.isBlockVisible("profile")).toBe(true);
-    // @ts-expect-error - mock data
-    expect(result.current.isBlockVisible("stats")).toBe(false);
-    // @ts-expect-error - mock data
-    expect(result.current.isBlockVisible("unknown")).toBe(false);
+        expect(result.current.isBlockVisible("profile")).toBe(true);
+        expect(result.current.isBlockVisible("stats")).toBe(false);
+        expect(result.current.isBlockVisible("unknown" as import("@/lib/types").CardBlockId)).toBe(false);
   });
 });
