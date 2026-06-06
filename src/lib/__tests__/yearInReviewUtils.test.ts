@@ -133,8 +133,8 @@ describe("getMostActiveHour", () => {
 });
 
 describe("getMostActiveDayFromCalendar", () => {
-    it("returns 'Sunday' when the calendar is empty", () => {
-        expect(getMostActiveDayFromCalendar([])).toBe("Sunday");
+    it("returns null when the calendar is empty", () => {
+        expect(getMostActiveDayFromCalendar([])).toBeNull();
     });
 
     it("correctly identifies the most active day of the week", () => {

@@ -104,4 +104,118 @@ describe("fetchContributions", () => {
     // monthly is 7 days times 10 plus 23 days times 5 equals 185
     expect(result.monthlyContributions).toBe(185);
   });
+
+  it("空の履歴(contributionDaysが空または全て0)を正しく処理する", async () => {
+    const mockEmptyContributions = {
+      data: {
+        user: {
+          contributionsCollection: {
+            totalCommitContributions: 0,
+            totalPullRequestContributions: 0,
+            totalIssueContributions: 0,
+            totalPullRequestReviewContributions: 0,
+            contributionCalendar: {
+              totalContributions: 0,
+              weeks: [
+                {
+                  contributionDays: []
+                }
+              ],
+            },
+          },
+        },
+      },
+    };
+
+    mockFetch.mockResolvedValueOnce(jsonResponse(mockEmptyContributions));
+
+    const { fetchContributions } = await import("../../github");
+    const result = await fetchContributions("testuser", "fake-token");
+
+    expect(result.totalCommits).toBe(0);
+    expect(result.totalContributions).toBe(0);
+    expect(result.weeklyContributions).toBe(0);
+    expect(result.monthlyContributions).toBe(0);
+    expect(result.longestStreak).toBe(0);
+    expect(result.currentStreak).toBe(0);
+    expect(result.mostActiveDay).toBeNull();
+    expect(result.calendar.length).toBe(0);
+  });
+
+
+  it("空の履歴(contributionDaysが空または全て0)を正しく処理する", async () => {
+    const mockEmptyContributions = {
+      data: {
+        user: {
+          contributionsCollection: {
+            totalCommitContributions: 0,
+            totalPullRequestContributions: 0,
+            totalIssueContributions: 0,
+            totalPullRequestReviewContributions: 0,
+            contributionCalendar: {
+              totalContributions: 0,
+              weeks: [
+                {
+                  contributionDays: []
+                }
+              ],
+            },
+          },
+        },
+      },
+    };
+
+    mockFetch.mockResolvedValueOnce(jsonResponse(mockEmptyContributions));
+
+    const { fetchContributions } = await import("../../github");
+    const result = await fetchContributions("testuser", "fake-token");
+
+    expect(result.totalCommits).toBe(0);
+    expect(result.totalContributions).toBe(0);
+    expect(result.weeklyContributions).toBe(0);
+    expect(result.monthlyContributions).toBe(0);
+    expect(result.longestStreak).toBe(0);
+    expect(result.currentStreak).toBe(0);
+    expect(result.mostActiveDay).toBeNull();
+    expect(result.calendar.length).toBe(0);
+  });
+
+
+  it("handles empty history correctly", async () => {
+    const mockEmptyContributions = {
+      data: {
+        user: {
+          contributionsCollection: {
+            totalCommitContributions: 0,
+            totalPullRequestContributions: 0,
+            totalIssueContributions: 0,
+            totalPullRequestReviewContributions: 0,
+            contributionCalendar: {
+              totalContributions: 0,
+              weeks: [
+                {
+                  contributionDays: []
+                }
+              ],
+            },
+          },
+        },
+      },
+    };
+
+    mockFetch.mockResolvedValueOnce(jsonResponse(mockEmptyContributions));
+
+    const { fetchContributions } = await import("../../github");
+    const result = await fetchContributions("testuser", "fake-token");
+
+    expect(result.totalCommits).toBe(0);
+    expect(result.totalContributions).toBe(0);
+    expect(result.weeklyContributions).toBe(0);
+    expect(result.monthlyContributions).toBe(0);
+    expect(result.longestStreak).toBe(0);
+    expect(result.currentStreak).toBe(0);
+    expect(result.mostActiveDay).toBeNull();
+    expect(result.calendar.length).toBe(0);
+  });
+
 });
