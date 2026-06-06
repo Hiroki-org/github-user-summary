@@ -61,6 +61,7 @@ export type CardData = {
     };
 };
 
+const HTTP_STATUS_NOT_FOUND = 404;
 const GITHUB_API = "https://api.github.com";
 const GITHUB_TIMEOUT_MS = 8000;
 
@@ -96,8 +97,8 @@ async function getJson<T>(url: string): Promise<{ status: number; data: T | null
         clearTimeout(timeoutId);
     }
 
-    if (response.status === 404) {
-        return { status: 404, data: null };
+    if (response.status === HTTP_STATUS_NOT_FOUND) {
+        return { status: HTTP_STATUS_NOT_FOUND, data: null };
     }
 
     if (!response.ok) {
@@ -229,7 +230,7 @@ export async function fetchCardData(username: string): Promise<CardData | null> 
         getJson<GitHubRepo[]>(reposUrl),
     ]);
 
-    if (!profileResult.data || profileResult.status === 404) {
+    if (!profileResult.data || profileResult.status === HTTP_STATUS_NOT_FOUND) {
         return null;
     }
 
