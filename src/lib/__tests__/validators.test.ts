@@ -46,6 +46,11 @@ describe("isValidGitHubUsername", () => {
     expect(isValidGitHubUsername("")).toBe(false);
   });
 
+  it("null/undefined は無効", () => {
+    expect(isValidGitHubUsername(null as unknown as string)).toBe(false);
+    expect(isValidGitHubUsername(undefined as unknown as string)).toBe(false);
+  });
+
   it("ハイフンで始まるユーザー名は無効", () => {
     expect(isValidGitHubUsername("-testuser")).toBe(false);
   });
