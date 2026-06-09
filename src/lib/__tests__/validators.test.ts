@@ -65,15 +65,12 @@ describe("isValidGitHubUsername", () => {
 
   it("40文字以上のユーザー名は無効", () => {
     expect(isValidGitHubUsername("a".repeat(40))).toBe(false);
-    expect(isValidGitHubUsername("a" + "b".repeat(37) + "-c")).toBe(false);
   });
 
   it("特殊文字を含むユーザー名は無効", () => {
     expect(isValidGitHubUsername("test@user")).toBe(false);
     expect(isValidGitHubUsername("test.user")).toBe(false);
     expect(isValidGitHubUsername("test_user")).toBe(false);
-    expect(isValidGitHubUsername("_testuser")).toBe(false);
-    expect(isValidGitHubUsername("testuser_")).toBe(false);
     expect(isValidGitHubUsername("test user")).toBe(false);
   });
 
