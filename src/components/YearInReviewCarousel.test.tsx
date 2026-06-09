@@ -93,4 +93,14 @@ describe("YearInReviewCarousel", () => {
     expect(screen.getByText("Where You Focused")).toBeDefined();
     expect(screen.getByText("No standout repository this year, but the momentum is still visible.")).toBeDefined();
   });
+
+  it("does not render null when mostActiveDay is missing", () => {
+    render(<YearInReviewCarousel data={{ ...mockData, mostActiveDay: null }} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Prev" }));
+
+    expect(screen.getByText("No contribution rhythm to summarize yet.")).toBeDefined();
+    expect(screen.getByText("Most active day: No contributions yet")).toBeDefined();
+    expect(screen.queryByText(/null/)).toBeNull();
+  });
 });

@@ -62,4 +62,11 @@ describe("YearInReviewSlide", () => {
     expect(screen.getByText("Most active day: Monday")).toBeInTheDocument();
     expect(screen.queryByText(/Top repo:/)).not.toBeInTheDocument();
   });
+
+  it("renders an empty-state label when mostActiveDay is null", () => {
+    render(<YearInReviewSlide title="Title" data={{ ...mockData, mostActiveDay: null }} />);
+
+    expect(screen.getByText("Most active day: No contributions yet")).toBeInTheDocument();
+    expect(screen.queryByText(/Most active day: null/)).not.toBeInTheDocument();
+  });
 });

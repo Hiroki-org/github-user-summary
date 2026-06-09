@@ -11,26 +11,32 @@ type Props = {
 
 export default function YearInReviewCarousel({ data }: Props) {
   const slides = useMemo(
-    () => [
-      {
-        key: "summary",
-        title: "Your Year at a Glance",
-        caption:
-          "A compact view of your coding momentum and contribution profile.",
-      },
-      {
-        key: "focus",
-        title: "Where You Focused",
-        caption: data.topRepository
-          ? `Most of your impact landed in ${data.topRepository.name}.`
-          : "No standout repository this year, but the momentum is still visible.",
-      },
-      {
-        key: "rhythm",
-        title: "Your Working Rhythm",
-        caption: `Most active on ${data.mostActiveDay} around ${data.mostActiveHour}:00 UTC.`,
-      },
-    ],
+    () => {
+      const rhythmCaption = data.mostActiveDay
+        ? `Most active on ${data.mostActiveDay} around ${data.mostActiveHour}:00 UTC.`
+        : "No contribution rhythm to summarize yet.";
+
+      return [
+        {
+          key: "summary",
+          title: "Your Year at a Glance",
+          caption:
+            "A compact view of your coding momentum and contribution profile.",
+        },
+        {
+          key: "focus",
+          title: "Where You Focused",
+          caption: data.topRepository
+            ? `Most of your impact landed in ${data.topRepository.name}.`
+            : "No standout repository this year, but the momentum is still visible.",
+        },
+        {
+          key: "rhythm",
+          title: "Your Working Rhythm",
+          caption: rhythmCaption,
+        },
+      ];
+    },
     [data],
   );
 
