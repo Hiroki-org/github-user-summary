@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import type { CardDisplayOptions, CardLayout } from "@/lib/types";
 export type { CardDisplayOptions, CardLayout };
 import { DEFAULT_CARD_LAYOUT } from "@/lib/types";
@@ -65,8 +66,9 @@ export function saveCardSettings(layout: CardLayout, options: CardDisplayOptions
     try {
         window.localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
         window.localStorage.setItem(OPTIONS_KEY, JSON.stringify(options));
-    } catch {
-        // Ignore storage write failures (private mode, quota exceeded, etc.)
+    } catch (err) {
+        logger.error("Failed to save card settings to localStorage", err);
+        // Ignore storage write failures to prevent breaking the app, but log them for debugging.
     }
 }
 
