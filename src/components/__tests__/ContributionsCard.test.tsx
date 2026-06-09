@@ -16,7 +16,7 @@ describe("ContributionsCard", () => {
           totalReviews: 0,
           longestStreak: 0,
           currentStreak: 0,
-          mostActiveDay: "",
+          mostActiveDay: null,
           calendar: [],
         }}
       />
