@@ -96,7 +96,7 @@ export function getMostActiveHour(heatmap: number[][]): number {
  * Returns the most active day of the week from the contribution calendar data.
  *
  * @param calendar Array of objects containing date and contribution count.
- * @returns The name of the most active day (e.g., "Monday"), or `null` if there are no contributions.
+ * @returns The name of the most active day (e.g., "Monday").
  */
 export function getMostActiveDayFromCalendar(calendar: { date: string; count: number }[]): string | null {
     const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
