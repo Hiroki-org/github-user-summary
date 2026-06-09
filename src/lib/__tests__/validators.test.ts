@@ -27,7 +27,7 @@ describe("isValidGitHubUsername", () => {
       ["38文字の英字", "a".repeat(38)],
       ["ハイフンが複数あるが連続していない", "a-b-c-d-e"],
       ["39文字でハイフンを含む", "a" + "b".repeat(36) + "-c"],
-    ])("%s: %s", (_, username) => {
+    ])("%s: %p", (_, username) => {
       expect(isValidGitHubUsername(username)).toBe(true);
     });
   });
