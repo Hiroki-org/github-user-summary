@@ -139,7 +139,6 @@ export default function ContributionsCard({ contributions }: Props) {
   }
 
   const stats = getStats(contributions);
-
   return (
     <div className="glass-card rounded-xl p-6 h-full flex flex-col">
       <h3 className="mb-6 text-lg font-semibold text-foreground flex items-center gap-2">
