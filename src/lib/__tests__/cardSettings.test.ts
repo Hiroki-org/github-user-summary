@@ -159,7 +159,7 @@ describe("cardSettings", () => {
         let loggerErrorSpy: ReturnType<typeof vi.spyOn>;
 
         beforeEach(() => {
-            loggerErrorSpy = vi.spyOn(logger, "error").mockImplementation((): void => {});
+            loggerErrorSpy = vi.spyOn(logger, "error").mockImplementation(() => {});
         });
 
         it("does nothing when window is undefined", () => {
@@ -169,7 +169,7 @@ describe("cardSettings", () => {
         });
 
         it("logs an error if saving to localStorage fails", () => {
-            setItemMock.mockImplementation((): never => {
+            setItemMock.mockImplementation(() => {
                 throw new Error("Quota Exceeded");
             });
             saveCardSettings(DEFAULT_CARD_LAYOUT, getDefaultCardSettings().options);
