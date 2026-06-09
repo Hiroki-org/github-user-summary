@@ -9,8 +9,6 @@ type Props = {
 };
 
 export default function YearInReviewSlide({ title, caption, data }: Props) {
-  const mostActiveDayLabel = data.mostActiveDay ?? "No contributions yet";
-
   return (
     <article className="min-h-[320px] rounded-2xl border border-card-border bg-card-bg p-6 shadow-lg">
       <p className="text-xs uppercase tracking-[0.2em] text-accent">
@@ -60,7 +58,7 @@ export default function YearInReviewSlide({ title, caption, data }: Props) {
 
       <div className="mt-6 flex flex-wrap items-center gap-3 text-sm">
         <span className="rounded-full bg-success/15 px-3 py-1 text-success">
-          Most active day: {mostActiveDayLabel}
+          Most active day: {data.mostActiveDay}
         </span>
         {data.topRepository ? (
           <span className="rounded-full bg-accent/15 px-3 py-1 text-accent">
