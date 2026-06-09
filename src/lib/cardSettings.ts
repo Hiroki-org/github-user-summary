@@ -68,7 +68,7 @@ export function saveCardSettings(layout: CardLayout, options: CardDisplayOptions
         window.localStorage.setItem(OPTIONS_KEY, JSON.stringify(options));
     } catch (err) {
         logger.error("Failed to save card settings to localStorage", err);
-        // Ignore storage write failures (private mode, quota exceeded, etc.)
+        // Log but do not propagate storage write failures (private mode, quota exceeded, etc.)
     }
 }
 
