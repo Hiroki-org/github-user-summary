@@ -11,7 +11,7 @@
  */
 const SAKAMOTO_T_ARRAY = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
 
-function getWeekdayFromDateString(dateString: string): number | null {
+export function getWeekdayFromDateString(dateString: string): number | null {
     if (dateString.length !== 10) return null;
 
     const y1 = dateString.charCodeAt(0) - 48;
@@ -47,7 +47,7 @@ function getWeekdayFromDateString(dateString: string): number | null {
         y -= 1;
     }
 
-    return (y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) + SAKAMOTO_T_ARRAY[m - 1] + d) % 7;
+    return ((y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) + SAKAMOTO_T_ARRAY[m - 1] + d) % 7 + 7) % 7;
 }
 
 export function buildHourlyHeatmapFromCommitDates(commitDates: string[]): number[][] {

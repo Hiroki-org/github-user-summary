@@ -2,7 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
     buildHourlyHeatmapFromCommitDates,
     getMostActiveHour,
-    getMostActiveDayFromCalendar
+    getMostActiveDayFromCalendar,
+    getWeekdayFromDateString
 } from "@/lib/yearInReviewUtils";
 
 describe("buildHourlyHeatmapFromCommitDates", () => {
@@ -209,5 +210,57 @@ describe("buildHourlyHeatmapFromCommitDates - edge cases", () => {
         ];
         const heatmap = buildHourlyHeatmapFromCommitDates(commitDates);
         expect(heatmap[0][10]).toBe(0);
+    });
+});
+
+describe("getWeekdayFromDateString", () => {
+    it("returns null for invalid length", () => {
+        expect(getWeekdayFromDateString("2023-01-0")).toBeNull();
+        expect(getWeekdayFromDateString("2023-01-011")).toBeNull();
+    });
+
+    it("returns null for missing hyphens", () => {
+        expect(getWeekdayFromDateString("2023/01-01")).toBeNull();
+        expect(getWeekdayFromDateString("2023-01/01")).toBeNull();
+    });
+
+    it("returns null for non-digit characters in components", () => {
+        expect(getWeekdayFromDateString("202a-01-01")).toBeNull();
+        expect(getWeekdayFromDateString("2023-0a-01")).toBeNull();
+        expect(getWeekdayFromDateString("2023-01-0a")).toBeNull();
+        expect(getWeekdayFromDateString("2023- 1-01")).toBeNull();
+    });
+
+    it("returns null for out-of-bounds months and days", () => {
+        expect(getWeekdayFromDateString("2023-00-01")).toBeNull();
+        expect(getWeekdayFromDateString("2023-13-01")).toBeNull();
+        expect(getWeekdayFromDateString("2023-01-00")).toBeNull();
+        expect(getWeekdayFromDateString("2023-01-32")).toBeNull();
+    });
+
+    it("correctly calculates weekdays for valid dates", () => {
+        // Sunday
+        expect(getWeekdayFromDateString("2023-01-01")).toBe(0);
+        // Monday
+        expect(getWeekdayFromDateString("2023-01-02")).toBe(1);
+        // Tuesday
+        expect(getWeekdayFromDateString("2023-10-24")).toBe(2);
+        // Wednesday
+        expect(getWeekdayFromDateString("2023-10-25")).toBe(3);
+        // Thursday
+        expect(getWeekdayFromDateString("2023-10-26")).toBe(4);
+        // Friday
+        expect(getWeekdayFromDateString("2023-10-27")).toBe(5);
+        // Saturday
+        expect(getWeekdayFromDateString("2023-10-28")).toBe(6);
+    });
+
+    it("correctly calculates weekdays for leap years", () => {
+        // 2024-02-29 is Thursday
+        expect(getWeekdayFromDateString("2024-02-29")).toBe(4);
+        // 2024-03-01 is Friday
+        expect(getWeekdayFromDateString("2024-03-01")).toBe(5);
+        // 2000-02-29 is Tuesday
+        expect(getWeekdayFromDateString("2000-02-29")).toBe(2);
     });
 });
