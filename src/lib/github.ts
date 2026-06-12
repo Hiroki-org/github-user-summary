@@ -379,8 +379,12 @@ async function fetchRepositoriesREST(username: string): Promise<RepositoryData> 
     }
   }
 
-  const totalRepoCount = Array.from(languageRepoCount.values()).reduce((a, b) => a + b, 0);
-  const languages: LanguageStats[] = getTopK(languageRepoCount, 10).map(({ name, count }) => ({
+  let totalRepoCount = 0;
+  const topLanguages = getTopK(languageRepoCount, 10);
+  for (const count of languageRepoCount.values()) {
+    totalRepoCount += count;
+  }
+  const languages: LanguageStats[] = topLanguages.map(({ name, count }) => ({
     name,
     bytes: count,
     percentage: totalRepoCount > 0 ? Math.round((count / totalRepoCount) * 1000) / 10 : 0,
