@@ -2,8 +2,9 @@ import { RateLimiter } from "@/lib/rateLimit";
 import { fetchCardData } from "@/lib/cardDataFetcher";
 import { parseCardQueryParams, renderCardResponse, renderErrorCardResponse } from "@/lib/cardRenderer";
 import { getClientIp } from "@/lib/rateLimit";
+import { getAuthenticatedUser } from "@/lib/apiUtils";
 
-export const runtime = "edge";
+
 const rateLimiter = new RateLimiter(50, 60 * 1000); // 50 requests per minute
 
 
@@ -15,6 +16,10 @@ export async function GET(
     { params }: { params: Promise<{ username: string }> }
 ): Promise<Response> {
     const { username } = await params;
+    const user = await getAuthenticatedUser();
+    if (!user) {
+        return new Response("Unauthorized", { status: 401 });
+    }
     const url = new URL(request.url);
     const options = parseCardQueryParams(url.searchParams);
     const allowedOrigin = process.env.APP_URL || "http://localhost:3000";

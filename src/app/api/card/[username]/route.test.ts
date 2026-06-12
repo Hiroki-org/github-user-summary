@@ -1,4 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
+import { getAuthenticatedUser } from "@/lib/apiUtils";
+
+vi.mock("@/lib/apiUtils", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/apiUtils")>();
+  return {
+    ...actual,
+    getAuthenticatedUser: vi.fn().mockResolvedValue({ username: "alice", token: "token" }),
+  };
+});
 
 vi.mock("@/lib/cardDataFetcher", () => ({
     fetchCardData: vi.fn(),
