@@ -84,7 +84,7 @@ async function getJson<T>(url: string): Promise<{ status: number; data: T | null
     try {
         response = await fetch(url, {
             headers: getHeaders(),
-            cache: "no-store",
+            next: { revalidate: 3600 },
             signal: controller.signal,
         });
     } catch (error) {
