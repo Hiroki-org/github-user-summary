@@ -175,3 +175,22 @@ describe("getClientIp", () => {
         });
         expect(getClientIp(req)).toBe("1.2.3.4");
     });
+
+    it("ignores x-real-ip if it is an invalid IP and falls back to x-forwarded-for", () => {
+        const req = new Request("http://localhost", {
+            headers: {
+                "x-real-ip": "invalid-ip",
+                "x-forwarded-for": "5.6.7.8, 9.10.11.12"
+            }
+        });
+        expect(getClientIp(req)).toBe("5.6.7.8");
+    });
+
+    it("ignores x-real-ip if it is an invalid IP and returns unknown if x-forwarded-for is missing", () => {
+        const req = new Request("http://localhost", {
+            headers: {
+                "x-real-ip": "invalid-ip"
+            }
+        });
+        expect(getClientIp(req)).toBe("unknown");
+    });
