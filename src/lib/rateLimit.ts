@@ -67,10 +67,16 @@ function isValidIp(value: string): boolean {
 }
 
 export function getClientIp(request: Request): string {
+    const realIp = request.headers.get("x-real-ip");
+    if (realIp) {
+        const trimmedRealIp = realIp.trim();
+        if (isValidIp(trimmedRealIp)) return trimmedRealIp;
+    }
+
     const forwardedFor = request.headers.get("x-forwarded-for");
     if (!forwardedFor) return "unknown";
 
-    const proxyObservedIp = forwardedFor.split(",").at(-1)?.trim();
+    const proxyObservedIp = forwardedFor.split(",")[0]?.trim();
     if (proxyObservedIp && isValidIp(proxyObservedIp)) return proxyObservedIp;
 
     return "unknown";
