@@ -97,10 +97,10 @@ describe("RateLimiter", () => {
 });
 
 describe("getClientIp", () => {
-    it("returns the right-most x-forwarded-for IP", () => {
+    it("returns the right-most untrusted x-forwarded-for IP", () => {
         const req = new Request("http://localhost", {
             headers: {
-                "x-forwarded-for": "5.6.7.8, 9.10.11.12"
+                "x-forwarded-for": "5.6.7.8, 9.10.11.12, 10.0.0.1" // 10.0.0.1 is trusted proxy
             }
         });
         expect(getClientIp(req)).toBe("9.10.11.12");
@@ -147,21 +147,29 @@ describe("getClientIp", () => {
         expect(getClientIp(req)).toBe("unknown");
     });
 
-    it("returns unknown when the right-most x-forwarded-for token is empty", () => {
+    it("returns the first valid untrusted IP when the right-most x-forwarded-for token is empty", () => {
         const req = new Request("http://localhost", {
             headers: {
                 "x-forwarded-for": "5.6.7.8,   "
             }
         });
-        expect(getClientIp(req)).toBe("unknown");
+        expect(getClientIp(req)).toBe("5.6.7.8");
     });
 
-    it("returns unknown when the right-most x-forwarded-for token is invalid", () => {
+    it("returns the first valid untrusted IP when the right-most x-forwarded-for token is invalid", () => {
         const req = new Request("http://localhost", {
             headers: {
                 "x-forwarded-for": "5.6.7.8, not-an-ip"
             }
         });
-        expect(getClientIp(req)).toBe("unknown");
+        expect(getClientIp(req)).toBe("5.6.7.8");
+    });
+    it("returns the left-most IP if all are trusted proxies", () => {
+        const req = new Request("http://localhost", {
+            headers: {
+                "x-forwarded-for": "192.168.1.1, 10.0.0.1"
+            }
+        });
+        expect(getClientIp(req)).toBe("192.168.1.1");
     });
 });
