@@ -675,19 +675,12 @@ export const fetchActivity = cache(async function fetchActivity(
   const pages = [1, 2, 3];
   const allEvents: GitHubEvent[] = [];
 
-  const promises = pages.map((page) =>
-    restGet<GitHubEvent[]>(
-      `/users/${encodeURIComponent(username)}/events/public?per_page=100&page=${page}`,
-      token
-    )
-  );
-
-  // Suppress unhandled promise rejections for subsequent pages if we break early or throw
-  promises.forEach((p) => p.catch((e) => logger.error("Event fetch promise rejected:", e)));
-
-  for (const p of promises) {
+  for (const page of pages) {
     try {
-      const events = await p;
+      const events = await restGet<GitHubEvent[]>(
+        `/users/${encodeURIComponent(username)}/events/public?per_page=100&page=${page}`,
+        token
+      );
       allEvents.push(...events);
       if (events.length < 100) break;
     } catch (error) {
@@ -697,6 +690,7 @@ export const fetchActivity = cache(async function fetchActivity(
       ) {
         throw error;
       }
+      logger.error("Event fetch failed:", error);
       break;
     }
   }
