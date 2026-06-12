@@ -682,12 +682,20 @@ export const fetchActivity = cache(async function fetchActivity(
     )
   );
 
+  const criticalErrorPromise = new Promise<never>((_, reject) => {
+    promises.forEach((p) => p.catch((e) => {
+      if (e instanceof UserNotFoundError || e instanceof RateLimitError) {
+        reject(e);
+      }
+    }));
+  });
+
   // Suppress unhandled promise rejections for subsequent pages if we break early or throw
   promises.forEach((p) => p.catch((e) => logger.error("Event fetch promise rejected:", e)));
 
   for (const p of promises) {
     try {
-      const events = await p;
+      const events = await Promise.race([p, criticalErrorPromise]);
       allEvents.push(...events);
       if (events.length < 100) break;
     } catch (error) {
