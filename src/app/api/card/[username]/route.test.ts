@@ -1,4 +1,9 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
+
+
+vi.mock("@/lib/apiUtils", () => ({
+    getAuthenticatedUser: vi.fn(),
+}));
 
 vi.mock("@/lib/cardDataFetcher", () => ({
     fetchCardData: vi.fn(),
@@ -10,7 +15,33 @@ vi.mock("@/lib/cardRenderer", () => ({
     renderErrorCardResponse: vi.fn(async ({ status, cacheControl }) => new Response("error", { status, headers: { "Cache-Control": cacheControl, "Content-Type": "image/png" } })),
 }));
 
+
+describe("GET /api/card/[username] authentication", () => {
+    it("returns 401 and correct message when user is not authenticated", async () => {
+        const { getAuthenticatedUser } = await import("@/lib/apiUtils");
+        const { renderErrorCardResponse } = await import("@/lib/cardRenderer");
+
+        vi.mocked(getAuthenticatedUser).mockResolvedValueOnce(null);
+
+        const { GET } = await import("./route");
+        const req = new Request("http://localhost/api/card/unauthuser");
+        await GET(req, { params: Promise.resolve({ username: "unauthuser" }) });
+
+        expect(renderErrorCardResponse).toHaveBeenCalledWith(expect.objectContaining({
+            message: "Unauthorized",
+            status: 401,
+            cacheControl: "public, s-maxage=60, stale-while-revalidate=120",
+            fontUrl: "http://localhost:3000/fonts/NotoSans-Regular.ttf"
+        }));
+    });
+});
+
 describe("GET /api/card/[username] cache headers", () => {
+    beforeEach(async () => {
+        const { getAuthenticatedUser } = await import("@/lib/apiUtils");
+        vi.mocked(getAuthenticatedUser).mockResolvedValue({ username: "testuser", token: "token" });
+    });
+
     it("uses long cache header on success", async () => {
         const { fetchCardData } = await import("@/lib/cardDataFetcher");
         vi.mocked(fetchCardData).mockResolvedValueOnce({
@@ -54,7 +85,13 @@ describe("GET /api/card/[username] cache headers", () => {
     });
 });
 
+
 describe("GET /api/card/[username] error responses", () => {
+    beforeEach(async () => {
+        const { getAuthenticatedUser } = await import("@/lib/apiUtils");
+        vi.mocked(getAuthenticatedUser).mockResolvedValue({ username: "testuser", token: "token" });
+    });
+
     const runErrorTest = async (mockData: null | Error, username: string, expectedMessage: string, expectedStatus: number) => {
         const { fetchCardData } = await import("@/lib/cardDataFetcher");
         const { renderErrorCardResponse } = await import("@/lib/cardRenderer");
@@ -86,7 +123,13 @@ describe("GET /api/card/[username] error responses", () => {
     });
 });
 
+
 describe("GET /api/card/[username] rate limiting", () => {
+    beforeEach(async () => {
+        const { getAuthenticatedUser } = await import("@/lib/apiUtils");
+        vi.mocked(getAuthenticatedUser).mockResolvedValue({ username: "testuser", token: "token" });
+    });
+
     it("should rate limit requests", async () => {
         const { GET } = await import("./route");
         const { fetchCardData } = await import("@/lib/cardDataFetcher");

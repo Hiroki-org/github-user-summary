@@ -2,8 +2,8 @@ import { RateLimiter } from "@/lib/rateLimit";
 import { fetchCardData } from "@/lib/cardDataFetcher";
 import { parseCardQueryParams, renderCardResponse, renderErrorCardResponse } from "@/lib/cardRenderer";
 import { getClientIp } from "@/lib/rateLimit";
+import { getAuthenticatedUser } from "@/lib/apiUtils";
 
-export const runtime = "edge";
 const rateLimiter = new RateLimiter(50, 60 * 1000); // 50 requests per minute
 
 
@@ -19,6 +19,19 @@ export async function GET(
     const options = parseCardQueryParams(url.searchParams);
     const allowedOrigin = process.env.APP_URL || "http://localhost:3000";
     const fontUrl = `${allowedOrigin}/fonts/NotoSans-Regular.ttf`;
+
+
+    const user = await getAuthenticatedUser();
+    if (!user) {
+        return renderErrorCardResponse({
+            message: "Unauthorized",
+            options,
+            status: 401,
+            cacheControl: ERROR_CACHE,
+            fontUrl,
+            allowedOrigin,
+        });
+    }
 
     const ip = getClientIp(request);
     const rateLimitResult = await rateLimiter.check(ip);
