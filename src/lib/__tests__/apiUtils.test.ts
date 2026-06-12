@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { handleErrorResponse, getAuthenticatedUser } from '../apiUtils';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { handleErrorResponse, getAuthenticatedUser, handleRateLimit } from '../apiUtils';
+import { RateLimitError } from '../types';
 import { NextResponse } from 'next/server';
 import { getServerSession } from "next-auth";
 
@@ -53,6 +54,45 @@ describe('apiUtils', () => {
         body: { error: 'Unknown error' },
         init: { status: 500 }
       });
+    });
+  });
+
+  describe('handleRateLimit', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(1000000));
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('should throw RateLimitError with timestamp from X-RateLimit-Reset header', () => {
+      const res = new Response(null, {
+        headers: { 'X-RateLimit-Reset': '2000' }
+      });
+      expect(() => handleRateLimit(res)).toThrowError(expect.objectContaining({
+        name: 'RateLimitError',
+        resetAt: new Date(2000000)
+      }));
+    });
+
+    it('should throw RateLimitError with fallback timestamp if header is missing', () => {
+      const res = new Response();
+      expect(() => handleRateLimit(res)).toThrowError(expect.objectContaining({
+        name: 'RateLimitError',
+        resetAt: new Date(4600000)
+      }));
+    });
+
+    it('should throw RateLimitError with fallback timestamp if header is invalid', () => {
+      const res = new Response(null, {
+        headers: { 'X-RateLimit-Reset': 'invalid' }
+      });
+      expect(() => handleRateLimit(res)).toThrowError(expect.objectContaining({
+        name: 'RateLimitError',
+        resetAt: new Date(4600000)
+      }));
     });
   });
 
