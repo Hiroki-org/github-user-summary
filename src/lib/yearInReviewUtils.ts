@@ -4,6 +4,52 @@
  * @param commitDates Array of ISO 8601 date strings.
  * @returns A 2D array representing the heatmap [day][hour].
  */
+
+/**
+ * Calculates the day of the week from a date string (YYYY-MM-DD) using Sakamoto's Algorithm.
+ * Returns 0 for Sunday, 1 for Monday, etc. Returns null if parsing fails.
+ */
+const SAKAMOTO_T_ARRAY = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
+
+function getWeekdayFromDateString(dateString: string): number | null {
+    if (dateString.length !== 10) return null;
+
+    const y1 = dateString.charCodeAt(0) - 48;
+    const y2 = dateString.charCodeAt(1) - 48;
+    const y3 = dateString.charCodeAt(2) - 48;
+    const y4 = dateString.charCodeAt(3) - 48;
+
+    if (dateString.charCodeAt(4) !== 45) return null;
+
+    const m1 = dateString.charCodeAt(5) - 48;
+    const m2 = dateString.charCodeAt(6) - 48;
+
+    if (dateString.charCodeAt(7) !== 45) return null;
+
+    const d1 = dateString.charCodeAt(8) - 48;
+    const d2 = dateString.charCodeAt(9) - 48;
+
+    if (y1 < 0 || y1 > 9 || y2 < 0 || y2 > 9 || y3 < 0 || y3 > 9 || y4 < 0 || y4 > 9 ||
+        m1 < 0 || m1 > 9 || m2 < 0 || m2 > 9 ||
+        d1 < 0 || d1 > 9 || d2 < 0 || d2 > 9) {
+        return null;
+    }
+
+    let y = y1 * 1000 + y2 * 100 + y3 * 10 + y4;
+    const m = m1 * 10 + m2;
+    const d = d1 * 10 + d2;
+
+    if (m < 1 || m > 12 || d < 1 || d > 31) {
+        return null;
+    }
+
+    if (m < 3) {
+        y -= 1;
+    }
+
+    return (y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) + SAKAMOTO_T_ARRAY[m - 1] + d) % 7;
+}
+
 export function buildHourlyHeatmapFromCommitDates(commitDates: string[]): number[][] {
     const heatmap = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
 
@@ -22,14 +68,19 @@ export function buildHourlyHeatmapFromCommitDates(commitDates: string[]): number
         // Check cache for day
         let day = dayCache.get(datePart);
 
-        // If missing, compute via Date parsing (but cached per day)
+        // If missing, compute mathematically (fast path) or fallback to Date parsing
         if (day === undefined) {
-            const date = new Date(datePart + "T00:00:00Z");
-            if (Number.isNaN(date.getTime())) {
-                parseFallbackDate(dateString, heatmap);
-                continue;
+            const calculatedDay = getWeekdayFromDateString(datePart);
+            if (calculatedDay !== null) {
+                day = calculatedDay;
+            } else {
+                const date = new Date(datePart + "T00:00:00Z");
+                if (Number.isNaN(date.getTime())) {
+                    parseFallbackDate(dateString, heatmap);
+                    continue;
+                }
+                day = date.getUTCDay();
             }
-            day = date.getUTCDay();
             dayCache.set(datePart, day);
         }
 
@@ -106,11 +157,14 @@ export function getMostActiveDayFromCalendar(calendar: { date: string; count: nu
         if (day.count <= 0) {
             continue;
         }
-        const parsedDate = new Date(`${day.date}T00:00:00Z`);
-        if (Number.isNaN(parsedDate.getTime())) {
-            continue;
+        let weekday = getWeekdayFromDateString(day.date);
+        if (weekday === null) {
+            const parsedDate = new Date(`${day.date}T00:00:00Z`);
+            if (Number.isNaN(parsedDate.getTime())) {
+                continue;
+            }
+            weekday = parsedDate.getUTCDay();
         }
-        const weekday = parsedDate.getUTCDay();
         totals[weekday] += day.count;
     }
 
