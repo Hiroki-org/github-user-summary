@@ -300,8 +300,9 @@ type RepositoriesResponse = {
  * 認証時: GraphQL (言語バイト数ベース), 未認証時: REST フォールバック
  * @throws {UserNotFoundError} ユーザーが存在しない場合
  * @throws {RateLimitError} APIレート制限に達した場合
+ * @internal
  */
-const fetchRepositories = cache(async function fetchRepositories(
+export const fetchRepositories = cache(async function fetchRepositories(
   username: string,
   token?: string
 ): Promise<RepositoryData> {
