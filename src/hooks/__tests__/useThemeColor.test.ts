@@ -56,7 +56,7 @@ describe("useThemeColor", () => {
     });
 
     // Suppress logger.warn for error tests
-    vi.spyOn(logger, "warn").mockImplementation(() => {});
+    vi.spyOn(logger, "warn").mockImplementation((): void => {});
   });
 
   afterEach(() => {
