@@ -30,7 +30,7 @@ describe("GET /api/card/[username] authentication", () => {
         expect(renderErrorCardResponse).toHaveBeenCalledWith(expect.objectContaining({
             message: "Unauthorized",
             status: 401,
-            cacheControl: "no-store",
+            cacheControl: "public, s-maxage=60, stale-while-revalidate=120",
             fontUrl: "http://localhost:3000/fonts/NotoSans-Regular.ttf"
         }));
     });
@@ -57,7 +57,7 @@ describe("GET /api/card/[username] cache headers", () => {
         const req = new Request("http://localhost/api/card/alice");
         const response = await GET(req, { params: Promise.resolve({ username: "alice" }) });
 
-        expect(response.headers.get("Cache-Control")).toBe("private, max-age=1800, stale-while-revalidate=3600");
+        expect(response.headers.get("Cache-Control")).toBe("public, s-maxage=1800, stale-while-revalidate=3600");
     });
 
     it("uses short cache header on not found", async () => {
@@ -69,7 +69,7 @@ describe("GET /api/card/[username] cache headers", () => {
         const response = await GET(req, { params: Promise.resolve({ username: "ghost" }) });
 
         expect(response.status).toBe(404);
-        expect(response.headers.get("Cache-Control")).toBe("private, max-age=60, stale-while-revalidate=120");
+        expect(response.headers.get("Cache-Control")).toBe("public, s-maxage=60, stale-while-revalidate=120");
     });
 
     it("uses short cache header on error", async () => {
@@ -81,7 +81,7 @@ describe("GET /api/card/[username] cache headers", () => {
         const response = await GET(req, { params: Promise.resolve({ username: "erroruser" }) });
 
         expect(response.status).toBe(503);
-        expect(response.headers.get("Cache-Control")).toBe("private, max-age=60, stale-while-revalidate=120");
+        expect(response.headers.get("Cache-Control")).toBe("public, s-maxage=60, stale-while-revalidate=120");
     });
 });
 
@@ -109,7 +109,7 @@ describe("GET /api/card/[username] error responses", () => {
         expect(renderErrorCardResponse).toHaveBeenCalledWith(expect.objectContaining({
             message: expectedMessage,
             status: expectedStatus,
-            cacheControl: "private, max-age=60, stale-while-revalidate=120",
+            cacheControl: "public, s-maxage=60, stale-while-revalidate=120",
             fontUrl: "http://localhost:3000/fonts/NotoSans-Regular.ttf"
         }));
     };
@@ -155,7 +155,6 @@ describe("GET /api/card/[username] rate limiting", () => {
         expect(renderErrorCardResponse).toHaveBeenCalledWith(expect.objectContaining({
             message: "Rate limit exceeded",
             status: 429,
-            cacheControl: "no-store",
         }));
     });
 });

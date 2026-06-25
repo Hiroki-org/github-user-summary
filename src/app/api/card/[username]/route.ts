@@ -7,9 +7,8 @@ import { getAuthenticatedUser } from "@/lib/apiUtils";
 const rateLimiter = new RateLimiter(50, 60 * 1000); // 50 requests per minute
 
 
-const SUCCESS_CACHE = "private, max-age=1800, stale-while-revalidate=3600";
-const ERROR_CACHE = "private, max-age=60, stale-while-revalidate=120";
-const NO_STORE_CACHE = "no-store";
+const SUCCESS_CACHE = "public, s-maxage=1800, stale-while-revalidate=3600";
+const ERROR_CACHE = "public, s-maxage=60, stale-while-revalidate=120";
 
 export async function GET(
     request: Request,
@@ -28,7 +27,7 @@ export async function GET(
             message: "Unauthorized",
             options,
             status: 401,
-            cacheControl: NO_STORE_CACHE,
+            cacheControl: ERROR_CACHE,
             fontUrl,
             allowedOrigin,
         });
@@ -42,7 +41,7 @@ export async function GET(
             message: "Rate limit exceeded",
             options,
             status: 429,
-            cacheControl: NO_STORE_CACHE,
+            cacheControl: ERROR_CACHE,
             fontUrl,
         });
     }
