@@ -80,9 +80,9 @@ type YearInReviewResponse = {
 };
 
 type GitHubCommit = {
-    commit?: {
-        author?: {
-            date?: string | null;
+    commit: {
+        author: {
+            date: string;
         } | null;
     };
 };
@@ -285,13 +285,16 @@ export async function fetchYearInReviewData(username: string, year: number, toke
 }
 
 
-const HEATMAP_DAYS = 7;
-const HEATMAP_HOURS = 24;
-
 function getEmptyHeatmap(): number[][] {
-    return Array.from({ length: HEATMAP_DAYS }, () =>
-        Array.from({ length: HEATMAP_HOURS }, () => 0)
-    );
+    return [
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    ];
 }
 
 async function fetchTopRepositoryCommits(
@@ -308,30 +311,18 @@ async function fetchTopRepositoryCommits(
     url.searchParams.set("until", toIso);
     url.searchParams.set("per_page", "100");
 
-    try {
-        const res = await fetch(url.toString(), { headers: headers(token), cache: "no-store" });
-        if (res.status === 403) {
-            handleRateLimit(res);
-        }
-        if (!res.ok) {
-            return null;
-        }
-
-        const commits = await res.json();
-        if (!Array.isArray(commits)) {
-            return null;
-        }
-
-        return commits
-            .map((commit: GitHubCommit) => commit.commit?.author?.date)
-            .filter((value): value is string => Boolean(value));
-    } catch (error) {
-        if (error instanceof RateLimitError) {
-            throw error;
-        }
-        logger.error("Failed to fetch top repository commits:", error);
+    const res = await fetch(url.toString(), { headers: headers(token), cache: "no-store" });
+    if (res.status === 403) {
+        handleRateLimit(res);
+    }
+    if (!res.ok) {
         return null;
     }
+
+    const commits = (await res.json()) as GitHubCommit[];
+    return commits
+        .map((commit) => commit.commit.author?.date)
+        .filter((value): value is string => Boolean(value));
 }
 
 export async function fetchCommitActivityHeatmap(username: string, year: number, token?: string): Promise<number[][]> {

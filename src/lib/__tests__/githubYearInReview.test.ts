@@ -478,68 +478,6 @@ describe("fetchCommitActivityHeatmap additional coverage", () => {
         expect(heatmap[6][23]).toBe(0);
     });
 
-    it("returns empty heatmap when commits response is not an array", async () => {
-        mockFetch.mockImplementation((url) => {
-             const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
-            if (urlStr.includes("/graphql")) {
-                return Promise.resolve(jsonResponse({
-                    data: {
-                        user: {
-                            id: "123",
-                            contributionsCollection: {
-                                commitContributionsByRepository: [
-                                    { repository: { owner: { login: "user1" }, name: "repo1" }, contributions: { totalCount: 1 } }
-                                ],
-                                pullRequestContributionsByRepository: [],
-                                issueContributionsByRepository: []
-                            }
-                        }
-                    }
-                }));
-            }
-            return Promise.resolve(jsonResponse({ message: "not an array" }));
-        });
-
-        const heatmap = await fetchCommitActivityHeatmap("testuser", 2024, "fake-token");
-        expect(heatmap[0][0]).toBe(0);
-        expect(heatmap[6][23]).toBe(0);
-    });
-
-    it("logs and returns empty heatmap when commits fetch throws", async () => {
-        const loggerSpy = vi.spyOn(logger, "error").mockImplementation(() => {});
-        const fetchError = new Error("network failed");
-
-        mockFetch.mockImplementation((url) => {
-             const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
-            if (urlStr.includes("/graphql")) {
-                return Promise.resolve(jsonResponse({
-                    data: {
-                        user: {
-                            id: "123",
-                            contributionsCollection: {
-                                commitContributionsByRepository: [
-                                    { repository: { owner: { login: "user1" }, name: "repo1" }, contributions: { totalCount: 1 } }
-                                ],
-                                pullRequestContributionsByRepository: [],
-                                issueContributionsByRepository: []
-                            }
-                        }
-                    }
-                }));
-            }
-            return Promise.reject(fetchError);
-        });
-
-        try {
-            const heatmap = await fetchCommitActivityHeatmap("testuser", 2024, "fake-token");
-            expect(heatmap[0][0]).toBe(0);
-            expect(heatmap[6][23]).toBe(0);
-            expect(loggerSpy).toHaveBeenCalledWith("Failed to fetch top repository commits:", fetchError);
-        } finally {
-            loggerSpy.mockRestore();
-        }
-    });
-
     it("throws error when GraphQL query fails", async () => {
         mockFetch.mockImplementation(() => {
             return Promise.resolve(jsonResponse(null, 500));

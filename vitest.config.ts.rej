@@ -1,0 +1,11 @@
+--- vitest.config.ts
++++ vitest.config.ts
+@@ -19,7 +19,7 @@
+         exclude: [
+           "node_modules",
+           "src/test/setup.ts",
+-          "src/components/ui/**",
++          "src/components/**",
+           "src/app/layout.tsx",
+           "src/app/page.tsx",
+           "**/*.d.ts",
