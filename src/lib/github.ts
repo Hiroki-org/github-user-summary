@@ -370,12 +370,17 @@ async function fetchRepositoriesREST(username: string): Promise<RepositoryData> 
 
   for (const repo of nonFork) {
     if (repo.language) {
-      languageRepoCount.set(repo.language, (languageRepoCount.get(repo.language) ?? 0) + 1);
+      const existing = languageRepoCount.get(repo.language);
+      languageRepoCount.set(repo.language, (existing ?? 0) + 1);
     }
-    for (const topic of repo.topics ?? []) {
-      const normalized = topic.trim();
-      if (!normalized) continue;
-      topicCountMap.set(normalized, (topicCountMap.get(normalized) ?? 0) + 1);
+    if (repo.topics) {
+      for (const topic of repo.topics) {
+        const normalized = topic.trim();
+        if (normalized) {
+          const existing = topicCountMap.get(normalized);
+          topicCountMap.set(normalized, (existing ?? 0) + 1);
+        }
+      }
     }
   }
 
