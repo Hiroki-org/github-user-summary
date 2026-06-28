@@ -173,9 +173,42 @@ describe("getMostActiveDayFromCalendar", () => {
         // The valid Thursday should win despite the large count on the invalid date
         expect(getMostActiveDayFromCalendar(calendar)).toBe("Thursday");
     });
+
+    it("returns null when all counts are zero", () => {
+        const calendar = [
+            { date: "2023-01-01", count: 0 },
+            { date: "2023-01-02", count: 0 },
+        ];
+        expect(getMostActiveDayFromCalendar(calendar)).toBeNull();
+    });
+
+    it("returns null when all counts are negative", () => {
+        const calendar = [
+            { date: "2023-01-01", count: -1 },
+            { date: "2023-01-02", count: -5 },
+        ];
+        expect(getMostActiveDayFromCalendar(calendar)).toBeNull();
+    });
+
+    it("returns null when all dates are invalid", () => {
+        const calendar = [
+            { date: "invalid-date-1", count: 10 },
+            { date: "invalid-date-2", count: 20 },
+        ];
+        expect(getMostActiveDayFromCalendar(calendar)).toBeNull();
+    });
 });
 
+
 describe("buildHourlyHeatmapFromCommitDates - edge cases", () => {
+    it("falls back to full string parsing when date part is invalid in Date parsing path", () => {
+        // Specifically testing lines 29-30 in buildHourlyHeatmapFromCommitDates
+        // "2023-99-99T10:00:00Z" passes the length and "T" checks, but Date parsing will fail.
+        const heatmap = buildHourlyHeatmapFromCommitDates(["2023-99-99T10:00:00Z"]);
+        const totalCommits = heatmap.flat().reduce((sum, count) => sum + count, 0);
+        expect(totalCommits).toBe(0);
+    });
+
     it("falls back to full string parsing for unparseable hour data", () => {
         const heatmap = buildHourlyHeatmapFromCommitDates(["2023-01-01TX0:00:00Z"]);
         const totalCommits = heatmap.flat().reduce((sum, count) => sum + count, 0);
