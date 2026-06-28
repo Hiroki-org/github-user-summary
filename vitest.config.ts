@@ -22,7 +22,12 @@ export default defineConfig({
         "src/components/SkillsCard.tsx",
         "src/components/LayoutEditor.tsx",
         "src/lib/rateLimit.ts",
-        "src/app/api/og/[username]/route.tsx"
+        "src/app/api/og/[username]/route.tsx",
+        "src/components/BusinessCardBlocks/AvatarBlock.tsx",
+        "src/components/BusinessCardBlocks/BioBlock.tsx",
+        "src/components/BusinessCardBlocks/StatsBlock.tsx",
+        "src/components/BusinessCardBlocks/TopLanguagesBlock.tsx",
+        "src/components/BusinessCardBlocks/TopReposBlock.tsx"
       ],
       thresholds: {
         lines: 80,
