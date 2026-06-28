@@ -81,13 +81,29 @@ function isTrustedJsDelivrNotoFont(parsedUrl: URL): boolean {
     return false;
   }
 
-  const pathSegments = parsedUrl.pathname.split("/");
-  const repoSegment = pathSegments[3];
+  const pathname = parsedUrl.pathname;
+
+  const slash1 = pathname.indexOf("/");
+  if (slash1 === -1) return false;
+
+  let slash2 = pathname.indexOf("/", slash1 + 1);
+  if (slash2 === -1) slash2 = pathname.length;
+  if (pathname.slice(slash1 + 1, slash2) !== "gh") return false;
+
+  let slash3 = pathname.indexOf("/", slash2 + 1);
+  if (slash3 === -1) slash3 = pathname.length;
+  if (pathname.slice(slash2 + 1, slash3) !== "googlefonts") return false;
+
+  let slash4 = pathname.indexOf("/", slash3 + 1);
+  if (slash4 === -1) slash4 = pathname.length;
+
+  const repoSegment = pathname.slice(slash3 + 1, slash4);
+
   const isNotoFontsRepo =
     repoSegment === "noto-fonts" ||
-    /^noto-fonts@.+$/.test(repoSegment ?? "");
+    /^noto-fonts@.+$/.test(repoSegment);
 
-  return pathSegments[1] === "gh" && pathSegments[2] === "googlefonts" && isNotoFontsRepo;
+  return isNotoFontsRepo;
 }
 
 /**
