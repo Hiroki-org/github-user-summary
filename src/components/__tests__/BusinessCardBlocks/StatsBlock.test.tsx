@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { describe, it, expect } from "vitest";
 
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { StatsBlock } from "../../BusinessCardBlocks/StatsBlock";
 
 describe("StatsBlock", () => {
@@ -15,21 +17,21 @@ describe("StatsBlock", () => {
   } as any;
 
   it("renders basic stats", () => {
-    render(<StatsBlock profile={profile} contributions={contributions} options={{}} />);
+    render(<StatsBlock profile={profile as any} contributions={contributions as any} options={{}} />);
     expect(screen.getByText("500")).toBeInTheDocument();
     expect(screen.getByText("100")).toBeInTheDocument();
     expect(screen.getByText("55")).toBeInTheDocument();
   });
 
   it("renders basic stats with null contributions", () => {
-    render(<StatsBlock profile={profile} contributions={null} options={{}} />);
+    render(<StatsBlock profile={profile as any} contributions={null as any} options={{}} />);
     expect(screen.getByText("0")).toBeInTheDocument();
     expect(screen.getByText("100")).toBeInTheDocument();
     expect(screen.getByText("55")).toBeInTheDocument();
   });
 
   it("renders contribution breakdown", () => {
-    render(<StatsBlock profile={profile} contributions={contributions} options={{ showContributionBreakdown: true }} />);
+    render(<StatsBlock profile={profile as any} contributions={contributions as any} options={{ showContributionBreakdown: true }} />);
     expect(screen.getByText("Commits")).toBeInTheDocument();
     expect(screen.getByText("400")).toBeInTheDocument();
     expect(screen.getByText("Pull Requests")).toBeInTheDocument();
@@ -41,7 +43,7 @@ describe("StatsBlock", () => {
   });
 
   it("renders streaks", () => {
-    render(<StatsBlock profile={profile} contributions={contributions} options={{ showStreaks: true }} />);
+    render(<StatsBlock profile={profile as any} contributions={contributions as any} options={{ showStreaks: true }} />);
     expect(screen.getByText("Longest Streak")).toBeInTheDocument();
     expect(screen.getByText("10 days")).toBeInTheDocument();
     expect(screen.getByText("Current Streak")).toBeInTheDocument();

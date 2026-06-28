@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { TopReposBlock } from "../../BusinessCardBlocks/TopReposBlock";
 
@@ -11,7 +13,7 @@ describe("TopReposBlock", () => {
       },
     ] as any;
 
-    render(<TopReposBlock reposToShow={repos} />);
+    render(<TopReposBlock reposToShow={repos as any} />);
     expect(screen.getByText("test-repo")).toBeInTheDocument();
     expect(screen.getByText("100")).toBeInTheDocument();
     expect(screen.getByText("TypeScript")).toBeInTheDocument();

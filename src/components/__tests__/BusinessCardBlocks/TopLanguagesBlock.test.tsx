@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { describe, it, expect } from "vitest";
 
 import { render, screen } from "@testing-library/react";
 import { TopLanguagesBlock } from "../../BusinessCardBlocks/TopLanguagesBlock";
@@ -20,12 +22,12 @@ describe("TopLanguagesBlock", () => {
   });
 
   it("renders interests", () => {
-    render(<TopLanguagesBlock topLanguages={[]} topTopics={[]} interests={interests} activity={null} options={{ showInterests: true }} />);
+    render(<TopLanguagesBlock topLanguages={[]} topTopics={[]} interests={interests as any} activity={null} options={{ showInterests: true }} />);
     expect(screen.getByText("#web")).toBeInTheDocument();
   });
 
   it("renders activity", () => {
-    render(<TopLanguagesBlock topLanguages={[]} topTopics={[]} interests={null} activity={activity} options={{ showActivityBreakdown: true }} />);
+    render(<TopLanguagesBlock topLanguages={[]} topTopics={[]} interests={null} activity={activity as any} options={{ showActivityBreakdown: true }} />);
     expect(screen.getByText("PushEvent")).toBeInTheDocument();
     expect(screen.getByText("20")).toBeInTheDocument();
   });

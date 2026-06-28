@@ -1,4 +1,7 @@
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { describe, it, expect } from "vitest";
+
 import { render, screen } from "@testing-library/react";
 import { BioBlock } from "../../BusinessCardBlocks/BioBlock";
 
@@ -31,7 +34,7 @@ describe("BioBlock", () => {
       showTwitter: true,
       showJoinedDate: true,
     };
-    render(<BioBlock profile={profile} options={options} />);
+    render(<BioBlock profile={profile} options={options as any} />);
     expect(screen.getByText("Test Company")).toBeInTheDocument();
     expect(screen.getByText("Test Location")).toBeInTheDocument();
     expect(screen.getByText("example.com")).toBeInTheDocument();

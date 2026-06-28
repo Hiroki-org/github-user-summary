@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { AvatarBlock } from "../../BusinessCardBlocks/AvatarBlock";
 
@@ -9,7 +11,7 @@ describe("AvatarBlock", () => {
       avatar_url: "https://example.com/avatar.jpg",
     } as any;
 
-    render(<AvatarBlock profile={profile} />);
+    render(<AvatarBlock profile={profile as any} />);
     expect(screen.getByText("Test User")).toBeInTheDocument();
     expect(screen.getByText("@testuser")).toBeInTheDocument();
 
@@ -24,7 +26,7 @@ describe("AvatarBlock", () => {
       avatar_url: "https://example.com/avatar2.jpg",
     } as any;
 
-    render(<AvatarBlock profile={profile} />);
+    render(<AvatarBlock profile={profile as any} />);
     expect(screen.getByText("testuser2")).toBeInTheDocument();
     expect(screen.getByText("@testuser2")).toBeInTheDocument();
   });
