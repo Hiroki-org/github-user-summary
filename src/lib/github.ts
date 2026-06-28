@@ -413,21 +413,25 @@ function processRepoData(repos: RepoNode[]): RepositoryData {
   const topicCountMap = new Map<string, number>();
 
   for (const repo of repos) {
-    for (const edge of repo.languages.edges) {
-      const existing = languageMap.get(edge.node.name);
-      if (existing) {
-        existing.bytes += edge.size;
-      } else {
-        languageMap.set(edge.node.name, { bytes: edge.size, color: edge.node.color });
+    if (repo.languages?.edges) {
+      for (const edge of repo.languages.edges) {
+        const existing = languageMap.get(edge.node.name);
+        if (existing) {
+          existing.bytes += edge.size;
+        } else {
+          languageMap.set(edge.node.name, { bytes: edge.size, color: edge.node.color });
+        }
       }
     }
 
-    for (const node of repo.repositoryTopics.nodes) {
-      const topicName = node.topic?.name?.trim();
-      if (!topicName) {
-        continue;
+    if (repo.repositoryTopics?.nodes) {
+      for (const topicNode of repo.repositoryTopics.nodes) {
+        const normalized = topicNode.topic.name.trim();
+        if (normalized) {
+          const existing = topicCountMap.get(normalized);
+          topicCountMap.set(normalized, (existing ?? 0) + 1);
+        }
       }
-      topicCountMap.set(topicName, (topicCountMap.get(topicName) ?? 0) + 1);
     }
   }
 
