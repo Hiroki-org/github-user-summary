@@ -78,11 +78,13 @@ const createMockSummary = (overrides?: Partial<UserSummary>): UserSummary => ({
 });
 
 describe("BusinessCard", () => {
+
   it("renders null if profile is missing", () => {
     const summary = createMockSummary({ profile: null });
     const { container } = render(<BusinessCard summary={summary} />);
     expect(container.firstChild).toBeNull();
   });
+
 
   it("renders standard business card layout", () => {
     const summary = createMockSummary();
@@ -233,6 +235,7 @@ describe("BusinessCard", () => {
     expect(screen.getByText("PushEvent")).toBeInTheDocument();
     expect(screen.getByText("100")).toBeInTheDocument();
   });
+
 
   it("renders top repos when block is visible", () => {
     const summary = createMockSummary();

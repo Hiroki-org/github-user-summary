@@ -31,27 +31,27 @@ const BusinessCard = forwardRef<HTMLDivElement, Props>(({ summary, layout, optio
       : repositories?.topRepos.slice(0, 2) || [];
 
   const renderBlock = (blockId: CardBlockId) => {
-    if (blockId === "avatar") {
-      return <AvatarBlock profile={profile} />;
+    switch (blockId) {
+      case "avatar":
+        return <AvatarBlock profile={profile} />;
+      case "bio":
+        return <BioBlock profile={profile} options={options || {}} />;
+      case "stats":
+        return <StatsBlock profile={profile} contributions={contributions} options={options || {}} />;
+      case "topLanguages":
+        return (
+          <TopLanguagesBlock
+            topLanguages={topLanguages}
+            topTopics={topTopics}
+            interests={interests}
+            activity={activity}
+            options={options || {}}
+          />
+        );
+      case "topRepos":
+      default:
+        return <TopReposBlock reposToShow={reposToShow} />;
     }
-    if (blockId === "bio") {
-      return <BioBlock profile={profile} options={options || {}} />;
-    }
-    if (blockId === "stats") {
-      return <StatsBlock profile={profile} contributions={contributions} options={options || {}} />;
-    }
-    if (blockId === "topLanguages") {
-      return (
-        <TopLanguagesBlock
-          topLanguages={topLanguages}
-          topTopics={topTopics}
-          interests={interests}
-          activity={activity}
-          options={options || {}}
-        />
-      );
-    }
-    return <TopReposBlock reposToShow={reposToShow} />;
   };
 
   const fullBlocks = activeLayout.blocks.filter((block) => block.column === "full" && block.visible);
