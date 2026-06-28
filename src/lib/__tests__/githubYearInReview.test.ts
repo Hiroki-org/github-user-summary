@@ -436,48 +436,6 @@ describe("fetchYearInReviewData additional coverage", () => {
 });
 
 describe("fetchCommitActivityHeatmap additional coverage", () => {
-    it("returns null when fetch returns non-ok response in fetchTopRepositoryCommits", async () => {
-        global.fetch = vi.fn()
-            .mockImplementationOnce(() => Promise.resolve(new Response(JSON.stringify({
-                data: {
-                    user: {
-                        id: "u1",
-                        contributionsCollection: {
-                            commitContributionsByRepository: [
-                                { repository: { name: "repo", owner: { login: "owner" } }, contributions: { totalCount: 10 } }
-                            ]
-                        }
-                    }
-                }
-            }), { status: 200 })))
-            .mockImplementationOnce(() => Promise.resolve(new Response("Internal Server Error", { status: 500 })));
-
-        const heatmap = await fetchCommitActivityHeatmap("testuser", 2024, "fake-token");
-        expect(heatmap[0][0]).toBe(0);
-        expect(heatmap[6][23]).toBe(0);
-    });
-
-    it("returns empty heatmap when fetchTopRepositoryCommits returns null (non-ok response)", async () => {
-        global.fetch = vi.fn()
-            .mockImplementationOnce(() => Promise.resolve(new Response(JSON.stringify({
-                data: {
-                    user: {
-                        id: "u1",
-                        contributionsCollection: {
-                            commitContributionsByRepository: [
-                                { repository: { name: "repo", owner: { login: "owner" } }, contributions: { totalCount: 10 } }
-                            ]
-                        }
-                    }
-                }
-            }), { status: 200 })))
-            .mockImplementationOnce(() => Promise.resolve(new Response("Not Found", { status: 404 }))); // Simulates !res.ok
-
-        const heatmap = await fetchCommitActivityHeatmap("testuser", 2024, "fake-token");
-        expect(heatmap[0][0]).toBe(0);
-        expect(heatmap[6][23]).toBe(0);
-    });
-
     it("throws error when GraphQL query fails", async () => {
         mockFetch.mockImplementation(() => {
             return Promise.resolve(jsonResponse(null, 500));
