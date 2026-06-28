@@ -28,6 +28,7 @@ type Props = {
 };
 
 const CONTAINERS: CardBlock["column"][] = ["left", "right", "full"];
+const CONTAINER_SET = new Set<string>(CONTAINERS);
 
 const BLOCK_LABELS: Record<CardBlockId, string> = {
   avatar: "Avatar",
@@ -70,7 +71,7 @@ function getInsertIndex(
   activeId: CardBlockId,
   overId: string,
 ): { column: CardBlock["column"]; index: number } | null {
-  if (CONTAINERS.includes(overId as CardBlock["column"])) {
+  if (CONTAINER_SET.has(overId)) {
     const column = overId as CardBlock["column"];
     let count = 0;
     const blocks = layout.blocks;
