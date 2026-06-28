@@ -93,6 +93,46 @@ describe("RateLimiter", () => {
             expect(result.success).toBe(true);
             expect(result.reset).toBe(12345);
         });
+
+        it("initializes without upstash and falls back if only token is present", async () => {
+            delete process.env.UPSTASH_REDIS_REST_URL;
+            const limiter = new RateLimiter(2, 1000);
+            const key = "fallback-key";
+            const result = await limiter.check(key);
+            expect(result.success).toBe(true);
+            expect(result.reset).toBeGreaterThan(Date.now());
+        });
+
+        it("initializes without upstash and falls back if only url is present", async () => {
+            delete process.env.UPSTASH_REDIS_REST_TOKEN;
+            const limiter = new RateLimiter(2, 1000);
+            const key = "fallback-key";
+            const result = await limiter.check(key);
+            expect(result.success).toBe(true);
+            expect(result.reset).toBeGreaterThan(Date.now());
+        });
+    });
+});
+
+describe("isValidIp catch block", () => {
+    it("returns false when URL throws", () => {
+        const req = new Request("http://localhost", {
+            headers: {
+                "x-forwarded-for": ":" // this triggers includes(":") and throws on URL parse because of HTTP
+            }
+        });
+        expect(getClientIp(req)).toBe("unknown");
+    });
+});
+
+describe("isValidIp", () => {
+    it("returns false for a URL that contains no colons and is not IPv4", () => {
+        const req = new Request("http://localhost", {
+            headers: {
+                "x-forwarded-for": "not-an-ip-or-url"
+            }
+        });
+        expect(getClientIp(req)).toBe("unknown");
     });
 });
 
