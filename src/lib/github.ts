@@ -746,21 +746,9 @@ export const fetchActivity = cache(async function fetchActivity(
  * 配列の作成とソートを最小限に抑えることでパフォーマンスを向上させます
  */
 function getTopK(map: Map<string, number>, k: number = 10): { name: string; count: number }[] {
-  const top: { name: string; count: number }[] = [];
-  for (const [name, count] of map.entries()) {
-    if (top.length < k) {
-      top.push({ name, count });
-      top.sort((a, b) => b.count - a.count);
-    } else if (count > top[k - 1].count) {
-      let i = k - 2;
-      while (i >= 0 && top[i].count < count) {
-        top[i + 1] = top[i];
-        i--;
-      }
-      top[i + 1] = { name, count };
-    }
-  }
-  return top;
+  return Array.from(map, ([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, k);
 }
 
 /**
