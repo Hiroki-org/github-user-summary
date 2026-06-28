@@ -145,6 +145,8 @@ describe("useYearInReview", () => {
         const { result } = renderHook(() => useYearInReview(2023), { wrapper });
 
         expect(result.current.isLoading).toBe(false);
+        expect(result.current.data).toBeUndefined();
+        expect(result.current.error).toBeUndefined();
     });
 
     it("handles loading state", () => {
