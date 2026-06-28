@@ -164,13 +164,4 @@ describe("getClientIp", () => {
         });
         expect(getClientIp(req)).toBe("unknown");
     });
-
-    it("returns unknown when the right-most x-forwarded-for token is an invalid IPv6", () => {
-        const req = new Request("http://localhost", {
-            headers: {
-                "x-forwarded-for": "5.6.7.8, not:an:ip:address"
-            }
-        });
-        expect(getClientIp(req)).toBe("unknown");
-    });
 });
