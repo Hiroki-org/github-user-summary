@@ -78,6 +78,39 @@ describe("buildHourlyHeatmapFromCommitDates", () => {
 
 
 describe("getMostActiveHour", () => {
+    it("returns 0 if heatmap is not an array", () => {
+        // @ts-expect-error Testing invalid input
+        expect(getMostActiveHour(null)).toBe(0);
+    });
+
+    it("returns 0 if heatmap does not have exactly 7 rows", () => {
+        const heatmapWith6Rows = Array.from({ length: 6 }, () => Array.from({ length: 24 }, () => 0));
+        expect(getMostActiveHour(heatmapWith6Rows)).toBe(0);
+    });
+
+    it("returns 0 if any row is not an array", () => {
+        const heatmapWithBadRow = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
+        // @ts-expect-error Testing invalid input
+        heatmapWithBadRow[0] = "not an array";
+        expect(getMostActiveHour(heatmapWithBadRow)).toBe(0);
+    });
+
+    it("returns 0 if any row does not have exactly 24 elements", () => {
+        const heatmapWithBadRowLength = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
+        heatmapWithBadRowLength[0] = Array.from({ length: 23 }, () => 0);
+        expect(getMostActiveHour(heatmapWithBadRowLength)).toBe(0);
+    });
+
+    it("returns 0 if any count in the heatmap is not finite", () => {
+        const heatmapWithNaN = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
+        heatmapWithNaN[0][0] = NaN;
+        expect(getMostActiveHour(heatmapWithNaN)).toBe(0);
+
+        const heatmapWithInfinity = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
+        heatmapWithInfinity[0][0] = Infinity;
+        expect(getMostActiveHour(heatmapWithInfinity)).toBe(0);
+    });
+
     it("returns 0 if heatmap is malformed (not 7x24 matrix)", () => {
         expect(getMostActiveHour([])).toBe(0);
         expect(getMostActiveHour([[1,2,3]])).toBe(0);
@@ -185,6 +218,33 @@ describe("buildHourlyHeatmapFromCommitDates - edge cases", () => {
     it("falls back to full string parsing for unparseable hour data but valid date", () => {
         const heatmap = buildHourlyHeatmapFromCommitDates(["2023-01-01T10:00:00.1234Z"]);
         expect(heatmap[0][10]).toBe(1);
+    });
+
+
+    it("falls back to parseFallbackDate when Date constructor fails with NaN (cache miss)", () => {
+        // "2023-13-45T" is 11 chars. Length >= 19, [10] === 'T'.
+        // datePart = "2023-13-45". new Date("2023-13-45T00:00:00Z") -> Invalid Date (NaN).
+        // It should call parseFallbackDate, which also fails and adds nothing.
+        const heatmap = buildHourlyHeatmapFromCommitDates(["2023-13-45T10:00:00Z"]);
+        const totalCommits = heatmap.flat().reduce((sum, count) => sum + count, 0);
+        expect(totalCommits).toBe(0);
+    });
+
+
+    it("falls back to full string parsing when cached day is undefined and Date constructor fails with NaN", () => {
+        // Use a string that passes the fast path length checks (length >= 19, [10] === 'T')
+        // But the datePart causes new Date() to be Invalid Date (NaN)
+        // e.g. "2023-13-45T10:00:00Z"
+        const heatmap = buildHourlyHeatmapFromCommitDates(["2023-13-45T10:00:00Z"]);
+        const totalCommits = heatmap.flat().reduce((sum, count) => sum + count, 0);
+        expect(totalCommits).toBe(0);
+    });
+
+    it("falls back to parseFallbackDate when getMostActiveDayFromCalendar encounters NaN", () => {
+        const calendar = [
+            { date: "2023-13-45", count: 10 }
+        ];
+        expect(getMostActiveDayFromCalendar(calendar)).toBeNull();
     });
 
     it("returns zero contributions for invalid date strings", () => {
