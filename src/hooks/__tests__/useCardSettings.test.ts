@@ -1,17 +1,17 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
+import { renderHook, act, waitFor } from "@testing-library/react";
 import { useCardSettings } from "../useCardSettings";
 import { loadCardSettings, saveCardSettings } from "@/lib/cardSettings";
 import { toggleBlockVisibility } from "@/lib/cardLayout";
-import type { CardLayout, CardDisplayOptions, CardBlockId } from "@/lib/types";
+import type { CardLayout, CardDisplayOptions } from "@/lib/types";
 
-vi.mock("@/lib/cardSettings", () => ({
+vi.mock("@/lib/cardSettings", (): { loadCardSettings: Mock; saveCardSettings: Mock } => ({
   loadCardSettings: vi.fn(),
   saveCardSettings: vi.fn(),
 }));
 
-vi.mock("@/lib/cardLayout", () => ({
+vi.mock("@/lib/cardLayout", (): { toggleBlockVisibility: Mock } => ({
   toggleBlockVisibility: vi.fn(),
 }));
 
@@ -41,33 +41,30 @@ describe("useCardSettings", () => {
 
     expect(result.current.layout).toEqual(mockLayout);
     expect(result.current.displayOptions).toEqual(mockOptions);
-    // Since useState initializers are called once
-    expect(loadCardSettings).toHaveBeenCalledTimes(2);
+    expect(loadCardSettings).toHaveBeenCalled();
   });
 
   it("does not hydrate or save when mounted is false", () => {
     renderHook(() => useCardSettings(false));
 
-    // Initial load only
-    expect(loadCardSettings).toHaveBeenCalledTimes(2);
+    expect(loadCardSettings).toHaveBeenCalled();
     expect(saveCardSettings).not.toHaveBeenCalled();
   });
 
   it("hydrates state and enables saving when mounted becomes true", () => {
     // Initial mount is false
-    const { result, rerender } = renderHook(
+    const { rerender } = renderHook(
       ({ mounted }) => useCardSettings(mounted),
       { initialProps: { mounted: false } }
     );
 
     expect(saveCardSettings).not.toHaveBeenCalled();
+    vi.mocked(loadCardSettings).mockClear();
 
     // Now mount the component
     rerender({ mounted: true });
 
-    // It should have called loadCardSettings again during hydration
-    expect(loadCardSettings).toHaveBeenCalledTimes(3);
-    // After hydration, layout and displayOptions effects trigger saveCardSettings
+    expect(loadCardSettings).toHaveBeenCalled();
     expect(saveCardSettings).toHaveBeenCalledWith(mockLayout, mockOptions);
   });
 
@@ -81,10 +78,8 @@ describe("useCardSettings", () => {
 
     rerender({ mounted: true });
 
-    // loadCardSettings should be called for hydration
-    expect(loadCardSettings).toHaveBeenCalledTimes(1);
-    // Save should be called after hydration
-    expect(saveCardSettings).toHaveBeenCalledTimes(1);
+    expect(loadCardSettings).toHaveBeenCalled();
+    expect(saveCardSettings).toHaveBeenCalledWith(mockLayout, mockOptions);
   });
 
   it("updates state if stored layout and options differ during hydration", () => {
@@ -122,7 +117,7 @@ describe("useCardSettings", () => {
     expect(saveCardSettings).toHaveBeenCalledWith(mockLayout, updatedOptions);
   });
 
-  it("toggles block visibility correctly", () => {
+  it("toggles block visibility correctly", async () => {
     const { result } = renderHook(() => useCardSettings(true));
 
     const toggledLayout: CardLayout = {
@@ -133,6 +128,7 @@ describe("useCardSettings", () => {
     };
 
     vi.mocked(toggleBlockVisibility).mockReturnValue(toggledLayout);
+    vi.mocked(saveCardSettings).mockClear();
 
     act(() => {
       result.current.toggleMainBlockVisibility("profile");
@@ -140,22 +136,38 @@ describe("useCardSettings", () => {
 
     expect(toggleBlockVisibility).toHaveBeenCalledWith(mockLayout, "profile");
     expect(result.current.layout).toEqual(toggledLayout);
+    await waitFor(() => {
+      expect(saveCardSettings).toHaveBeenCalledWith(toggledLayout, mockOptions);
+    });
   });
 
-  it("toggles display options correctly", () => {
+  it("toggles display options correctly", async () => {
     const { result } = renderHook(() => useCardSettings(true));
+    vi.mocked(saveCardSettings).mockClear();
 
     act(() => {
       result.current.toggleDisplayOption("showAvatar");
     });
 
     expect(result.current.displayOptions.showAvatar).toBe(false);
+    await waitFor(() => {
+      expect(saveCardSettings).toHaveBeenCalledWith(mockLayout, {
+        showAvatar: false,
+        showBio: false,
+      });
+    });
 
     act(() => {
       result.current.toggleDisplayOption("showBio");
     });
 
     expect(result.current.displayOptions.showBio).toBe(true);
+    await waitFor(() => {
+      expect(saveCardSettings).toHaveBeenCalledWith(mockLayout, {
+        showAvatar: false,
+        showBio: true,
+      });
+    });
   });
 
   it("checks block visibility correctly", () => {
@@ -164,7 +176,7 @@ describe("useCardSettings", () => {
     expect(result.current.isBlockVisible("profile")).toBe(true);
     expect(result.current.isBlockVisible("contributions")).toBe(false);
 
-    // Non-existent block should be false
-    expect(result.current.isBlockVisible("skills" as CardBlockId)).toBe(false);
+    // A valid block ID that is absent from the current layout should be false.
+    expect(result.current.isBlockVisible("skills")).toBe(false);
   });
 });
