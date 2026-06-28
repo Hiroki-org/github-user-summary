@@ -284,18 +284,59 @@ export async function fetchYearInReviewData(username: string, year: number, toke
     }
 }
 
+
+function getEmptyHeatmap(): number[][] {
+    return [
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    ];
+}
+
+async function fetchTopRepositoryCommits(
+    topRepository: { name: string },
+    username: string,
+    token: string,
+    fromIso: string,
+    toIso: string
+): Promise<string[] | null> {
+    const [owner, repo] = topRepository.name.split("/");
+    const url = new URL(`${GITHUB_API}/repos/${owner}/${repo}/commits`);
+    url.searchParams.set("author", username);
+    url.searchParams.set("since", fromIso);
+    url.searchParams.set("until", toIso);
+    url.searchParams.set("per_page", "100");
+
+    const res = await fetch(url.toString(), { headers: headers(token), cache: "no-store" });
+    if (res.status === 403) {
+        handleRateLimit(res);
+    }
+    if (!res.ok) {
+        return null;
+    }
+
+    const commits = (await res.json()) as GitHubCommit[];
+    return commits
+        .map((commit) => commit.commit.author?.date)
+        .filter((value): value is string => Boolean(value));
+}
+
 export async function fetchCommitActivityHeatmap(username: string, year: number, token?: string): Promise<number[][]> {
     if (!token) {
         throw new GitHubApiError("Commit activity requires authentication token", 401);
     }
 
-    const from = new Date(Date.UTC(year, 0, 1, 0, 0, 0));
-    const to = new Date(Date.UTC(year, 11, 31, 23, 59, 59));
+    const fromIso = new Date(Date.UTC(year, 0, 1, 0, 0, 0)).toISOString();
+    const toIso = new Date(Date.UTC(year, 11, 31, 23, 59, 59)).toISOString();
 
     const reposResponse = await graphql<YearInReviewResponse>(YEAR_IN_REVIEW_QUERY, token, {
         login: username,
-        from: from.toISOString(),
-        to: to.toISOString(),
+        from: fromIso,
+        to: toIso,
         maxRepositories: 10,
     });
 
@@ -306,28 +347,14 @@ export async function fetchCommitActivityHeatmap(username: string, year: number,
     const topRepository = mergeTopRepository(reposResponse.user.contributionsCollection);
 
     if (!topRepository) {
-        return Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
+        return getEmptyHeatmap();
     }
 
-    const [owner, repo] = topRepository.name.split("/");
-    const url = new URL(`${GITHUB_API}/repos/${owner}/${repo}/commits`);
-    url.searchParams.set("author", username);
-    url.searchParams.set("since", from.toISOString());
-    url.searchParams.set("until", to.toISOString());
-    url.searchParams.set("per_page", "100");
+    const dates = await fetchTopRepositoryCommits(topRepository, username, token, fromIso, toIso);
 
-    const res = await fetch(url.toString(), { headers: headers(token), cache: "no-store" });
-    if (res.status === 403) {
-        handleRateLimit(res);
+    if (!dates) {
+        return getEmptyHeatmap();
     }
-    if (!res.ok) {
-        return Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
-    }
-
-    const commits = (await res.json()) as GitHubCommit[];
-    const dates = commits
-        .map((commit) => commit.commit.author?.date)
-        .filter((value): value is string => Boolean(value));
 
     return buildHourlyHeatmapFromCommitDates(dates);
 }
