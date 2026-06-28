@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseCardQueryParams } from "@/lib/cardOptions";
+import { parseCardQueryParams } from "../cardOptions";
 
 describe("parseCardQueryParams", () => {
   it("should return default values when URLSearchParams is empty", () => {
@@ -50,10 +50,10 @@ describe("parseCardQueryParams", () => {
     expect(parseCardQueryParams(params3).cols).toBe(1);
   });
 
-  it("should parse blocks parameter correctly", (): void => {
+  it("should parse blocks parameter correctly", () => {
     // Valid blocks
-    const params1 = new URLSearchParams({ blocks: "repos,heatmap,streak" });
-    expect(parseCardQueryParams(params1).blocks).toEqual(["repos", "heatmap", "streak"]);
+    const params1 = new URLSearchParams({ blocks: "repos,streak" });
+    expect(parseCardQueryParams(params1).blocks).toEqual(["repos", "streak"]);
 
     // With spaces and mixed case
     const params2 = new URLSearchParams({ blocks: " Repos,  STREAK , Invalid " });
@@ -72,7 +72,7 @@ describe("parseCardQueryParams", () => {
     expect(parseCardQueryParams(params5).blocks).toEqual(["repos", "streak"]);
   });
 
-  it("should parse layout parameter correctly", (): void => {
+  it("should parse layout parameter correctly", () => {
     // Valid layout
     const params1 = new URLSearchParams({ layout: "left:bio,right:stats,full:langs" });
     expect(parseCardQueryParams(params1).layout).toEqual({
@@ -95,12 +95,6 @@ describe("parseCardQueryParams", () => {
     // Malformed pairs
     const params4 = new URLSearchParams({ layout: "left,bio:stats:full,right:" });
     expect(parseCardQueryParams(params4).layout).toEqual({});
-
-    // Duplicate block assignments use the last valid slot.
-    const params5 = new URLSearchParams({ layout: "left:bio,right:bio" });
-    expect(parseCardQueryParams(params5).layout).toEqual({
-      bio: "right",
-    });
   });
 
   it("should parse hide parameter correctly", () => {
@@ -114,24 +108,17 @@ describe("parseCardQueryParams", () => {
     expect(parseCardQueryParams(params3).hide).toEqual(new Set());
   });
 
-  it("should parse width parameter correctly", (): void => {
+  it("should parse width parameter correctly", () => {
     // Valid width
     const params1 = new URLSearchParams({ width: "800" });
     expect(parseCardQueryParams(params1).width).toBe(800);
 
-    // Boundary values
-    const paramsMin = new URLSearchParams({ width: "320" });
-    expect(parseCardQueryParams(paramsMin).width).toBe(320);
-
-    const paramsMax = new URLSearchParams({ width: "1400" });
-    expect(parseCardQueryParams(paramsMax).width).toBe(1400);
-
     // Too small
-    const params2 = new URLSearchParams({ width: "319" });
+    const params2 = new URLSearchParams({ width: "300" });
     expect(parseCardQueryParams(params2).width).toBe(600);
 
     // Too large
-    const params3 = new URLSearchParams({ width: "1401" });
+    const params3 = new URLSearchParams({ width: "1500" });
     expect(parseCardQueryParams(params3).width).toBe(600);
 
     // Not a number

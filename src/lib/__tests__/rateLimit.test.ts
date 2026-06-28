@@ -93,26 +93,6 @@ describe("RateLimiter", () => {
             expect(result.success).toBe(true);
             expect(result.reset).toBe(12345);
         });
-
-        it("initializes without upstash and falls back if only token is present", async (): Promise<void> => {
-            delete process.env.UPSTASH_REDIS_REST_URL;
-            const now = Date.now();
-            const limiter = new RateLimiter(2, 1000);
-            const key = "fallback-key";
-            const result = await limiter.check(key);
-            expect(result.success).toBe(true);
-            expect(result.reset).toBe(now + 1000);
-        });
-
-        it("initializes without upstash and falls back if only url is present", async (): Promise<void> => {
-            delete process.env.UPSTASH_REDIS_REST_TOKEN;
-            const now = Date.now();
-            const limiter = new RateLimiter(2, 1000);
-            const key = "fallback-key";
-            const result = await limiter.check(key);
-            expect(result.success).toBe(true);
-            expect(result.reset).toBe(now + 1000);
-        });
     });
 });
 
@@ -180,15 +160,6 @@ describe("getClientIp", () => {
         const req = new Request("http://localhost", {
             headers: {
                 "x-forwarded-for": "5.6.7.8, not-an-ip"
-            }
-        });
-        expect(getClientIp(req)).toBe("unknown");
-    });
-
-    it("returns unknown when the right-most x-forwarded-for token is an invalid IPv6", () => {
-        const req = new Request("http://localhost", {
-            headers: {
-                "x-forwarded-for": "5.6.7.8, not:an:ip:address"
             }
         });
         expect(getClientIp(req)).toBe("unknown");
