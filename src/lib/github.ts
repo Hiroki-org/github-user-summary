@@ -426,7 +426,9 @@ function processRepoData(repos: RepoNode[]): RepositoryData {
 
     if (repo.repositoryTopics?.nodes) {
       for (const topicNode of repo.repositoryTopics.nodes) {
-        const normalized = topicNode.topic.name.trim();
+        const topicName = topicNode.topic?.name?.trim();
+        if (!topicName) continue;
+        const normalized = topicName;
         if (normalized) {
           const existing = topicCountMap.get(normalized);
           topicCountMap.set(normalized, (existing ?? 0) + 1);
