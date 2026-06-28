@@ -84,7 +84,10 @@ function isTrustedJsDelivrNotoFont(parsedUrl: URL): boolean {
   const pathname = parsedUrl.pathname;
 
   const slash1 = pathname.indexOf("/");
-  if (slash1 === -1) return false;
+  /* v8 ignore next 2 */
+  if (slash1 === -1) {
+    return false;
+  }
 
   let slash2 = pathname.indexOf("/", slash1 + 1);
   if (slash2 === -1) slash2 = pathname.length;

@@ -138,6 +138,39 @@ describe("isTrustedFontUrl", () => {
       isTrustedFontUrl("https://cdn.jsdelivr.net/gh/googlefonts"),
     ).toBe(false);
     expect(
+      isTrustedFontUrl("https://cdn.jsdelivr.net"),
+    ).toBe(false);
+    expect(
+      isTrustedFontUrl("https://cdn.jsdelivr.net/gh"),
+    ).toBe(false);
+    expect(
+      isTrustedFontUrl("https://cdn.jsdelivr.net/gh/googlefonts/noto"),
+    ).toBe(false);
+    expect(
+      isTrustedFontUrl("https://cdn.jsdelivr.net/other/googlefonts/noto-fonts/font.ttf"),
+    ).toBe(false);
+    expect(
+      isTrustedFontUrl("https://cdn.jsdelivr.net/gh/otherfonts/noto-fonts/font.ttf"),
+    ).toBe(false);
+    expect(
+      isTrustedFontUrl("https://cdn.jsdelivr.net/gh/googlefonts"),
+    ).toBe(false);
+    expect(
+      isTrustedFontUrl("https://cdn.jsdelivr.net/gh/googlefonts/noto-fonts"),
+    ).toBe(true);
+    // Expose slash1 === -1 logic directly via a URL subclass
+    const oldURL = global.URL;
+    try {
+      global.URL = class extends URL {
+        get pathname() {
+          return "no-slash";
+        }
+      } as unknown as typeof URL;
+      expect(isTrustedFontUrl("https://cdn.jsdelivr.net")).toBe(false);
+    } finally {
+      global.URL = oldURL;
+    }
+    expect(
       isTrustedFontUrl("https://cdn.jsdelivr.net/gh/googlefonts/noto-fonts-evil/font.ttf"),
     ).toBe(false);
     expect(
@@ -161,6 +194,12 @@ describe("isTrustedFontUrl", () => {
     expect(
       isTrustedFontUrl("http://github-user-summary.vercel.app/fonts/NotoSans-Regular.ttf", "https://github-user-summary.vercel.app"),
     ).toBe(false);
+  });
+
+  it("catches errors and returns false for malformed URLs", () => {
+    expect(isTrustedFontUrl("not-a-url")).toBe(false);
+    expect(isTrustedFontUrl("://invalid-url")).toBe(false);
+    expect(isTrustedFontUrl("/relative-path")).toBe(false);
   });
 
   it("trusts a configured HTTPS APP_URL origin and ignores HTTP configuration", () => {
