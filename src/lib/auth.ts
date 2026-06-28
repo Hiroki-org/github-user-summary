@@ -18,6 +18,16 @@ declare module "next-auth/jwt" {
   }
 }
 
+const getSecret = () => {
+  if (process.env.NEXTAUTH_SECRET) {
+    return process.env.NEXTAUTH_SECRET;
+  }
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("NEXTAUTH_SECRET is not set in production. Please set it to a secure random value.");
+  }
+  return "fallback_secret_for_development_only";
+};
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GitHubProvider({
@@ -48,5 +58,5 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: getSecret(),
 };
