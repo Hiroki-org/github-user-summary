@@ -80,6 +80,27 @@ describe("fetchRepositories", () => {
     expect(result.languages[0].name).toBe("JavaScript");
   });
 
+  it("REST フォールバック時に topic がない場合でも正しく動作する", async () => {
+    const restRepos = [
+      {
+        name: "rest-repo-no-topic",
+        description: "A REST repo with no topics",
+        html_url: "https://github.com/testuser/rest-repo-no-topic",
+        stargazers_count: 25,
+        forks_count: 3,
+        fork: false,
+        language: "JavaScript",
+      },
+    ];
+    mockFetch.mockResolvedValueOnce(jsonResponse(restRepos));
+
+    const { fetchRepositories } = await import("../../github");
+    const result = await fetchRepositories("testuser");
+
+    expect(result.totalCount).toBe(1);
+    expect(result.topics.length).toBe(0);
+  });
+
   it("ユーザーが存在しない場合 UserNotFoundError をスローする", async () => {
     mockFetch.mockResolvedValueOnce(
       jsonResponse({ data: { user: null } })
@@ -92,4 +113,77 @@ describe("fetchRepositories", () => {
       UserNotFoundError
     );
   });
+
+  it("GraphQL レスポンスで repo.topics が undefined の場合でも正しく動作する", async () => {
+    const customResponse = {
+      data: {
+        user: {
+          repositories: {
+            pageInfo: { hasNextPage: false, endCursor: null },
+            nodes: [
+              {
+                name: "repo-no-topics",
+                description: null,
+                url: "https://github.com/test/no-topics",
+                stargazerCount: 10,
+                forkCount: 1,
+                isFork: false,
+                languages: { edges: [] },
+                repositoryTopics: { nodes: [] },
+              },
+            ],
+          },
+        },
+      },
+    };
+    mockFetch.mockResolvedValueOnce(jsonResponse(customResponse));
+
+    const { fetchRepositories } = await import("../../github");
+    const result = await fetchRepositories("testuser", "fake-token");
+
+    expect(result.totalCount).toBe(1);
+    expect(result.topics.length).toBe(0);
+  });
+
+  it("GraphQL レスポンスで fork リポジトリは除外される", async () => {
+    const customResponse = {
+      data: {
+        user: {
+          repositories: {
+            pageInfo: { hasNextPage: false, endCursor: null },
+            nodes: [
+              {
+                name: "repo-fork",
+                description: null,
+                url: "https://github.com/test/repo-fork",
+                stargazerCount: 10,
+                forkCount: 1,
+                isFork: true, // Should be excluded
+                languages: { edges: [] },
+                repositoryTopics: { nodes: [] },
+              },
+              {
+                name: "repo-not-fork",
+                description: null,
+                url: "https://github.com/test/repo-not-fork",
+                stargazerCount: 10,
+                forkCount: 1,
+                isFork: false,
+                languages: { edges: [] },
+                repositoryTopics: { nodes: [] },
+              },
+            ],
+          },
+        },
+      },
+    };
+    mockFetch.mockResolvedValueOnce(jsonResponse(customResponse));
+
+    const { fetchRepositories } = await import("../../github");
+    const result = await fetchRepositories("testuser", "fake-token");
+
+    expect(result.totalCount).toBe(1);
+    expect(result.topRepos[0].name).toBe("repo-not-fork");
+  });
+
 });
