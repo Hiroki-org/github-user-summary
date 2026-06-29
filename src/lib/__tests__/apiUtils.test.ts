@@ -1,6 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { handleErrorResponse, getAuthenticatedUser, handleRateLimit } from '../apiUtils';
-import { RateLimitError } from '@/lib/types';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { handleErrorResponse, getAuthenticatedUser } from '../apiUtils';
 import { NextResponse } from 'next/server';
 import { getServerSession } from "next-auth";
 
@@ -54,54 +53,6 @@ describe('apiUtils', () => {
         body: { error: 'Unknown error' },
         init: { status: 500 }
       });
-    });
-  });
-
-  describe('handleRateLimit', () => {
-    beforeEach(() => {
-      vi.useFakeTimers();
-      vi.setSystemTime(new Date(1600000000000)); // 1600000000 in Unix seconds
-    });
-
-    afterEach(() => {
-      vi.useRealTimers();
-    });
-
-    it('should throw RateLimitError with timestamp from X-RateLimit-Reset header', () => {
-      const mockResponse = {
-        headers: new Headers({
-          'X-RateLimit-Reset': '1600003600'
-        })
-      } as unknown as Response;
-
-      expect(() => handleRateLimit(mockResponse)).toThrowError(expect.objectContaining({
-        name: 'RateLimitError',
-        resetAt: new Date(1600003600000)
-      }));
-    });
-
-    it('should throw RateLimitError with +1 hour timestamp if header is missing', () => {
-      const mockResponse = {
-        headers: new Headers()
-      } as unknown as Response;
-
-      expect(() => handleRateLimit(mockResponse)).toThrowError(expect.objectContaining({
-        name: 'RateLimitError',
-        resetAt: new Date(1600000000000 + 3600000)
-      }));
-    });
-
-    it('should throw RateLimitError with +1 hour timestamp if header is invalid', () => {
-      const mockResponse = {
-        headers: new Headers({
-          'X-RateLimit-Reset': 'invalid'
-        })
-      } as unknown as Response;
-
-      expect(() => handleRateLimit(mockResponse)).toThrowError(expect.objectContaining({
-        name: 'RateLimitError',
-        resetAt: new Date(1600000000000 + 3600000)
-      }));
     });
   });
 

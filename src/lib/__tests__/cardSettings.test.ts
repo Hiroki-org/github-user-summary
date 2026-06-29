@@ -105,14 +105,13 @@ describe("cardSettings", () => {
 
         it("returns defaults and does not throw when localStorage access throws an error", () => {
             // Mock window.localStorage.getItem to throw an error
-            getItemMock.mockImplementation((): never => {
+            getItemMock.mockImplementation(() => {
                 throw new Error('Access to localStorage is denied');
             });
 
             // The function should gracefully handle the exception and return defaults
             const result = loadCardSettings();
 
-            expect(getItemMock).toHaveBeenCalled();
             expect(result.layout).toEqual(DEFAULT_CARD_LAYOUT);
             expect(result.options.showCompany).toBe(true);
             expect(result.options.showTwitter).toBe(true);

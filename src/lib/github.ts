@@ -88,7 +88,7 @@ function calculateStreaks(calendar: { count: number }[]): { longestStreak: numbe
   return { longestStreak, currentStreak };
 }
 
-function calculateMostActiveDay(calendar: { date: string; count: number }[]): string | null {
+function calculateMostActiveDay(calendar: { date: string; count: number }[]): string {
   const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const weekdayTotals = Array.from({ length: 7 }, () => 0);
 
@@ -103,7 +103,7 @@ function calculateMostActiveDay(calendar: { date: string; count: number }[]): st
   const maxWeekdayTotal = Math.max(...weekdayTotals);
   return maxWeekdayTotal > 0
     ? weekdayNames[weekdayTotals.findIndex((count) => count === maxWeekdayTotal)]
-    : null;
+    : "";
 }
 
 async function graphql<T>(query: string, token?: string, variables?: Record<string, unknown>): Promise<T> {
