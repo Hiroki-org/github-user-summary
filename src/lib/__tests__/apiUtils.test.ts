@@ -58,9 +58,22 @@ describe('apiUtils', () => {
   });
 
   describe('handleRateLimit', () => {
+    const expectRateLimitReset = (response: Response, expectedResetAt: Date) => {
+      let thrownError: unknown;
+
+      try {
+        handleRateLimit(response);
+      } catch (error) {
+        thrownError = error;
+      }
+
+      expect(thrownError).toBeInstanceOf(RateLimitError);
+      expect((thrownError as RateLimitError).resetAt).toEqual(expectedResetAt);
+    };
+
     beforeEach(() => {
       vi.useFakeTimers();
-      vi.setSystemTime(new Date(1600000000000)); // 1600000000 seconds
+      vi.setSystemTime(new Date(1600000000000)); // Unix timestamp 1600000000 (ms: 1600000000000)
     });
 
     afterEach(() => {
@@ -74,10 +87,7 @@ describe('apiUtils', () => {
         })
       } as unknown as Response;
 
-      expect(() => handleRateLimit(mockResponse)).toThrowError(expect.objectContaining({
-        name: 'RateLimitError',
-        resetAt: new Date(1600003600000)
-      }));
+      expectRateLimitReset(mockResponse, new Date(1600003600000));
     });
 
     it('should throw RateLimitError with +1 hour timestamp if header is missing', () => {
@@ -85,10 +95,7 @@ describe('apiUtils', () => {
         headers: new Headers()
       } as unknown as Response;
 
-      expect(() => handleRateLimit(mockResponse)).toThrowError(expect.objectContaining({
-        name: 'RateLimitError',
-        resetAt: new Date(1600000000000 + 3600000)
-      }));
+      expectRateLimitReset(mockResponse, new Date(1600000000000 + 3600000));
     });
 
     it('should throw RateLimitError with +1 hour timestamp if header is invalid', () => {
@@ -98,10 +105,7 @@ describe('apiUtils', () => {
         })
       } as unknown as Response;
 
-      expect(() => handleRateLimit(mockResponse)).toThrowError(expect.objectContaining({
-        name: 'RateLimitError',
-        resetAt: new Date(1600000000000 + 3600000)
-      }));
+      expectRateLimitReset(mockResponse, new Date(1600000000000 + 3600000));
     });
   });
 
