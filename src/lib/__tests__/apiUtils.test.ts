@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { handleErrorResponse, getAuthenticatedUser, handleRateLimit } from '../apiUtils';
+import { handleErrorResponse, getAuthenticatedUser, handleRateLimit } from '@/lib/apiUtils';
 import { RateLimitError } from '@/lib/types';
 import { NextResponse } from 'next/server';
 import { getServerSession } from "next-auth";
