@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { handleErrorResponse, getAuthenticatedUser, handleRateLimit } from '@/lib/apiUtils';
+import { handleErrorResponse, getAuthenticatedUser, handleRateLimit } from '../apiUtils';
 import { RateLimitError } from '@/lib/types';
 import { NextResponse } from 'next/server';
 import { getServerSession } from "next-auth";
@@ -58,22 +58,9 @@ describe('apiUtils', () => {
   });
 
   describe('handleRateLimit', () => {
-    const expectRateLimitReset = (response: Response, expectedResetAt: Date) => {
-      let thrownError: unknown;
-
-      try {
-        handleRateLimit(response);
-      } catch (error) {
-        thrownError = error;
-      }
-
-      expect(thrownError).toBeInstanceOf(RateLimitError);
-      expect((thrownError as RateLimitError).resetAt).toEqual(expectedResetAt);
-    };
-
     beforeEach(() => {
       vi.useFakeTimers();
-      vi.setSystemTime(new Date(1600000000000)); // Unix timestamp 1600000000 (ms: 1600000000000)
+      vi.setSystemTime(new Date(1600000000000)); // 1600000000 in Unix seconds
     });
 
     afterEach(() => {
@@ -87,7 +74,10 @@ describe('apiUtils', () => {
         })
       } as unknown as Response;
 
-      expectRateLimitReset(mockResponse, new Date(1600003600000));
+      expect(() => handleRateLimit(mockResponse)).toThrowError(expect.objectContaining({
+        name: 'RateLimitError',
+        resetAt: new Date(1600003600000)
+      }));
     });
 
     it('should throw RateLimitError with +1 hour timestamp if header is missing', () => {
@@ -95,7 +85,10 @@ describe('apiUtils', () => {
         headers: new Headers()
       } as unknown as Response;
 
-      expectRateLimitReset(mockResponse, new Date(1600000000000 + 3600000));
+      expect(() => handleRateLimit(mockResponse)).toThrowError(expect.objectContaining({
+        name: 'RateLimitError',
+        resetAt: new Date(1600000000000 + 3600000)
+      }));
     });
 
     it('should throw RateLimitError with +1 hour timestamp if header is invalid', () => {
@@ -105,7 +98,10 @@ describe('apiUtils', () => {
         })
       } as unknown as Response;
 
-      expectRateLimitReset(mockResponse, new Date(1600000000000 + 3600000));
+      expect(() => handleRateLimit(mockResponse)).toThrowError(expect.objectContaining({
+        name: 'RateLimitError',
+        resetAt: new Date(1600000000000 + 3600000)
+      }));
     });
   });
 
