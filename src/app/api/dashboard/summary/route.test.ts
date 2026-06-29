@@ -91,7 +91,9 @@ describe("GET /api/dashboard/summary", () => {
   });
 
   it("returns 500 if getAuthenticatedUser throws an error", async () => {
-    vi.mocked(getAuthenticatedUser).mockRejectedValueOnce(new Error("Auth failed"));
+    vi.mocked(getAuthenticatedUser).mockImplementationOnce(async (): Promise<never> => {
+      throw new Error("Auth failed");
+    });
 
     const { GET } = await import("./route");
     const response = await GET();
