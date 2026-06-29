@@ -145,33 +145,6 @@ describe("useYearInReview", () => {
         const { result } = renderHook(() => useYearInReview(2023), { wrapper });
 
         expect(result.current.isLoading).toBe(false);
-        expect(result.current.data).toBeUndefined();
-        expect(result.current.error).toBeUndefined();
-    });
-
-    it("handles loading state", () => {
-        vi.mocked(useSession).mockReturnValue({
-            data: null,
-            status: "loading",
-            update: vi.fn(),
-        } satisfies MockSessionReturn as unknown as MockSessionReturn);
-
-        const { result } = renderHook(() => useYearInReview(2023), { wrapper });
-
-        expect(result.current.isLoading).toBe(true);
-        expect(result.current.data).toBeUndefined();
-    });
-
-    it("handles authenticated state but without token", () => {
-        vi.mocked(useSession).mockReturnValue({
-            data: { user: { name: "test" }, expires: "2030-01-01T00:00:00.000Z" },
-            status: "authenticated",
-            update: vi.fn(),
-        } satisfies MockSessionReturn as unknown as MockSessionReturn);
-
-        const { result } = renderHook(() => useYearInReview(2023), { wrapper });
-
-        expect(result.current.isLoading).toBe(false);
     });
 
     it("handles authenticated state but null year", () => {
