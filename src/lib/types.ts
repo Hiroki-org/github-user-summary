@@ -59,7 +59,7 @@ export type ContributionData = {
   weeklyContributions: number;
   longestStreak: number;
   currentStreak: number;
-  mostActiveDay: string;
+  mostActiveDay: string | null;
   calendar: { date: string; count: number }[];
 };
 
@@ -91,7 +91,7 @@ export type YearInReviewData = {
   totalPRs: number;
   totalIssues: number;
   totalReviews: number;
-  mostActiveDay: string;
+  mostActiveDay: string | null;
   mostActiveHour: number;
   topRepository: {
     name: string;
