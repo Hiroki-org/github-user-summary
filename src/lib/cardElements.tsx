@@ -289,7 +289,7 @@ export function createBlock(
   }
 }
 
-export function blockContainer(
+function blockContainer(
   theme: ThemePalette,
   child: ReactElement,
 ): ReactElement {
