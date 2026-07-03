@@ -7,7 +7,7 @@ import type {
 } from "./cardOptions";
 import { resolveBlockLayout } from "./cardOptions";
 
-export type ThemePalette = {
+type ThemePalette = {
   bg: string;
   panel: string;
   text: string;
