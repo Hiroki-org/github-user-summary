@@ -783,7 +783,7 @@ function processResult<T>(
  * Promise.allSettled で部分失敗に対応（profile 404 のみ再スロー）
  * @throws {UserNotFoundError} プロフィールが404の場合
  */
-export async function fetchUserSummary(
+export const fetchUserSummary = cache(async function fetchUserSummary(
   username: string,
   token?: string
 ): Promise<UserSummary> {
@@ -816,7 +816,7 @@ export async function fetchUserSummary(
     interests: processResult(interestsResult, "interests", errors),
     errors,
   };
-}
+});
 
 // ===== ユーティリティ =====
 
