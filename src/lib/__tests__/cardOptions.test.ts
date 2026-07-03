@@ -3,7 +3,6 @@ import {
   resolveBlockLayout,
   parseCardQueryParams,
   CardRenderOptions,
-  CardBlockType,
   DEFAULT_BLOCKS
 } from '../cardOptions';
 
@@ -137,7 +136,7 @@ describe('cardOptions', () => {
         cols: 2,
         blocks: ['bio', 'stats'],
         layout: {
-          // @ts-ignore: testing invalid value at runtime
+          // @ts-expect-error: testing invalid value at runtime
           bio: 'invalid_slot',
         },
       };
