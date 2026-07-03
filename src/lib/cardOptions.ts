@@ -7,7 +7,7 @@ export type CardBlockType =
   | "repos"
   | "streak"
   | "heatmap";
-export type CardLayoutSlot = "left" | "right" | "full";
+type CardLayoutSlot = "left" | "right" | "full";
 
 export type CardRenderOptions = {
   format: CardFormat;
