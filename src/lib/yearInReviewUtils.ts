@@ -92,8 +92,26 @@ export function getMostActiveHour(heatmap: number[][]): number {
     return mostActiveHour;
 }
 
+
+// Constants for Sakamoto's algorithm to calculate the day of the week
+const SAKAMOTO_T = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
+
+/**
+ * Calculates the day of the week using Sakamoto's algorithm.
+ * @param year The full year.
+ * @param month The month (1-12).
+ * @param dateNum The day of the month.
+ * @returns 0 for Sunday, 1 for Monday, etc.
+ */
+function getDaySakamoto(year: number, month: number, dateNum: number): number {
+    const y = year - (month < 3 ? 1 : 0);
+    const val = y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) + SAKAMOTO_T[month - 1] + dateNum;
+    return ((val % 7) + 7) % 7;
+}
+
 /**
  * Returns the most active day of the week from the contribution calendar data.
+
  *
  * @param calendar Array of objects containing date and contribution count.
  * @returns The name of the most active day (e.g., "Monday").
@@ -106,12 +124,39 @@ export function getMostActiveDayFromCalendar(calendar: { date: string; count: nu
         if (day.count <= 0) {
             continue;
         }
-        const parsedDate = new Date(`${day.date}T00:00:00Z`);
-        if (Number.isNaN(parsedDate.getTime())) {
-            continue;
+
+        const dateStr = day.date;
+
+        // Fast path for standard ISO 8601 dates (YYYY-MM-DD)
+        if (dateStr.length === 10 && dateStr[4] === "-" && dateStr[7] === "-") {
+            const y1 = dateStr.charCodeAt(0) - 48;
+            const y2 = dateStr.charCodeAt(1) - 48;
+            const y3 = dateStr.charCodeAt(2) - 48;
+            const y4 = dateStr.charCodeAt(3) - 48;
+            const m1 = dateStr.charCodeAt(5) - 48;
+            const m2 = dateStr.charCodeAt(6) - 48;
+            const d1 = dateStr.charCodeAt(8) - 48;
+            const d2 = dateStr.charCodeAt(9) - 48;
+
+            if (
+                y1 >= 0 && y1 <= 9 && y2 >= 0 && y2 <= 9 && y3 >= 0 && y3 <= 9 && y4 >= 0 && y4 <= 9 &&
+                m1 >= 0 && m1 <= 9 && m2 >= 0 && m2 <= 9 && d1 >= 0 && d1 <= 9 && d2 >= 0 && d2 <= 9
+            ) {
+                const year = y1 * 1000 + y2 * 100 + y3 * 10 + y4;
+                const month = m1 * 10 + m2;
+                const dateNum = d1 * 10 + d2;
+
+                const weekday = getDaySakamoto(year, month, dateNum);
+                totals[weekday] += day.count;
+                continue;
+            }
         }
-        const weekday = parsedDate.getUTCDay();
-        totals[weekday] += day.count;
+
+        // Fallback for non-standard dates
+        const parsedDate = new Date(`${dateStr}T00:00:00Z`);
+        if (!Number.isNaN(parsedDate.getTime())) {
+            totals[parsedDate.getUTCDay()] += day.count;
+        }
     }
 
     let maxDay = 0;
