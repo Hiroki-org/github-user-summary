@@ -19,7 +19,7 @@ export type CardRenderOptions = {
   width: number;
 };
 
-export const DEFAULT_BLOCKS: CardBlockType[] = ["bio", "stats", "langs"];
+const DEFAULT_BLOCKS: CardBlockType[] = ["bio", "stats", "langs"];
 export const VALID_BLOCKS: CardBlockType[] = [
   "bio",
   "stats",
