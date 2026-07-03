@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  cloneDefaultCardLayout,
+
   moveBlock,
   normalizeCardLayout,
   toggleBlockVisibility,
 } from "../cardLayout";
 import { CardBlockId, DEFAULT_CARD_LAYOUT } from "../types";
+
+const cloneDefaultCardLayout = () => normalizeCardLayout(null);
 
 describe("cardLayout utilities", () => {
   describe("cloneDefaultCardLayout", () => {
