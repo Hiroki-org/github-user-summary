@@ -118,16 +118,23 @@ async function graphql<T>(query: string, token: string, variables: Record<string
 
 function mergeTopRepository(data: NonNullable<YearInReviewResponse["user"]>["contributionsCollection"]): { name: string; contributions: number } | null {
     const counter = new Map<string, number>();
-    const buckets = [
-        ...(data.commitContributionsByRepository || []),
-        ...(data.pullRequestContributionsByRepository || []),
-        ...(data.issueContributionsByRepository || []),
-    ];
 
-    for (const item of buckets) {
-        const name = `${item.repository.owner.login}/${item.repository.name}`;
-        counter.set(name, (counter.get(name) ?? 0) + item.contributions.totalCount);
-    }
+    const processBucket = (bucket?: NonNullable<YearInReviewResponse["user"]>["contributionsCollection"]["commitContributionsByRepository"]) => {
+        if (!bucket) return;
+        for (const item of bucket) {
+            const name = `${item.repository.owner.login}/${item.repository.name}`;
+            const count = counter.get(name);
+            if (count !== undefined) {
+                counter.set(name, count + item.contributions.totalCount);
+            } else {
+                counter.set(name, item.contributions.totalCount);
+            }
+        }
+    };
+
+    processBucket(data.commitContributionsByRepository);
+    processBucket(data.pullRequestContributionsByRepository);
+    processBucket(data.issueContributionsByRepository);
 
     let top: { name: string; contributions: number } | null = null;
     for (const [name, contributions] of counter.entries()) {
