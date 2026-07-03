@@ -1,4 +1,4 @@
-export type CardFormat = "png" | "svg";
+type CardFormat = "png" | "svg";
 export type CardTheme = "light" | "dark";
 export type CardBlockType =
   | "bio"
