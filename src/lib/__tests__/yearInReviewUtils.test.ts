@@ -165,6 +165,37 @@ describe("getMostActiveDayFromCalendar", () => {
         expect(getMostActiveDayFromCalendar(calendar)).toBe("Monday");
     });
 
+
+    it("falls back to Date parsing when the string is not 10 chars, but valid for Date", () => {
+        const OriginalDate = global.Date;
+        try {
+            global.Date = class extends OriginalDate {
+                constructor(val: any) {
+                    if (val === "2023-Jan-05T00:00:00Z") {
+                        super("2023-01-05T00:00:00Z");
+                    } else {
+                        super(val);
+                    }
+                }
+            } as any;
+            const calendar = [
+                { date: "2023-Jan-05", count: 7 } // Length > 10, valid when parsed
+            ];
+            expect(getMostActiveDayFromCalendar(calendar)).toBe("Thursday");
+        } finally {
+            global.Date = OriginalDate;
+        }
+    });
+
+    it("falls back to Date parsing when year, month or date has invalid character", () => {
+        // String is 10 chars, has hyphens in right place, but non-numeric chars
+        // e.g. "2023-01-XX" -> "2023-01-XXT00:00:00Z", which is Invalid Date
+        const calendar = [
+            { date: "2023-01-XX", count: 10 }
+        ];
+        expect(getMostActiveDayFromCalendar(calendar)).toBe("Sunday");
+    });
+
     it("ignores items with invalid date strings", () => {
         const calendar = [
             { date: "invalid-date", count: 100 }, // Should be ignored
