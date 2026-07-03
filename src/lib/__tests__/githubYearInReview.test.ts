@@ -420,8 +420,11 @@ describe("fetchYearInReviewData additional coverage", () => {
                             totalIssueContributions: 0,
                             totalPullRequestReviewContributions: 0,
                             contributionCalendar: { totalContributions: 100, weeks: [] },
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             commitContributionsByRepository: undefined as any,
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             pullRequestContributionsByRepository: undefined as any,
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             issueContributionsByRepository: undefined as any,
                         }
                     }
