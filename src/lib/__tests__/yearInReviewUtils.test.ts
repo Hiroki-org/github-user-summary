@@ -170,14 +170,14 @@ describe("getMostActiveDayFromCalendar", () => {
         const OriginalDate = global.Date;
         try {
             global.Date = class extends OriginalDate {
-                constructor(val: any) {
+                constructor(val: string | number | Date) {
                     if (val === "2023-Jan-05T00:00:00Z") {
                         super("2023-01-05T00:00:00Z");
                     } else {
                         super(val);
                     }
                 }
-            } as any;
+            } as unknown as DateConstructor;
             const calendar = [
                 { date: "2023-Jan-05", count: 7 } // Length > 10, valid when parsed
             ];
