@@ -408,6 +408,56 @@ describe("fetchYearInReviewData additional coverage", () => {
         }
     });
 
+    it("handles missing collection arrays in mergeTopRepository gracefully when null", async () => {
+        mockFetch.mockImplementation(() => {
+            return Promise.resolve(jsonResponse({
+                data: {
+                    user: {
+                        id: "123",
+                        contributionsCollection: {
+                            totalCommitContributions: 100,
+                            totalPullRequestContributions: 0,
+                            totalIssueContributions: 0,
+                            totalPullRequestReviewContributions: 0,
+                            contributionCalendar: { totalContributions: 100, weeks: [] },
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            commitContributionsByRepository: null as any,
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            pullRequestContributionsByRepository: null as any,
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            issueContributionsByRepository: null as any,
+                        }
+                    }
+                }
+            }));
+        });
+
+        const data = await fetchYearInReviewData("testuser", 2024, "fake-token");
+        expect(data.topRepository).toBeNull();
+    });
+
+    it("handles missing collection arrays in mergeTopRepository gracefully when missing", async () => {
+        mockFetch.mockImplementation(() => {
+            return Promise.resolve(jsonResponse({
+                data: {
+                    user: {
+                        id: "123",
+                        contributionsCollection: {
+                            totalCommitContributions: 100,
+                            totalPullRequestContributions: 0,
+                            totalIssueContributions: 0,
+                            totalPullRequestReviewContributions: 0,
+                            contributionCalendar: { totalContributions: 100, weeks: [] },
+                        }
+                    }
+                }
+            }));
+        });
+
+        const data = await fetchYearInReviewData("testuser", 2024, "fake-token");
+        expect(data.topRepository).toBeNull();
+    });
+
     it("handles missing collection arrays in mergeTopRepository gracefully", async () => {
         mockFetch.mockImplementation(() => {
             return Promise.resolve(jsonResponse({
