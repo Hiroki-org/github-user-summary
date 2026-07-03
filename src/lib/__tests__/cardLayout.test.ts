@@ -1,38 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  cloneDefaultCardLayout,
-  moveBlock,
+    moveBlock,
   normalizeCardLayout,
   toggleBlockVisibility,
 } from "../cardLayout";
 import { CardBlockId, DEFAULT_CARD_LAYOUT } from "../types";
 
 describe("cardLayout utilities", () => {
-  describe("cloneDefaultCardLayout", () => {
-    it("returns a new object structurally equal to DEFAULT_CARD_LAYOUT", () => {
-      const layout = cloneDefaultCardLayout();
-      expect(layout).toEqual(DEFAULT_CARD_LAYOUT);
-    });
-
-    it("returns a deep copy, modifying the clone does not affect the default", () => {
-      const layout = cloneDefaultCardLayout();
-
-      // Ensure different array reference
-      expect(layout.blocks).not.toBe(DEFAULT_CARD_LAYOUT.blocks);
-
-      // Ensure different block references
-      layout.blocks.forEach((block, index) => {
-        expect(block).not.toBe(DEFAULT_CARD_LAYOUT.blocks[index]);
-      });
-
-      // Actually modify the clone to ensure default is unaffected
-      layout.blocks[0].visible = !layout.blocks[0].visible;
-      expect(DEFAULT_CARD_LAYOUT.blocks[0].visible).not.toBe(layout.blocks[0].visible);
-    });
-  });
-
-  describe("normalizeCardLayout", () => {
+    describe("normalizeCardLayout", () => {
     it("fills missing blocks and removes invalid ones", () => {
       const normalized = normalizeCardLayout({
         blocks: [
@@ -133,14 +109,14 @@ describe("toggleBlockVisibility", () => {
       expect(next.blocks.find(b => b.id === "stats")?.visible).toBe(false);
     });
     it("toggles block visibility to false", () => {
-      const layout = cloneDefaultCardLayout(); // 'bio' is visible by default
+      const layout = normalizeCardLayout(null); // 'bio' is visible by default
       const next = toggleBlockVisibility(layout, "bio");
 
       expect(next.blocks.find((b) => b.id === "bio")?.visible).toBe(false);
     });
 
     it("toggles block visibility to true", () => {
-      const layout = cloneDefaultCardLayout();
+      const layout = normalizeCardLayout(null);
       const firstToggle = toggleBlockVisibility(layout, "bio");
       const next = toggleBlockVisibility(firstToggle, "bio");
 
@@ -148,7 +124,7 @@ describe("toggleBlockVisibility", () => {
     });
 
     it("does not affect other blocks", () => {
-      const layout = cloneDefaultCardLayout();
+      const layout = normalizeCardLayout(null);
       const next = toggleBlockVisibility(layout, "bio");
 
       expect(next.blocks.find((b) => b.id === "avatar")?.visible).toBe(true);
@@ -158,7 +134,7 @@ describe("toggleBlockVisibility", () => {
     });
 
     it("returns unmodified layout blocks if blockId is not found", () => {
-      const layout = cloneDefaultCardLayout();
+      const layout = normalizeCardLayout(null);
       // Use unknown block ID
       // We have to cast to unknown -> CardBlockId here because TS would complain
       const next = toggleBlockVisibility(layout, "nonExistent" as unknown as CardBlockId);
@@ -168,7 +144,7 @@ describe("toggleBlockVisibility", () => {
   });
 
   it("moveBlock reorders within same column", () => {
-    const layout = cloneDefaultCardLayout();
+    const layout = normalizeCardLayout(null);
     const moved = moveBlock(layout, "stats", "left", 0);
 
     const left = moved.blocks.filter((b) => b.column === "left").map((b) => b.id);
@@ -176,7 +152,7 @@ describe("toggleBlockVisibility", () => {
   });
 
   it("moveBlock moves between columns", () => {
-    const layout = cloneDefaultCardLayout();
+    const layout = normalizeCardLayout(null);
     // In DEFAULT_CARD_LAYOUT, "topRepos" is in "right" column.
     // There are several blocks in "full" column: profile, contributions, heatmap, interests, skills
     const moved = moveBlock(layout, "topRepos", "full", 0);
@@ -187,14 +163,14 @@ describe("toggleBlockVisibility", () => {
   });
 
   it("moveBlock returns original layout when moving non-existent block", () => {
-    const layout = cloneDefaultCardLayout();
+    const layout = normalizeCardLayout(null);
     const moved = moveBlock(layout, "nonExistentBlock" as unknown as CardBlockId, "left", 0);
 
     expect(moved).toBe(layout);
   });
 
   it("moveBlock clamps targetIndex when negative", () => {
-    const layout = cloneDefaultCardLayout();
+    const layout = normalizeCardLayout(null);
     // Default left column is ["avatar", "bio", "stats"]
     const moved = moveBlock(layout, "stats", "left", -5);
 
@@ -203,7 +179,7 @@ describe("toggleBlockVisibility", () => {
   });
 
   it("moveBlock clamps targetIndex when exceeding column length", () => {
-    const layout = cloneDefaultCardLayout();
+    const layout = normalizeCardLayout(null);
     const moved = moveBlock(layout, "avatar", "left", 100);
 
     const left = moved.blocks.filter((b) => b.column === "left").map((b) => b.id);
