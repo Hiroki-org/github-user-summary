@@ -6,7 +6,7 @@ import { normalizeCardLayout } from "@/lib/cardLayout";
 const LAYOUT_KEY = "card-layout";
 const OPTIONS_KEY = "card-display-options";
 
-export const DEFAULT_DISPLAY_OPTIONS: CardDisplayOptions = {
+const DEFAULT_DISPLAY_OPTIONS: CardDisplayOptions = {
     showAvatar: true,
     showBio: true,
     showStats: true,
