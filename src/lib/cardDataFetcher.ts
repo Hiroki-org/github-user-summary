@@ -21,7 +21,7 @@ type GitHubRepo = {
     pushed_at: string;
 };
 
-export type CardProfileData = {
+type CardProfileData = {
     login: string;
     name: string;
     avatarUrl: string;
