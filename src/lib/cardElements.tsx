@@ -56,7 +56,7 @@ export function estimateHeight(
   return Math.min(900, Math.max(320, base + rows * rowHeight));
 }
 
-export function levelColor(
+function levelColor(
   count: number,
   maxCount: number,
   theme: ThemePalette,
