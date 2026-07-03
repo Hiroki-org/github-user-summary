@@ -31,7 +31,7 @@ export type CardProfileData = {
     publicRepos: number;
 };
 
-export type CardRepoData = {
+type CardRepoData = {
     name: string;
     stars: number;
     forks: number;
