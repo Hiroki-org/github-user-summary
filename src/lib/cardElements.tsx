@@ -17,7 +17,7 @@ export type ThemePalette = {
   success: string;
 };
 
-export const themes: Record<CardTheme, ThemePalette> = {
+const themes: Record<CardTheme, ThemePalette> = {
   light: {
     bg: "#f8fafc",
     panel: "#ffffff",
