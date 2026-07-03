@@ -21,7 +21,7 @@ type GitHubRepo = {
     pushed_at: string;
 };
 
-export type CardProfileData = {
+type CardProfileData = {
     login: string;
     name: string;
     avatarUrl: string;
@@ -31,7 +31,7 @@ export type CardProfileData = {
     publicRepos: number;
 };
 
-export type CardRepoData = {
+type CardRepoData = {
     name: string;
     stars: number;
     forks: number;
@@ -40,7 +40,7 @@ export type CardRepoData = {
     pushedAt: string;
 };
 
-export type CardLanguageData = {
+type CardLanguageData = {
     name: string;
     count: number;
     percentage: number;
