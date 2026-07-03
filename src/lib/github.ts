@@ -750,7 +750,9 @@ function getTopK(map: Map<string, number>, k: number = 10): { name: string; coun
   for (const [name, count] of map.entries()) {
     if (top.length < k) {
       top.push({ name, count });
-      top.sort((a, b) => b.count - a.count);
+      if (top.length === k) {
+        top.sort((a, b) => b.count - a.count);
+      }
     } else if (count > top[k - 1].count) {
       let i = k - 2;
       while (i >= 0 && top[i].count < count) {
@@ -759,6 +761,9 @@ function getTopK(map: Map<string, number>, k: number = 10): { name: string; coun
       }
       top[i + 1] = { name, count };
     }
+  }
+  if (top.length > 0 && top.length < k) {
+    top.sort((a, b) => b.count - a.count);
   }
   return top;
 }
