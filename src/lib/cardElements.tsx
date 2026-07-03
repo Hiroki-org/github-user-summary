@@ -267,7 +267,7 @@ function createHeatmapBlock(
   );
 }
 
-export function createBlock(
+function createBlock(
   block: CardBlockType,
   data: CardData,
   theme: ThemePalette,
