@@ -28,7 +28,7 @@ export const VALID_BLOCKS: CardBlockType[] = [
   "streak",
   "heatmap",
 ];
-export const VALID_LAYOUT_SLOTS: CardLayoutSlot[] = ["left", "right", "full"];
+const VALID_LAYOUT_SLOTS: CardLayoutSlot[] = ["left", "right", "full"];
 
 function toList(csv: string | null): string[] {
   if (!csv) {
