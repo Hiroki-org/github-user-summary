@@ -40,7 +40,7 @@ export type CardRepoData = {
     pushedAt: string;
 };
 
-export type CardLanguageData = {
+type CardLanguageData = {
     name: string;
     count: number;
     percentage: number;
