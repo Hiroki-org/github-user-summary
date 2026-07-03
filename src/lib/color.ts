@@ -6,7 +6,7 @@ import { logger } from "./logger";
 
 extend([mixPlugin, namesPlugin, a11yPlugin]);
 
-export type ColorResult = {
+type ColorResult = {
   accent: string;
   accentRgb: string;
   accentHover: string;
