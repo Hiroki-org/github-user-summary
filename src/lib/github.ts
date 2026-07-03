@@ -59,7 +59,8 @@ async function handleResponse<T>(res: Response): Promise<T> {
 }
 
 
-function calculateStreaks(calendar: { count: number }[]): { longestStreak: number; currentStreak: number } {
+
+export function calculateStreaks(calendar: { count: number }[]): { longestStreak: number; currentStreak: number } {
   let longestStreak = 0;
   let currentStreak = 0;
   const len = calendar.length;
@@ -77,6 +78,7 @@ function calculateStreaks(calendar: { count: number }[]): { longestStreak: numbe
 
   return { longestStreak, currentStreak };
 }
+
 
 function calculateMostActiveDay(calendar: { date: string; count: number }[]): string {
   const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
