@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {  parseCardQueryParams , resolveBlockLayout } from "../cardOptions";
+import { parseCardQueryParams, resolveBlockLayout, CardBlockType } from "../cardOptions";
 
 describe("parseCardQueryParams", () => {
   it("parses empty search params with defaults", () => {
@@ -90,7 +90,7 @@ describe("resolveBlockLayout", () => {
     const options = {
       format: "png" as const,
       theme: "light" as const,
-      blocks: ["bio", "stats", "langs"] as const,
+      blocks: ["bio", "stats", "langs"] as CardBlockType[],
       cols: 1 as const,
       layout: { bio: "left" as const, stats: "right" as const },
       hide: new Set<string>(),
@@ -108,7 +108,7 @@ describe("resolveBlockLayout", () => {
     const options = {
       format: "png" as const,
       theme: "light" as const,
-      blocks: ["bio", "stats", "langs", "repos"] as const,
+      blocks: ["bio", "stats", "langs", "repos"] as CardBlockType[],
       cols: 2 as const,
       layout: { bio: "full" as const, stats: "left" as const, langs: "right" as const },
       hide: new Set<string>(),
@@ -126,7 +126,7 @@ describe("resolveBlockLayout", () => {
     const options = {
       format: "png" as const,
       theme: "light" as const,
-      blocks: ["bio", "stats", "langs", "repos", "streak"] as const,
+      blocks: ["bio", "stats", "langs", "repos", "streak"] as CardBlockType[],
       cols: 2 as const,
       layout: {},
       hide: new Set<string>(),
