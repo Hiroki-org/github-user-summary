@@ -62,26 +62,16 @@ async function handleResponse<T>(res: Response): Promise<T> {
 function calculateStreaks(calendar: { count: number }[]): { longestStreak: number; currentStreak: number } {
   let longestStreak = 0;
   let currentStreak = 0;
-  let streak = 0;
+  const len = calendar.length;
 
-  for (const day of calendar) {
-    if (day.count > 0) {
-      streak += 1;
-      longestStreak = Math.max(longestStreak, streak);
-    } else {
-      streak = 0;
-    }
-  }
-
-  let startIdx = calendar.length - 1;
-  if (startIdx >= 0 && calendar[startIdx].count === 0) {
-    startIdx -= 1;
-  }
-  for (let i = startIdx; i >= 0; i -= 1) {
+  for (let i = 0; i < len; i++) {
     if (calendar[i].count > 0) {
       currentStreak += 1;
-    } else {
-      break;
+      if (currentStreak > longestStreak) {
+        longestStreak = currentStreak;
+      }
+    } else if (i !== len - 1) {
+      currentStreak = 0;
     }
   }
 
