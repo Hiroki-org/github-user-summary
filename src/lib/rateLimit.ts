@@ -91,10 +91,5 @@ export function getClientIp(request: Request): string {
         }
     }
 
-    // Fallback: If all are trusted (which is unlikely for a client request, but possible if they spoof),
-    // or if we couldn't find a valid non-trusted one, return the left-most valid IP.
-    const firstIp = ips[0];
-    if (firstIp && isValidIp(firstIp)) return firstIp;
-
     return "unknown";
 }
