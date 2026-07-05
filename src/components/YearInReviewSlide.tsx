@@ -57,9 +57,11 @@ export default function YearInReviewSlide({ title, caption, data }: Props) {
       </div>
 
       <div className="mt-6 flex flex-wrap items-center gap-3 text-sm">
-        <span className="rounded-full bg-success/15 px-3 py-1 text-success">
-          Most active day: {data.mostActiveDay}
-        </span>
+        {data.mostActiveDay ? (
+          <span className="rounded-full bg-success/15 px-3 py-1 text-success">
+            Most active day: {data.mostActiveDay}
+          </span>
+        ) : null}
         {data.topRepository ? (
           <span className="rounded-full bg-accent/15 px-3 py-1 text-accent">
             Top repo: {data.topRepository.name} (
