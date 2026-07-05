@@ -5,8 +5,6 @@ const BLOCK_ID_SET = new Set<CardBlockId>([
     ...DEFAULT_CARD_LAYOUT.blocks.map((block) => block.id),
 ]);
 
-export const LAYOUT_STORAGE_KEY = "card-layout";
-
 export function cloneDefaultCardLayout(): CardLayout {
     return {
         blocks: DEFAULT_CARD_LAYOUT.blocks.map((block) => ({ ...block })),
