@@ -15,8 +15,8 @@ export default defineConfig({
       include: [
         "src/lib/**/*.ts",
         "src/hooks/**/*.ts",
-        "src/components/ActionButtons.tsx",
         "src/components/ThemeController.tsx",
+        "src/components/SettingsTab.tsx",
         "src/components/ReadmeCardUrlSection.tsx",
         "src/components/BusinessCard.tsx",
         "src/components/LanguageChart.tsx",
