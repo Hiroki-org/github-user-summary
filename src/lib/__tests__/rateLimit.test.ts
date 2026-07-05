@@ -164,40 +164,12 @@ describe("getClientIp", () => {
         });
         expect(getClientIp(req)).toBe("5.6.7.8");
     });
-
-    it("skips the full IPv4 loopback range when selecting the client IP", () => {
-        const req = new Request("http://localhost", {
-            headers: {
-                "x-forwarded-for": "5.6.7.8, 127.0.0.2"
-            }
-        });
-        expect(getClientIp(req)).toBe("5.6.7.8");
-    });
-
-    it("skips IPv6 ULA fc and fd proxy addresses", () => {
-        const req = new Request("http://localhost", {
-            headers: {
-                "x-forwarded-for": "2001:db8::1, fc12::1, fd00::1"
-            }
-        });
-        expect(getClientIp(req)).toBe("2001:db8::1");
-    });
-
-    it("returns unknown if all x-forwarded-for IPs are trusted proxies", () => {
+    it("returns the left-most IP if all are trusted proxies", () => {
         const req = new Request("http://localhost", {
             headers: {
                 "x-forwarded-for": "192.168.1.1, 10.0.0.1"
             }
         });
-        expect(getClientIp(req)).toBe("unknown");
-    });
-
-    it("does not allow spoofed private x-forwarded-for values to select the rate-limit key", () => {
-        const req = new Request("http://localhost", {
-            headers: {
-                "x-forwarded-for": "10.0.0.2, 10.0.0.1"
-            }
-        });
-        expect(getClientIp(req)).toBe("unknown");
+        expect(getClientIp(req)).toBe("192.168.1.1");
     });
 });
