@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { render, screen, fireEvent } from "@testing-library/react";
-import { beforeEach, describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import "@testing-library/jest-dom";
 import { SettingsTab } from "../SettingsTab";
 import { MAIN_BLOCKS, DETAIL_OPTIONS } from "@/lib/cardGeneratorConstants";
@@ -13,11 +13,6 @@ describe("SettingsTab", () => {
     displayOptions: {} as CardDisplayOptions,
     toggleDisplayOption: vi.fn(),
   };
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    defaultProps.isBlockVisible.mockReturnValue(false);
-  });
 
   it("renders all main blocks and detail options", () => {
     render(<SettingsTab {...defaultProps} />);
