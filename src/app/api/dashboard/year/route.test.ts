@@ -76,7 +76,7 @@ describe("GET /api/dashboard/year validation", () => {
     it("returns 200 and fetches data when year is valid", async () => {
         vi.mocked(getAuthenticatedUser).mockResolvedValueOnce({ username: "alice", token: "token" });
 
-        vi.mocked(fetchYearInReviewData).mockResolvedValueOnce({ data: "ok", mostActiveDay: null } as unknown as YearInReviewData);
+        vi.mocked(fetchYearInReviewData).mockResolvedValueOnce({ data: "ok" } as unknown as YearInReviewData);
 
         const { GET } = await import("./route");
         const currentYear = new Date().getUTCFullYear();
@@ -85,14 +85,14 @@ describe("GET /api/dashboard/year validation", () => {
 
         expect(response.status).toBe(200);
         const data = await response.json();
-        expect(data).toEqual({ data: "ok", mostActiveDay: null });
+        expect(data).toEqual({ data: "ok" });
         expect(fetchYearInReviewData).toHaveBeenCalledWith("alice", currentYear, "token");
     });
 
     it("returns 200 and falls back to current year when year is not provided", async () => {
         vi.mocked(getAuthenticatedUser).mockResolvedValueOnce({ username: "alice", token: "token" });
 
-        vi.mocked(fetchYearInReviewData).mockResolvedValueOnce({ data: "ok", mostActiveDay: null } as unknown as YearInReviewData);
+        vi.mocked(fetchYearInReviewData).mockResolvedValueOnce({ data: "ok" } as unknown as YearInReviewData);
 
         const { GET } = await import("./route");
         const req = createMockRequest(`http://localhost/api/dashboard/year`);
@@ -100,7 +100,7 @@ describe("GET /api/dashboard/year validation", () => {
 
         expect(response.status).toBe(200);
         const data = await response.json();
-        expect(data).toEqual({ data: "ok", mostActiveDay: null });
+        expect(data).toEqual({ data: "ok" });
 
         const currentYear = new Date().getUTCFullYear();
         expect(fetchYearInReviewData).toHaveBeenCalledWith("alice", currentYear, "token");

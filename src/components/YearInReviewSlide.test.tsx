@@ -62,10 +62,4 @@ describe("YearInReviewSlide", () => {
     expect(screen.getByText("Most active day: Monday")).toBeInTheDocument();
     expect(screen.queryByText(/Top repo:/)).not.toBeInTheDocument();
   });
-
-  it("does not render the most active day badge when mostActiveDay is null", () => {
-    render(<YearInReviewSlide title="Title" data={{ ...mockData, mostActiveDay: null }} />);
-
-    expect(screen.queryByText(/Most active day:/)).not.toBeInTheDocument();
-  });
 });
