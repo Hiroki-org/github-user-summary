@@ -176,6 +176,12 @@ describe("getMostActiveDayFromCalendar", () => {
 });
 
 describe("buildHourlyHeatmapFromCommitDates - edge cases", () => {
+    it("falls back to full string parsing for unparseable datePart but valid format", () => {
+        const heatmap = buildHourlyHeatmapFromCommitDates(["2023-13-40T10:00:00Z"]);
+        const totalCommits = heatmap.flat().reduce((sum, count) => sum + count, 0);
+        expect(totalCommits).toBe(0);
+    });
+
     it("falls back to full string parsing for unparseable hour data", () => {
         const heatmap = buildHourlyHeatmapFromCommitDates(["2023-01-01TX0:00:00Z"]);
         const totalCommits = heatmap.flat().reduce((sum, count) => sum + count, 0);
