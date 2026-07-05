@@ -119,7 +119,7 @@ async function graphql<T>(query: string, token: string, variables: Record<string
 function mergeTopRepository(data: NonNullable<YearInReviewResponse["user"]>["contributionsCollection"]): { name: string; contributions: number } | null {
     const counter = new Map<string, number>();
 
-    const processBucket = (bucket?: NonNullable<YearInReviewResponse["user"]>["contributionsCollection"]["commitContributionsByRepository"]) => {
+    const processBucket = (bucket?: ContributionsByRepoNode[]) => {
         if (!bucket) return;
         for (const item of bucket) {
             const name = `${item.repository.owner.login}/${item.repository.name}`;
