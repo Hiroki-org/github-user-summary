@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 import { ActionButtons } from "@/components/ActionButtons";
 
 describe("ActionButtons", () => {
@@ -10,6 +10,10 @@ describe("ActionButtons", () => {
     previewUrl: "https://example.com/image.png",
     copyStatus: "idle" as const,
   };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it("renders the Copy and Download buttons", () => {
     render(<ActionButtons {...defaultProps} />);
@@ -47,6 +51,26 @@ describe("ActionButtons", () => {
 
     expect(copyButton).toBeDisabled();
     expect(downloadButton).toBeDisabled();
+  });
+
+  it("does not call handlers when disabled buttons are clicked", async () => {
+    const user = userEvent.setup();
+    const handleCopy = vi.fn();
+    const handleDownload = vi.fn();
+    render(
+      <ActionButtons
+        {...defaultProps}
+        handleCopy={handleCopy}
+        handleDownload={handleDownload}
+        previewUrl={null}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: /Copy Image/i }));
+    await user.click(screen.getByRole("button", { name: /Download PNG/i }));
+
+    expect(handleCopy).not.toHaveBeenCalled();
+    expect(handleDownload).not.toHaveBeenCalled();
   });
 
   it("enables both buttons when previewUrl is a valid string", () => {
