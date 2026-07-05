@@ -146,9 +146,11 @@ export function getMostActiveDayFromCalendar(calendar: { date: string; count: nu
                 const month = m1 * 10 + m2;
                 const dateNum = d1 * 10 + d2;
 
-                const weekday = getDaySakamoto(year, month, dateNum);
-                totals[weekday] += day.count;
-                continue;
+                if (month >= 1 && month <= 12 && dateNum >= 1 && dateNum <= 31) {
+                    const weekday = getDaySakamoto(year, month, dateNum);
+                    totals[weekday] += day.count;
+                    continue;
+                }
             }
         }
 
