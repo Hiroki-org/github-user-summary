@@ -139,8 +139,6 @@ export default function ContributionsCard({ contributions }: Props) {
   }
 
   const stats = getStats(contributions);
-  const showMostActiveDay = contributions.mostActiveDay.length > 0;
-
   return (
     <div className="glass-card rounded-xl p-6 h-full flex flex-col">
       <h3 className="mb-6 text-lg font-semibold text-foreground flex items-center gap-2">
@@ -153,7 +151,7 @@ export default function ContributionsCard({ contributions }: Props) {
         {stats.map((stat, i) => (
           <StatCard key={stat.label} stat={stat} index={i} />
         ))}
-        {showMostActiveDay && (
+        {contributions.mostActiveDay && (
           <MostActiveDayCard day={contributions.mostActiveDay} />
         )}
       </div>
