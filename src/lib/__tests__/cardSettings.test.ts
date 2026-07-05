@@ -102,6 +102,17 @@ describe("cardSettings", () => {
             expect(settings.options.showCompany).toBe(true);
         });
 
+        it("returns defaults and does not throw when localStorage access throws an error", () => {
+            getItemMock.mockImplementation((): never => {
+                throw new Error("Access to localStorage is denied");
+            });
+
+            const result = loadCardSettings();
+
+            expect(getItemMock).toHaveBeenCalled();
+            expect(result).toEqual(getDefaultCardSettings());
+        });
+
         it("returns parsed settings from localStorage when window is defined", () => {
             const mockLayout: CardLayout = normalizeCardLayout({ blocks: [{ id: "bio", visible: true, column: "left" }] });
             const mockOptions: Partial<CardDisplayOptions> = { showTwitter: false, showLocation: false };
