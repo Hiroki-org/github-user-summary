@@ -16,7 +16,7 @@ describe("ContributionsCard", () => {
           totalReviews: 0,
           longestStreak: 0,
           currentStreak: 0,
-          mostActiveDay: "",
+          mostActiveDay: null,
           calendar: [],
         }}
       />
@@ -44,4 +44,26 @@ describe("ContributionsCard", () => {
 
     expect(screen.getByText("Contributions")).toBeInTheDocument();
   });
+
+  it("does not render MostActiveDayCard when mostActiveDay is null", () => {
+    render(
+      <ContributionsCard
+        contributions={{
+          totalContributions: 10, monthlyContributions: 0, weeklyContributions: 0,
+          totalCommits: 5,
+          totalPRs: 3,
+          totalIssues: 1,
+          totalReviews: 1,
+          longestStreak: 5,
+          currentStreak: 2,
+          mostActiveDay: null,
+          calendar: [],
+        }}
+      />
+    );
+
+    expect(screen.getByText("Contributions")).toBeInTheDocument();
+    expect(screen.queryByText("Most Active Day")).not.toBeInTheDocument();
+  });
+
 });

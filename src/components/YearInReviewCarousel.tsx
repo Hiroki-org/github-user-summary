@@ -28,7 +28,9 @@ export default function YearInReviewCarousel({ data }: Props) {
       {
         key: "rhythm",
         title: "Your Working Rhythm",
-        caption: `Most active on ${data.mostActiveDay} around ${data.mostActiveHour}:00 UTC.`,
+        caption: data.mostActiveDay
+          ? `Most active on ${data.mostActiveDay} around ${data.mostActiveHour}:00 UTC.`
+          : `No most active day yet; your peak activity hour is ${data.mostActiveHour}:00 UTC.`,
       },
     ],
     [data],
