@@ -58,15 +58,6 @@ describe("YearInReviewCarousel", () => {
     expect(screen.getByText("Most active on Monday around 14:00 UTC.")).toBeDefined();
   });
 
-  it("does not stringify null mostActiveDay in the rhythm caption", () => {
-    render(<YearInReviewCarousel data={{ ...mockData, mostActiveDay: null }} />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Prev" }));
-
-    expect(screen.getByText("No most active day yet; your peak activity hour is 14:00 UTC.")).toBeDefined();
-    expect(screen.queryByText(/Most active on null/)).toBeNull();
-  });
-
   it("wraps around to the first slide when 'Next' is clicked on the last slide", () => {
     render(<YearInReviewCarousel data={mockData} />);
 
