@@ -67,12 +67,18 @@ function isValidIp(value: string): boolean {
 }
 
 function isTrustedProxy(ip: string): boolean {
-    // Matches standard private IPv4 ranges (RFC 1918) and localhost
-    const privateIpv4 = /^(127\.0\.0\.1|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/;
-    // Matches IPv6 localhost
-    const privateIpv6 = /^(::1|fd|fc00::)/;
+    // Matches private IPv4 ranges, loopback, and link-local addresses.
+    const privateIpv4 = /^(127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/;
+    // Matches IPv4-mapped IPv6 versions of the same private IPv4 ranges.
+    const privateIpv4MappedIpv6 = /^::ffff:(127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/i;
+    // Matches IPv6 loopback, ULA (fc00::/7), and link-local (fe80::/10).
+    const privateIpv6 = /^(::1|f[cd]|fe[89ab])/i;
 
-    return privateIpv4.test(ip) || privateIpv6.test(ip);
+    return (
+        privateIpv4.test(ip) ||
+        privateIpv4MappedIpv6.test(ip) ||
+        privateIpv6.test(ip)
+    );
 }
 
 export function getClientIp(request: Request): string {
@@ -81,20 +87,13 @@ export function getClientIp(request: Request): string {
 
     const ips = forwardedFor.split(",").map(ip => ip.trim());
 
-    // Iterate from right to left to find the first non-trusted IP
-    // For this example, we assume we want to skip internal/private IPs (trusted proxies)
-    // and find the true client IP.
+    // Iterate from right to left and return the first non-private IP as the client IP.
     for (let i = ips.length - 1; i >= 0; i--) {
         const ip = ips[i];
         if (ip && isValidIp(ip) && !isTrustedProxy(ip)) {
             return ip;
         }
     }
-
-    // Fallback: If all are trusted (which is unlikely for a client request, but possible if they spoof),
-    // or if we couldn't find a valid non-trusted one, return the left-most valid IP.
-    const firstIp = ips[0];
-    if (firstIp && isValidIp(firstIp)) return firstIp;
 
     return "unknown";
 }
