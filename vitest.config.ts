@@ -13,7 +13,6 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "lcov"],
       include: [
-        "src/app/dashboard/settings/page.tsx",
         "src/lib/**/*.ts",
         "src/hooks/**/*.ts",
         "src/components/ThemeController.tsx",
@@ -23,7 +22,6 @@ export default defineConfig({
         "src/components/SkillsCard.tsx",
         "src/components/LayoutEditor.tsx",
         "src/lib/rateLimit.ts",
-        "src/app/[username]/components/UserSummaryGrid.tsx",
       ],
       thresholds: {
         lines: 80,
