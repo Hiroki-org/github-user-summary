@@ -207,13 +207,22 @@ describe("isTrustedFontUrl", () => {
     ).toBe(false);
   });
   it("handles invalid APP_URL gracefully and falls back to allowlist", () => {
+    const originalAppUrl = process.env.APP_URL;
     process.env.APP_URL = "invalid-url";
-    expect(
-      isTrustedFontUrl(
-        "https://github-user-summary.vercel.app/fonts/NotoSans-Regular.ttf",
-        "https://github-user-summary.vercel.app"
-      )
-    ).toBe(true);
+    try {
+      expect(
+        isTrustedFontUrl(
+          "https://github-user-summary.vercel.app/fonts/NotoSans-Regular.ttf",
+          "https://github-user-summary.vercel.app"
+        )
+      ).toBe(true);
+    } finally {
+      if (originalAppUrl === undefined) {
+        delete process.env.APP_URL;
+      } else {
+        process.env.APP_URL = originalAppUrl;
+      }
+    }
   });
 
 });
