@@ -83,6 +83,12 @@ describe("parseCardQueryParams", () => {
     const result = parseCardQueryParams(params);
     expect(result.width).toBe(600);
   });
+
+  it("handles width above maximum falling back to 600", () => {
+    const params = new URLSearchParams("width=1500");
+    const result = parseCardQueryParams(params);
+    expect(result.width).toBe(600);
+  });
 });
 
 describe("resolveBlockLayout", () => {
@@ -139,9 +145,23 @@ describe("resolveBlockLayout", () => {
       right: ["stats", "repos"],
     });
   });
+
+  it("does not apply hide filtering while resolving layout", () => {
+    const options = {
+      format: "png" as const,
+      theme: "light" as const,
+      blocks: ["bio", "stats", "langs"] as CardBlockType[],
+      cols: 1 as const,
+      layout: {},
+      hide: new Set<string>(["stats"]),
+      width: 600,
+    };
+    const result = resolveBlockLayout(options);
+    expect(result.full).toEqual(["bio", "stats", "langs"]);
+  });
 });
 
-describe("parseLayout edge cases", () => {
+describe("parseCardQueryParams layout edge cases", () => {
   it("ignores invalid layout slots and blocks without throwing", () => {
     // This will hit the missing coverage on line 85 of cardOptions.ts
     const params = new URLSearchParams("layout=bio:,:left");
