@@ -4,7 +4,6 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { useThemeColor } from "../useThemeColor";
 import * as colorLib from "@/lib/color";
 import { FastAverageColor } from "fast-average-color";
-import { logger } from "@/lib/logger";
 
 // Mock fast-average-color
 vi.mock("fast-average-color", () => {
@@ -55,8 +54,8 @@ describe("useThemeColor", () => {
       value: [100, 150, 200, 255]
     });
 
-    // Suppress logger.warn for error tests
-    vi.spyOn(logger, "warn").mockImplementation((): void => {});
+    // Suppress console.warn for error tests
+    vi.spyOn(console, "warn").mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -125,9 +124,9 @@ describe("useThemeColor", () => {
       expect(mockGetColorAsync).toHaveBeenCalled();
     });
 
-    // Check that logger.warn was called
+    // Check that console.warn was called
     await waitFor(() => {
-      expect(logger.warn).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         "Failed to extract color from avatar, keeping fallback color.",
         error
       );
