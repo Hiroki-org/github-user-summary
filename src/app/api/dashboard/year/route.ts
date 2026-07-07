@@ -10,6 +10,11 @@ export async function GET(request: NextRequest) {
         }
 
         const yearParam = request.nextUrl.searchParams.get("year");
+
+        if (yearParam !== null && !/^\d{4}$/.test(yearParam)) {
+            return NextResponse.json({ error: "Invalid year" }, { status: 400 });
+        }
+
         const year = yearParam ? Number.parseInt(yearParam, 10) : new Date().getUTCFullYear();
 
         if (!Number.isFinite(year) || year < 2008 || year > new Date().getUTCFullYear()) {
