@@ -194,3 +194,13 @@ describe("getClientIp", () => {
         });
         expect(getClientIp(req)).toBe("unknown");
     });
+
+    it("ignores x-real-ip if it is an invalid IPv6 IP and falls back to x-forwarded-for", () => {
+        const req = new Request("http://localhost", {
+            headers: {
+                "x-real-ip": "invalid:ipv6:value",
+                "x-forwarded-for": "5.6.7.8, 9.10.11.12"
+            }
+        });
+        expect(getClientIp(req)).toBe("5.6.7.8");
+    });
