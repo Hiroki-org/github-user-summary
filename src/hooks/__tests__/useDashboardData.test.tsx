@@ -279,13 +279,11 @@ describe("useDashboardStats", () => {
         const { result } = renderHook(() => useDashboardStats(2023), { wrapper });
 
         await waitFor(() => {
-            expect(result.current.error).toBeDefined();
+            expect(result.current.error?.message).toBe("Stats Server Error");
         });
-
-        expect(result.current.error.message).toBe("Stats Server Error");
     });
 
-    it("returns mutate function", async () => {
+    it("returns mutate function", () => {
         vi.mocked(useSession).mockReturnValue({
             data: { accessToken: "token123", expires: "2030-01-01T00:00:00.000Z" },
             status: "authenticated",
@@ -294,9 +292,7 @@ describe("useDashboardStats", () => {
 
         const { result } = renderHook(() => useDashboardStats(2023), { wrapper });
 
-        await waitFor(() => {
-            expect(typeof result.current.mutate).toBe("function");
-        });
+        expect(typeof result.current.mutate).toBe("function");
     });
 
     it("handles non-finite year inputs", async () => {
@@ -305,6 +301,7 @@ describe("useDashboardStats", () => {
             status: "authenticated",
             update: vi.fn(),
         } satisfies MockSessionReturn as unknown as MockSessionReturn);
+        global.fetch = vi.fn();
 
         const { result: nanResult } = renderHook(() => useDashboardStats(NaN), { wrapper });
         await waitFor(() => {
@@ -315,6 +312,7 @@ describe("useDashboardStats", () => {
         await waitFor(() => {
             expect(infResult.current.isLoading).toBe(false);
         });
+        expect(global.fetch).not.toHaveBeenCalled();
     });
 });
 
