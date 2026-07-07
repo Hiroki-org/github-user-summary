@@ -97,10 +97,10 @@ describe("RateLimiter", () => {
 });
 
 describe("getClientIp", () => {
-    it("returns the right-most x-forwarded-for IP", () => {
+    it("returns the right-most untrusted x-forwarded-for IP", () => {
         const req = new Request("http://localhost", {
             headers: {
-                "x-forwarded-for": "5.6.7.8, 9.10.11.12"
+                "x-forwarded-for": "5.6.7.8, 9.10.11.12, 10.0.0.1" // 10.0.0.1 is trusted proxy
             }
         });
         expect(getClientIp(req)).toBe("9.10.11.12");
@@ -147,19 +147,54 @@ describe("getClientIp", () => {
         expect(getClientIp(req)).toBe("unknown");
     });
 
-    it("returns unknown when the right-most x-forwarded-for token is empty", () => {
+    it("returns the first valid untrusted IP when the right-most x-forwarded-for token is empty", () => {
         const req = new Request("http://localhost", {
             headers: {
                 "x-forwarded-for": "5.6.7.8,   "
             }
         });
-        expect(getClientIp(req)).toBe("unknown");
+        expect(getClientIp(req)).toBe("5.6.7.8");
     });
 
-    it("returns unknown when the right-most x-forwarded-for token is invalid", () => {
+    it("returns the first valid untrusted IP when the right-most x-forwarded-for token is invalid", () => {
         const req = new Request("http://localhost", {
             headers: {
                 "x-forwarded-for": "5.6.7.8, not-an-ip"
+            }
+        });
+        expect(getClientIp(req)).toBe("5.6.7.8");
+    });
+    it.each([
+        ["IPv4 loopback", "203.0.113.10, 127.0.0.2"],
+        ["IPv4 link-local", "203.0.113.10, 169.254.10.20"],
+        ["IPv4-mapped IPv6 private IPv4", "203.0.113.10, ::ffff:10.0.0.1"],
+        ["IPv4-mapped IPv6 loopback", "203.0.113.10, ::ffff:127.0.0.2"],
+        ["IPv4-mapped IPv6 link-local", "203.0.113.10, ::ffff:169.254.10.20"],
+        ["IPv6 ULA fc prefix", "203.0.113.10, fc12::1"],
+        ["IPv6 ULA uppercase fd prefix", "203.0.113.10, FD00::1"],
+        ["IPv6 link-local", "203.0.113.10, fe80::1"],
+    ])("skips trusted proxy range: %s", (_, forwardedFor) => {
+        const req = new Request("http://localhost", {
+            headers: {
+                "x-forwarded-for": forwardedFor
+            }
+        });
+        expect(getClientIp(req)).toBe("203.0.113.10");
+    });
+
+    it("returns unknown if all x-forwarded-for IPs are trusted proxies", () => {
+        const req = new Request("http://localhost", {
+            headers: {
+                "x-forwarded-for": "192.168.1.1, 10.0.0.1"
+            }
+        });
+        expect(getClientIp(req)).toBe("unknown");
+    });
+
+    it("returns unknown if a spoofed private chain contains no public client IP", () => {
+        const req = new Request("http://localhost", {
+            headers: {
+                "x-forwarded-for": "127.0.0.2, 169.254.10.20, fd00::1"
             }
         });
         expect(getClientIp(req)).toBe("unknown");

@@ -36,6 +36,19 @@ describe("GET /api/dashboard/year validation", () => {
         expect(response.status).toBe(401);
     });
 
+
+    it("returns 400 when year contains non-numeric characters (e.g. 2024abc)", async () => {
+        vi.mocked(getAuthenticatedUser).mockResolvedValueOnce({ username: "alice", token: "token" });
+
+        const { GET } = await import("./route");
+        const req = createMockRequest("http://localhost/api/dashboard/year?year=2024abc");
+        const response = await GET(req);
+
+        expect(response.status).toBe(400);
+        const data = await response.json();
+        expect(data.error).toBe("Invalid year");
+    });
+
     it("returns 400 when year is invalid (not a number)", async () => {
         vi.mocked(getAuthenticatedUser).mockResolvedValueOnce({ username: "alice", token: "token" });
 
