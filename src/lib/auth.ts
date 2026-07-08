@@ -18,14 +18,14 @@ declare module "next-auth/jwt" {
   }
 }
 
-const getSecret = () => {
+const getSecret = (): string => {
   if (process.env.NEXTAUTH_SECRET) {
     return process.env.NEXTAUTH_SECRET;
   }
-  if (process.env.NODE_ENV === "production" && process.env.VITEST !== "true") {
-    throw new Error("NEXTAUTH_SECRET is not set in production. Please set it to a secure random value.");
+  if (process.env.NODE_ENV === "development") {
+    return "fallback_secret_for_development_only";
   }
-  return "fallback_secret_for_development_only";
+  throw new Error("NEXTAUTH_SECRET is not set. Please set it to a secure random value.");
 };
 
 export const authOptions: NextAuthOptions = {
