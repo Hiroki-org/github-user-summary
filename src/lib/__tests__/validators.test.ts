@@ -12,90 +12,58 @@ import { isTrustedFontUrl, isValidGitHubUsername, sanitizeUrl } from "../validat
  */
 
 describe("isValidGitHubUsername", () => {
-  // ---------- 有効なユーザー名 ----------
-  it("英数字のみのユーザー名は有効", () => {
-    expect(isValidGitHubUsername("testuser")).toBe(true);
+  describe("有効なユーザー名 (Valid usernames)", () => {
+    it.each([
+      ["英数字のみ", "testuser"],
+      ["1文字の英字", "a"],
+      ["1文字の数字", "1"],
+      ["数字のみ", "12345"],
+      ["ハイフンを含む", "test-user"],
+      ["複数ハイフンを含む", "my-test-user"],
+      ["大文字を含む", "TestUser"],
+      ["大文字とハイフン", "Test-User"],
+      ["39文字の英字", "a".repeat(39)],
+      ["39文字の数字", "1".repeat(39)],
+      ["38文字の英字", "a".repeat(38)],
+      ["ハイフンが複数あるが連続していない", "a-b-c-d-e"],
+      ["39文字でハイフンを含む", "a" + "b".repeat(36) + "-c"],
+    ])("%s: %p", (_, username) => {
+      expect(isValidGitHubUsername(username)).toBe(true);
+    });
   });
 
-  it("1文字のユーザー名は有効", () => {
-    expect(isValidGitHubUsername("a")).toBe(true);
+  describe("無効なユーザー名 (Invalid usernames)", () => {
+    it.each([
+      ["空文字列", ""],
+      ["ハイフンで始まる", "-testuser"],
+      ["ハイフンで終わる", "testuser-"],
+      ["連続ハイフンを含む", "test--user"],
+      ["40文字", "a".repeat(40)],
+      ["40文字（ハイフン含む）", "a" + "b".repeat(37) + "-c"],
+      ["先頭がアンダースコア", "_testuser"],
+      ["末尾がアンダースコア", "testuser_"],
+      ["特殊文字を含む(@)", "test@user"],
+      ["特殊文字を含む(.)", "test.user"],
+      ["特殊文字を含む(_)", "test_user"],
+      ["空白を含む", "test user"],
+      ["先頭に空白", " testuser"],
+      ["末尾に空白", "testuser "],
+      ["制御文字(改行)を含む", "test\nuser"],
+      ["制御文字(タブ)を含む", "test\tuser"],
+      ["ヌル文字を含む", "test\0user"],
+      ["パストラバーサル", "../etc/passwd"],
+      ["パストラバーサル(/)", "test/user"],
+      ["SQLインジェクション", "'; DROP TABLE users; --"],
+      ["日本語", "テスト"],
+      ["絵文字", "user😀"],
+      ["アクセント記号", "déjà-vu"],
+      ["極端に長い文字列", "a".repeat(1000)],
+      ["undefined (型キャスト)", undefined as unknown as string],
+      ["null (型キャスト)", null as unknown as string],
+    ])("%s: %p", (_, username) => {
+      expect(isValidGitHubUsername(username)).toBe(false);
+    });
   });
-
-  it("数字のみのユーザー名は有効", () => {
-    expect(isValidGitHubUsername("12345")).toBe(true);
-  });
-
-  it("ハイフンを含むユーザー名は有効", () => {
-    expect(isValidGitHubUsername("test-user")).toBe(true);
-  });
-
-  it("複数ハイフンを含むユーザー名は有効", () => {
-    expect(isValidGitHubUsername("my-test-user")).toBe(true);
-  });
-
-  it("39文字のユーザー名は有効", () => {
-    expect(isValidGitHubUsername("a".repeat(39))).toBe(true);
-  });
-
-  it("大文字を含むユーザー名は有効", () => {
-    expect(isValidGitHubUsername("TestUser")).toBe(true);
-  });
-
-  // ---------- 無効なユーザー名 ----------
-  it("空文字列は無効", () => {
-    expect(isValidGitHubUsername("")).toBe(false);
-  });
-
-  it("ハイフンで始まるユーザー名は無効", () => {
-    expect(isValidGitHubUsername("-testuser")).toBe(false);
-  });
-
-  it("ハイフンで終わるユーザー名は無効", () => {
-    expect(isValidGitHubUsername("testuser-")).toBe(false);
-  });
-
-  it("連続ハイフンを含むユーザー名は無効", () => {
-    expect(isValidGitHubUsername("test--user")).toBe(false);
-  });
-
-  it("40文字以上のユーザー名は無効", () => {
-    expect(isValidGitHubUsername("a".repeat(40))).toBe(false);
-  });
-
-  it("特殊文字を含むユーザー名は無効", () => {
-    expect(isValidGitHubUsername("test@user")).toBe(false);
-    expect(isValidGitHubUsername("test.user")).toBe(false);
-    expect(isValidGitHubUsername("test_user")).toBe(false);
-    expect(isValidGitHubUsername("test user")).toBe(false);
-  });
-
-  it("スラッシュを含むユーザー名は無効 (パストラバーサル防止)", () => {
-    expect(isValidGitHubUsername("test/user")).toBe(false);
-    expect(isValidGitHubUsername("../etc/passwd")).toBe(false);
-  });
-
-  it("SQLインジェクション的な文字列は無効", () => {
-    expect(isValidGitHubUsername("'; DROP TABLE users; --")).toBe(false);
-  });
-
-  it("マルチバイト文字（日本語や絵文字）を含むユーザー名は無効", () => {
-    expect(isValidGitHubUsername("テスト")).toBe(false);
-    expect(isValidGitHubUsername("user😀")).toBe(false);
-    expect(isValidGitHubUsername("déjà-vu")).toBe(false);
-  });
-
-  it("空白文字や制御文字を含むユーザー名は無効", () => {
-    expect(isValidGitHubUsername(" testuser")).toBe(false);
-    expect(isValidGitHubUsername("testuser ")).toBe(false);
-    expect(isValidGitHubUsername("test\nuser")).toBe(false);
-    expect(isValidGitHubUsername("test\tuser")).toBe(false);
-    expect(isValidGitHubUsername("test\0user")).toBe(false);
-  });
-
-  it("極端に長い文字列は無効 (長さ上限の確認)", () => {
-    expect(isValidGitHubUsername("a".repeat(1000))).toBe(false);
-  });
-
 });
 
 describe("sanitizeUrl", () => {

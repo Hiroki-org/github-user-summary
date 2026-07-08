@@ -262,6 +262,58 @@ describe("useDashboardStats", () => {
         expect(result.current.heatmap).toEqual([[1, 2]]);
         expect(global.fetch).toHaveBeenCalledWith("/api/dashboard/stats?year=2023");
     });
+
+    it("handles SWR error", async () => {
+        vi.mocked(useSession).mockReturnValue({
+            data: { accessToken: "token123", expires: "2030-01-01T00:00:00.000Z" },
+            status: "authenticated",
+            update: vi.fn(),
+        } satisfies MockSessionReturn as unknown as MockSessionReturn);
+
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: false,
+            status: 500,
+            text: async () => "Stats Server Error",
+        });
+
+        const { result } = renderHook(() => useDashboardStats(2023), { wrapper });
+
+        await waitFor(() => {
+            expect(result.current.error?.message).toBe("Stats Server Error");
+        });
+    });
+
+    it("returns mutate function", () => {
+        vi.mocked(useSession).mockReturnValue({
+            data: { accessToken: "token123", expires: "2030-01-01T00:00:00.000Z" },
+            status: "authenticated",
+            update: vi.fn(),
+        } satisfies MockSessionReturn as unknown as MockSessionReturn);
+
+        const { result } = renderHook(() => useDashboardStats(2023), { wrapper });
+
+        expect(typeof result.current.mutate).toBe("function");
+    });
+
+    it("handles non-finite year inputs", async () => {
+        vi.mocked(useSession).mockReturnValue({
+            data: { accessToken: "token123", expires: "2030-01-01T00:00:00.000Z" },
+            status: "authenticated",
+            update: vi.fn(),
+        } satisfies MockSessionReturn as unknown as MockSessionReturn);
+        global.fetch = vi.fn();
+
+        const { result: nanResult } = renderHook(() => useDashboardStats(NaN), { wrapper });
+        await waitFor(() => {
+            expect(nanResult.current.isLoading).toBe(false);
+        });
+
+        const { result: infResult } = renderHook(() => useDashboardStats(Infinity), { wrapper });
+        await waitFor(() => {
+            expect(infResult.current.isLoading).toBe(false);
+        });
+        expect(global.fetch).not.toHaveBeenCalled();
+    });
 });
 
 describe("fetcher error edge cases", () => {
