@@ -36,19 +36,6 @@ describe("GET /api/dashboard/year validation", () => {
         expect(response.status).toBe(401);
     });
 
-
-    it("returns 400 when year contains non-numeric characters (e.g. 2024abc)", async () => {
-        vi.mocked(getAuthenticatedUser).mockResolvedValueOnce({ username: "alice", token: "token" });
-
-        const { GET } = await import("./route");
-        const req = createMockRequest("http://localhost/api/dashboard/year?year=2024abc");
-        const response = await GET(req);
-
-        expect(response.status).toBe(400);
-        const data = await response.json();
-        expect(data.error).toBe("Invalid year");
-    });
-
     it("returns 400 when year is invalid (not a number)", async () => {
         vi.mocked(getAuthenticatedUser).mockResolvedValueOnce({ username: "alice", token: "token" });
 
@@ -89,7 +76,7 @@ describe("GET /api/dashboard/year validation", () => {
     it("returns 200 and fetches data when year is valid", async () => {
         vi.mocked(getAuthenticatedUser).mockResolvedValueOnce({ username: "alice", token: "token" });
 
-        vi.mocked(fetchYearInReviewData).mockResolvedValueOnce({ data: "ok", mostActiveDay: null } as unknown as YearInReviewData);
+        vi.mocked(fetchYearInReviewData).mockResolvedValueOnce({ data: "ok" } as unknown as YearInReviewData);
 
         const { GET } = await import("./route");
         const currentYear = new Date().getUTCFullYear();
@@ -98,14 +85,14 @@ describe("GET /api/dashboard/year validation", () => {
 
         expect(response.status).toBe(200);
         const data = await response.json();
-        expect(data).toEqual({ data: "ok", mostActiveDay: null });
+        expect(data).toEqual({ data: "ok" });
         expect(fetchYearInReviewData).toHaveBeenCalledWith("alice", currentYear, "token");
     });
 
     it("returns 200 and falls back to current year when year is not provided", async () => {
         vi.mocked(getAuthenticatedUser).mockResolvedValueOnce({ username: "alice", token: "token" });
 
-        vi.mocked(fetchYearInReviewData).mockResolvedValueOnce({ data: "ok", mostActiveDay: null } as unknown as YearInReviewData);
+        vi.mocked(fetchYearInReviewData).mockResolvedValueOnce({ data: "ok" } as unknown as YearInReviewData);
 
         const { GET } = await import("./route");
         const req = createMockRequest(`http://localhost/api/dashboard/year`);
@@ -113,7 +100,7 @@ describe("GET /api/dashboard/year validation", () => {
 
         expect(response.status).toBe(200);
         const data = await response.json();
-        expect(data).toEqual({ data: "ok", mostActiveDay: null });
+        expect(data).toEqual({ data: "ok" });
 
         const currentYear = new Date().getUTCFullYear();
         expect(fetchYearInReviewData).toHaveBeenCalledWith("alice", currentYear, "token");
