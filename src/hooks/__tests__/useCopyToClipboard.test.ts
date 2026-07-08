@@ -114,28 +114,6 @@ describe("useCopyToClipboard", () => {
     expect(result.current.copied).toBe(false);
   });
 
-  it("should catch and store error if navigator.clipboard.writeText rejects", async () => {
-    const error = new Error("writeText failed");
-    vi.mocked(navigator.clipboard.writeText).mockRejectedValue(error);
-
-    // We also need to mock execCommand to return true so the fallback succeeds
-    // or false so it fails, but we want to specifically ensure the catch block was hit.
-    vi.mocked(document.execCommand).mockReturnValue(false);
-
-    const { result } = renderHook(() => useCopyToClipboard());
-
-    await act(async () => {
-      await result.current.copyToClipboard("test text");
-    });
-
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith("test text");
-    expect(logger.error).toHaveBeenCalledWith(
-      "Failed to copy",
-      error,
-      expect.any(Error)
-    );
-  });
-
   it("should log error if both clipboard and fallback fail", async () => {
     vi.mocked(navigator.clipboard.writeText).mockRejectedValue(new Error("Clipboard error"));
     vi.mocked(document.execCommand).mockReturnValue(false);
