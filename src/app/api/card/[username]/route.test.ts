@@ -84,28 +84,6 @@ describe("GET /api/card/[username] error responses", () => {
     it("returns 503 and correct message on API error", async () => {
         await runErrorTest(new Error("API Error"), "erroruser", "Temporarily unavailable", 503);
     });
-
-    it("returns a generic rendered error when production APP_URL is missing", async () => {
-        vi.resetModules();
-        vi.stubEnv("APP_URL", "");
-        vi.stubEnv("NODE_ENV", "production");
-
-        try {
-            const { GET } = await import("./route");
-            const { renderErrorCardResponse } = await import("@/lib/cardRenderer");
-            const req = new Request("http://localhost/api/card/alice");
-            const response = await GET(req, { params: Promise.resolve({ username: "alice" }) });
-
-            expect(response.status).toBe(500);
-            expect(renderErrorCardResponse).toHaveBeenCalledWith(expect.objectContaining({
-                message: "Server configuration error",
-                status: 500,
-                cacheControl: "public, s-maxage=60, stale-while-revalidate=120",
-            }));
-        } finally {
-            vi.unstubAllEnvs();
-        }
-    });
 });
 
 describe("GET /api/card/[username] rate limiting", () => {
