@@ -113,10 +113,16 @@ describe('authOptions', () => {
       expect(authModule.authOptions.secret).toBe('fallback_secret_for_development_only');
     });
 
-    it('throws error in production environment if NEXTAUTH_SECRET is missing', async () => {
+    it('throws error outside development and test environments if NEXTAUTH_SECRET is missing', async () => {
       delete process.env.NEXTAUTH_SECRET;
       Object.defineProperty(process.env, 'NODE_ENV', { value: 'production', configurable: true });
-      await expect(() => import('../auth')).rejects.toThrow('NEXTAUTH_SECRET is not set in production. Please set it to a secure random value.');
+      await expect(() => import('../auth')).rejects.toThrow('NEXTAUTH_SECRET is not set. Please set it to a secure random value.');
+    });
+
+    it('throws error in staging-like environments if NEXTAUTH_SECRET is missing', async () => {
+      delete process.env.NEXTAUTH_SECRET;
+      Object.defineProperty(process.env, 'NODE_ENV', { value: 'staging', configurable: true });
+      await expect(() => import('../auth')).rejects.toThrow('NEXTAUTH_SECRET is not set. Please set it to a secure random value.');
     });
   });
 });
