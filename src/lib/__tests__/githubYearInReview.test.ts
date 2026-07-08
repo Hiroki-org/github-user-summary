@@ -212,11 +212,9 @@ describe("fetchYearInReviewData success paths", () => {
         expect(data.topRepository).toBeNull();
     });
 
-
-
-
-
     it("falls back to empty array and logs error if fetchCommitDatesForTopRepos throws an exception", async () => {
+        expect.assertions(2);
+
         let callCount = 0;
         const loggerSpy = vi.spyOn(logger, 'error').mockImplementation(() => {});
         mockFetch.mockImplementation((url: string | URL | Request) => {
