@@ -239,18 +239,7 @@ export async function fetchUserProfile(
   ]);
 
   return {
-    login: profile.login,
-    avatar_url: profile.avatar_url,
-    name: profile.name,
-    bio: profile.bio,
-    company: profile.company,
-    location: profile.location,
-    blog: profile.blog,
-    twitter_username: profile.twitter_username,
-    created_at: profile.created_at,
-    followers: profile.followers,
-    following: profile.following,
-    public_repos: profile.public_repos,
+    ...profile,
     orgs,
     pinnedRepos,
   };
