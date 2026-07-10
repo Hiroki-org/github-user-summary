@@ -485,6 +485,57 @@ type ContributionsResponse = {
   } | null;
 };
 
+const CONTRIBUTIONS_QUERY = `query($login: String!, $from: DateTime!, $to: DateTime!) {
+  user(login: $login) {
+    contributionsCollection(from: $from, to: $to) {
+      totalCommitContributions
+      totalPullRequestContributions
+      totalIssueContributions
+      totalPullRequestReviewContributions
+      contributionCalendar {
+        totalContributions
+        weeks {
+          contributionDays {
+            date
+            contributionCount
+          }
+        }
+      }
+    }
+  }
+}`;
+
+type ContributionWeek = NonNullable<ContributionsResponse["user"]>["contributionsCollection"]["contributionCalendar"]["weeks"][number];
+
+function processContributionsCalendar(weeks: NonNullable<ContributionsResponse["user"]>["contributionsCollection"]["contributionCalendar"]["weeks"]) {
+  const calendar = weeks.flatMap((w) =>
+    w.contributionDays.map((d) => ({
+      date: d.date,
+      count: d.contributionCount,
+    }))
+  );
+  calendar.sort((a, b) => a.date.localeCompare(b.date));
+  return calendar;
+}
+
+function calculateRecentContributions(calendar: { date: string; count: number }[], sevenDaysAgoStr: string, thirtyDaysAgoStr: string) {
+  let weeklyContributions = 0;
+  let monthlyContributions = 0;
+
+  for (let i = calendar.length - 1; i >= 0; i--) {
+    const day = calendar[i];
+    if (day.date < thirtyDaysAgoStr) {
+      break;
+    }
+    monthlyContributions += day.count;
+    if (day.date >= sevenDaysAgoStr) {
+      weeklyContributions += day.count;
+    }
+  }
+
+  return { weeklyContributions, monthlyContributions };
+}
+
 /**
  * Task⑥: 過去1年間のコントリビューション統計を取得
  * GraphQL contributionsCollection (認証必須)
@@ -509,27 +560,9 @@ export async function fetchContributions(
   const sevenDaysAgoStr = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
   const thirtyDaysAgoStr = new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
-  const query = `query($login: String!, $from: DateTime!, $to: DateTime!) {
-    user(login: $login) {
-      contributionsCollection(from: $from, to: $to) {
-        totalCommitContributions
-        totalPullRequestContributions
-        totalIssueContributions
-        totalPullRequestReviewContributions
-        contributionCalendar {
-          totalContributions
-          weeks {
-            contributionDays {
-              date
-              contributionCount
-            }
-          }
-        }
-      }
-    }
-  }`;
 
-  const data = await graphql<ContributionsResponse>(query, token, {
+
+  const data = await graphql<ContributionsResponse>(CONTRIBUTIONS_QUERY, token, {
     login: username,
     from: oneYearAgo.toISOString(),
     to: now.toISOString(),
@@ -539,32 +572,8 @@ export async function fetchContributions(
   }
 
   const cc = data.user.contributionsCollection;
-  const calendar = cc.contributionCalendar.weeks.flatMap((w) =>
-    w.contributionDays.map((d) => ({
-      date: d.date,
-      count: d.contributionCount,
-    }))
-  );
-
-
-  calendar.sort((a, b) => a.date.localeCompare(b.date));
-
-  let weeklyContributions = 0;
-  let monthlyContributions = 0;
-
-  for (let i = calendar.length - 1; i >= 0; i--) {
-    const day = calendar[i];
-
-    if (day.date < thirtyDaysAgoStr) {
-      break;
-    }
-
-    monthlyContributions += day.count;
-
-    if (day.date >= sevenDaysAgoStr) {
-      weeklyContributions += day.count;
-    }
-  }
+  const calendar = processContributionsCalendar(cc.contributionCalendar.weeks);
+  const { weeklyContributions, monthlyContributions } = calculateRecentContributions(calendar, sevenDaysAgoStr, thirtyDaysAgoStr);
 
   const { longestStreak, currentStreak } = calculateStreaks(calendar);
   const mostActiveDay = calculateMostActiveDay(calendar);
