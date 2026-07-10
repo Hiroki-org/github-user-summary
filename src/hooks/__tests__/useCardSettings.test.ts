@@ -64,6 +64,7 @@ describe("useCardSettings", () => {
 
     // Mock loadCardSettings to return new values during effect execution
     vi.spyOn(cardSettingsLib, 'loadCardSettings').mockReturnValueOnce({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       layout: customLayout as any,
       options: customOptions
     });
@@ -130,6 +131,7 @@ describe("useCardSettings", () => {
 
     // Verify it was saved to storage
     const savedLayout = JSON.parse(window.localStorage.getItem("card-layout") || "{}");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const savedProfileBlock = savedLayout.blocks.find((b: any) => b.id === "profile");
     expect(savedProfileBlock.visible).toBe(false);
   });
