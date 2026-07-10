@@ -295,6 +295,47 @@ type RepositoriesResponse = {
   } | null;
 };
 
+const REPOSITORIES_GRAPHQL_QUERY = `query($login: String!) {
+  user(login: $login) {
+    repositories(first: 100, ownerAffiliations: [OWNER, ORGANIZATION_MEMBER, COLLABORATOR], orderBy: {field: STARGAZERS, direction: DESC}, isFork: false, privacy: PUBLIC) {
+      totalCount
+      nodes {
+        name
+        description
+        url
+        stargazerCount
+        forkCount
+        isFork
+        primaryLanguage { name color }
+        languages(first: 10) {
+          edges {
+            size
+            node { name color }
+          }
+        }
+        repositoryTopics(first: 10) {
+          nodes {
+            topic { name }
+          }
+        }
+      }
+    }
+  }
+}`;
+
+async function fetchRepositoriesGraphQL(
+  username: string,
+  token: string
+): Promise<RepositoryData> {
+  const data = await graphql<RepositoriesResponse>(REPOSITORIES_GRAPHQL_QUERY, token, { login: username });
+  if (!data.user) {
+    throw new UserNotFoundError(username);
+  }
+
+  const repos = data.user.repositories.nodes.filter((r) => !r.isFork);
+  return processRepoData(repos);
+}
+
 /**
  * Task⑤: リポジトリ一覧・言語統計・トップリポジトリを取得
  * 認証時: GraphQL (言語バイト数ベース), 未認証時: REST フォールバック
@@ -310,41 +351,7 @@ export const fetchRepositories = cache(async function fetchRepositories(
     return fetchRepositoriesREST(username);
   }
 
-  const query = `query($login: String!) {
-    user(login: $login) {
-      repositories(first: 100, ownerAffiliations: [OWNER, ORGANIZATION_MEMBER, COLLABORATOR], orderBy: {field: STARGAZERS, direction: DESC}, isFork: false, privacy: PUBLIC) {
-        totalCount
-        nodes {
-          name
-          description
-          url
-          stargazerCount
-          forkCount
-          isFork
-          primaryLanguage { name color }
-          languages(first: 10) {
-            edges {
-              size
-              node { name color }
-            }
-          }
-          repositoryTopics(first: 10) {
-            nodes {
-              topic { name }
-            }
-          }
-        }
-      }
-    }
-  }`;
-
-  const data = await graphql<RepositoriesResponse>(query, token, { login: username });
-  if (!data.user) {
-    throw new UserNotFoundError(username);
-  }
-
-  const repos = data.user.repositories.nodes.filter((r) => !r.isFork);
-  return processRepoData(repos);
+  return fetchRepositoriesGraphQL(username, token);
 });
 
 async function fetchRepositoriesREST(username: string): Promise<RepositoryData> {
