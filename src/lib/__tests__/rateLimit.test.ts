@@ -199,4 +199,30 @@ describe("getClientIp", () => {
         });
         expect(getClientIp(req)).toBe("unknown");
     });
+
+    it.each([
+        ["out of bounds segment", "256.256.256.256"],
+        ["too few segments", "1.2.3"],
+        ["too many segments", "1.2.3.4.5"],
+        ["empty segment", "1..3.4"],
+        ["negative number", "-1.2.3.4"],
+        ["contains letters", "1.2.a.4"],
+        ["leading zeros", "192.168.01.1"],
+    ])("returns unknown for malformed IPv4 address: %s", (_, forwardedFor) => {
+        const req = new Request("http://localhost", {
+            headers: {
+                "x-forwarded-for": forwardedFor
+            }
+        });
+        expect(getClientIp(req)).toBe("unknown");
+    });
+
+    it("returns unknown for invalid IPv6 URL malformed address", () => {
+        const req = new Request("http://localhost", {
+            headers: {
+                "x-forwarded-for": "123:456:789:abc:def:gh:ij:kl"
+            }
+        });
+        expect(getClientIp(req)).toBe("unknown");
+    });
 });
