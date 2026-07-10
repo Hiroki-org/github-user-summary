@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { handleErrorResponse, handleRateLimit, getAuthenticatedUser } from '../apiUtils';
 import { RateLimitError } from '@/lib/types';
 import { NextResponse } from 'next/server';
@@ -59,7 +59,7 @@ describe('apiUtils', () => {
 
 
   describe('handleRateLimit', () => {
-    let originalDateNow;
+    let originalDateNow: () => number;
     const mockNow = 1700000000000; // 2023-11-14T22:13:20.000Z
 
     beforeEach(() => {
@@ -83,7 +83,8 @@ describe('apiUtils', () => {
 
       try {
         handleRateLimit(res);
-      } catch (error) {
+      } // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      catch (error: any) {
         expect(error).toBeInstanceOf(RateLimitError);
         expect(error.resetAt.getTime()).toBe(resetTimestamp * 1000);
       }
@@ -96,7 +97,8 @@ describe('apiUtils', () => {
 
       try {
         handleRateLimit(res);
-      } catch (error) {
+      } // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      catch (error: any) {
         expect(error).toBeInstanceOf(RateLimitError);
         const expectedResetTimestamp = Math.floor(mockNow / 1000) + 3600;
         expect(error.resetAt.getTime()).toBe(expectedResetTimestamp * 1000);
@@ -114,7 +116,8 @@ describe('apiUtils', () => {
 
       try {
         handleRateLimit(res);
-      } catch (error) {
+      } // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      catch (error: any) {
         expect(error).toBeInstanceOf(RateLimitError);
         const expectedResetTimestamp = Math.floor(mockNow / 1000) + 3600;
         expect(error.resetAt.getTime()).toBe(expectedResetTimestamp * 1000);
