@@ -6,6 +6,17 @@ import { buildHourlyHeatmapFromCommitDates, getMostActiveDayFromCalendar, getMos
 import { logger } from "@/lib/logger";
 
 
+
+const EMPTY_HEATMAP = [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+];
+
 const YEAR_IN_REVIEW_QUERY = `query($login: String!, $from: DateTime!, $to: DateTime!, $maxRepositories: Int!) {
     user(login: $login) {
       id
@@ -306,7 +317,7 @@ export async function fetchCommitActivityHeatmap(username: string, year: number,
     const topRepository = mergeTopRepository(reposResponse.user.contributionsCollection);
 
     if (!topRepository) {
-        return Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
+        return EMPTY_HEATMAP;
     }
 
     const [owner, repo] = topRepository.name.split("/");
@@ -321,7 +332,7 @@ export async function fetchCommitActivityHeatmap(username: string, year: number,
         handleRateLimit(res);
     }
     if (!res.ok) {
-        return Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
+        return EMPTY_HEATMAP;
     }
 
     const commits = (await res.json()) as GitHubCommit[];
