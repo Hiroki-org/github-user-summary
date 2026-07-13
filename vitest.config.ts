@@ -13,6 +13,7 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "lcov"],
       include: [
+        "src/lib/githubYearInReview.ts",
         "src/lib/**/*.ts",
         "src/hooks/**/*.ts",
         "src/components/ThemeController.tsx",
