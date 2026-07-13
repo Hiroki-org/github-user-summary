@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/cardDataFetcher", () => ({
     fetchCardData: vi.fn(),
@@ -9,6 +9,10 @@ vi.mock("@/lib/cardRenderer", () => ({
     renderCardResponse: vi.fn(async ({ cacheControl }) => new Response("ok", { headers: { "Cache-Control": cacheControl, "Content-Type": "image/png" } })),
     renderErrorCardResponse: vi.fn(async ({ status, cacheControl }) => new Response("error", { status, headers: { "Cache-Control": cacheControl, "Content-Type": "image/png" } })),
 }));
+
+afterEach(() => {
+    vi.unstubAllEnvs();
+});
 
 describe("GET /api/card/[username] cache headers", () => {
     it("uses long cache header on success", async () => {
@@ -83,6 +87,28 @@ describe("GET /api/card/[username] error responses", () => {
 
     it("returns 503 and correct message on API error", async () => {
         await runErrorTest(new Error("API Error"), "erroruser", "Temporarily unavailable", 503);
+    });
+
+    it("returns a cached SVG error when APP_URL is unavailable in production", async () => {
+        vi.stubEnv("NODE_ENV", "production");
+        vi.stubEnv("APP_URL", "");
+        const { renderErrorCardResponse } = await import("@/lib/cardRenderer");
+        const { GET } = await import("./route");
+
+        const response = await GET(
+            new Request("http://localhost/api/card/alice"),
+            { params: Promise.resolve({ username: "alice" }) }
+        );
+
+        expect(response.status).toBe(500);
+        expect(response.headers.get("Cache-Control")).toBe(
+            "public, s-maxage=60, stale-while-revalidate=120"
+        );
+        expect(renderErrorCardResponse).toHaveBeenCalledWith(expect.objectContaining({
+            message: "Server configuration error",
+            status: 500,
+            cacheControl: "public, s-maxage=60, stale-while-revalidate=120",
+        }));
     });
 });
 
