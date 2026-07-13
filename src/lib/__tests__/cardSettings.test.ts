@@ -27,7 +27,6 @@ describe("cardSettings", () => {
 
     describe("loadCardSettings", () => {
         it("returns defaults when window is undefined", () => {
-             // Remove window from global object to simulate SSR environment
              vi.stubGlobal("window", undefined);
              const result = loadCardSettings();
              expect(result.layout).toEqual(DEFAULT_CARD_LAYOUT);
