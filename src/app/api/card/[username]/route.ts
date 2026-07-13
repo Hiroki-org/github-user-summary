@@ -17,15 +17,10 @@ export async function GET(
     const { username } = await params;
     const url = new URL(request.url);
     const options = parseCardQueryParams(url.searchParams);
-    let allowedOrigin = process.env.APP_URL?.trim();
+    let allowedOrigin = process.env.APP_URL;
     if (!allowedOrigin) {
         if (process.env.NODE_ENV === "production") {
-            return renderErrorCardResponse({
-                message: "Server configuration error",
-                options,
-                status: 500,
-                cacheControl: ERROR_CACHE,
-            });
+            return new Response("Server configuration error: APP_URL environment variable is not set", { status: 500 });
         }
         allowedOrigin = "http://localhost:3000";
     }
