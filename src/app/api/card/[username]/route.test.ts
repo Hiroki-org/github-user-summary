@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, afterEach } from "vitest";
 
 vi.mock("@/lib/cardDataFetcher", () => ({
     fetchCardData: vi.fn(),
@@ -113,5 +113,31 @@ describe("GET /api/card/[username] rate limiting", () => {
             message: "Rate limit exceeded",
             status: 429,
         }));
+    });
+});
+
+describe("GET /api/card/[username] production configuration", () => {
+    const originalNodeEnv = process.env.NODE_ENV;
+    const originalAppUrl = process.env.APP_URL;
+
+    afterEach(() => {
+        vi.unstubAllEnvs();
+        if (originalAppUrl === undefined) {
+            delete process.env.APP_URL;
+        } else {
+            process.env.APP_URL = originalAppUrl;
+        }
+    });
+
+    it("returns 500 when APP_URL is missing in production", async () => {
+        vi.stubEnv("NODE_ENV", "production");
+        delete process.env.APP_URL;
+
+        const { GET } = await import("./route");
+        const req = new Request("http://localhost/api/card/testuser");
+        const response = await GET(req, { params: Promise.resolve({ username: "testuser" }) });
+
+        expect(response.status).toBe(500);
+        expect(await response.text()).toBe("Server configuration error: APP_URL environment variable is not set");
     });
 });

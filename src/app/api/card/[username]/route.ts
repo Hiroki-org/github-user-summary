@@ -17,7 +17,13 @@ export async function GET(
     const { username } = await params;
     const url = new URL(request.url);
     const options = parseCardQueryParams(url.searchParams);
-    const allowedOrigin = process.env.APP_URL || "http://localhost:3000";
+    let allowedOrigin = process.env.APP_URL;
+    if (!allowedOrigin) {
+        if (process.env.NODE_ENV === "production") {
+            return new Response("Server configuration error: APP_URL environment variable is not set", { status: 500 });
+        }
+        allowedOrigin = "http://localhost:3000";
+    }
     const fontUrl = `${allowedOrigin}/fonts/NotoSans-Regular.ttf`;
 
     const ip = getClientIp(request);
