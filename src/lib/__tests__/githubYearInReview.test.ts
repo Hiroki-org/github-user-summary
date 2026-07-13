@@ -408,6 +408,87 @@ describe("fetchYearInReviewData additional coverage", () => {
         }
     });
 
+
+
+
+    it("handles missing repository data in mergeTopRepository", async () => {
+        mockFetch.mockImplementation(() => {
+            return Promise.resolve(jsonResponse({
+                data: {
+                    user: {
+                        id: "123",
+                        contributionsCollection: {
+                            totalCommitContributions: 100,
+                            totalPullRequestContributions: 50,
+                            totalIssueContributions: 10,
+                            totalPullRequestReviewContributions: 0,
+                            contributionCalendar: { totalContributions: 160, weeks: [] },
+                        }
+                    }
+                }
+            }));
+        });
+
+        const data = await fetchYearInReviewData("testuser", 2023, "token");
+        expect(data.topRepository).toBeNull();
+    });
+
+    it("handles undefined repository data in mergeTopRepository", async () => {
+        mockFetch.mockImplementation(() => {
+            return Promise.resolve(jsonResponse({
+                data: {
+                    user: {
+                        id: "123",
+                        contributionsCollection: {
+                            totalCommitContributions: 100,
+                            totalPullRequestContributions: 50,
+                            totalIssueContributions: 10,
+                            totalPullRequestReviewContributions: 0,
+                            contributionCalendar: { totalContributions: 160, weeks: [] },
+                            commitContributionsByRepository: undefined,
+                            pullRequestContributionsByRepository: undefined,
+                            issueContributionsByRepository: undefined,
+                        }
+                    }
+                }
+            }));
+        });
+
+        const data = await fetchYearInReviewData("testuser", 2023, "token");
+        expect(data.topRepository).toBeNull();
+    });
+
+    it("handles full repository data in mergeTopRepository", async () => {
+        mockFetch.mockImplementation(() => {
+            return Promise.resolve(jsonResponse({
+                data: {
+                    user: {
+                        id: "123",
+                        contributionsCollection: {
+                            totalCommitContributions: 100,
+                            totalPullRequestContributions: 50,
+                            totalIssueContributions: 10,
+                            totalPullRequestReviewContributions: 0,
+                            contributionCalendar: { totalContributions: 160, weeks: [] },
+                            commitContributionsByRepository: [
+                                { repository: { owner: { login: "user1" }, name: "repo1" }, contributions: { totalCount: 50 } }
+                            ],
+                            pullRequestContributionsByRepository: [
+                                { repository: { owner: { login: "user1" }, name: "repo1" }, contributions: { totalCount: 20 } }
+                            ],
+                            issueContributionsByRepository: [
+                                { repository: { owner: { login: "user1" }, name: "repo1" }, contributions: { totalCount: 10 } }
+                            ],
+                        }
+                    }
+                }
+            }));
+        });
+
+        const data = await fetchYearInReviewData("testuser", 2023, "token");
+        expect(data.topRepository).toEqual({ name: "user1/repo1", contributions: 80 });
+    });
+
     it("handles partial repository data in mergeTopRepository", async () => {
         mockFetch.mockImplementation(() => {
             return Promise.resolve(jsonResponse({
