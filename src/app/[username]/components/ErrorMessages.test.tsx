@@ -12,6 +12,7 @@ describe("ErrorMessages", () => {
 
   it("returns null when errors is undefined", () => {
     // Typecast to any to test the falsy condition handled in the component
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { container } = render(<ErrorMessages errors={undefined as any} />);
     expect(container.firstChild).toBeNull();
   });
