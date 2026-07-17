@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { handleErrorResponse, getAuthenticatedUser } from '../apiUtils';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { handleErrorResponse, handleRateLimit, getAuthenticatedUser } from '../apiUtils';
+import { RateLimitError } from '@/lib/types';
 import { NextResponse } from 'next/server';
 import { getServerSession } from "next-auth";
 
@@ -53,6 +54,74 @@ describe('apiUtils', () => {
         body: { error: 'Unknown error' },
         init: { status: 500 }
       });
+    });
+  });
+
+
+  describe('handleRateLimit', () => {
+    let originalDateNow: () => number;
+    const mockNow = 1700000000000; // 2023-11-14T22:13:20.000Z
+
+    beforeEach(() => {
+      originalDateNow = Date.now;
+      Date.now = vi.fn(() => mockNow);
+    });
+
+    afterEach(() => {
+      Date.now = originalDateNow;
+    });
+
+    it('should throw RateLimitError with X-RateLimit-Reset header timestamp', () => {
+      const resetTimestamp = 1700003600;
+      const res = new Response(null, {
+        headers: {
+          'X-RateLimit-Reset': resetTimestamp.toString(),
+        },
+      });
+
+      expect(() => handleRateLimit(res)).toThrow(RateLimitError);
+
+      try {
+        handleRateLimit(res);
+      } // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      catch (error: any) {
+        expect(error).toBeInstanceOf(RateLimitError);
+        expect(error.resetAt.getTime()).toBe(resetTimestamp * 1000);
+      }
+    });
+
+    it('should throw RateLimitError with default timestamp (1 hour from now) if header is missing', () => {
+      const res = new Response(null);
+
+      expect(() => handleRateLimit(res)).toThrow(RateLimitError);
+
+      try {
+        handleRateLimit(res);
+      } // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      catch (error: any) {
+        expect(error).toBeInstanceOf(RateLimitError);
+        const expectedResetTimestamp = Math.floor(mockNow / 1000) + 3600;
+        expect(error.resetAt.getTime()).toBe(expectedResetTimestamp * 1000);
+      }
+    });
+
+    it('should throw RateLimitError with default timestamp if header is invalid', () => {
+      const res = new Response(null, {
+        headers: {
+          'X-RateLimit-Reset': 'invalid-timestamp',
+        },
+      });
+
+      expect(() => handleRateLimit(res)).toThrow(RateLimitError);
+
+      try {
+        handleRateLimit(res);
+      } // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      catch (error: any) {
+        expect(error).toBeInstanceOf(RateLimitError);
+        const expectedResetTimestamp = Math.floor(mockNow / 1000) + 3600;
+        expect(error.resetAt.getTime()).toBe(expectedResetTimestamp * 1000);
+      }
     });
   });
 

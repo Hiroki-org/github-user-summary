@@ -14,6 +14,7 @@ export default defineConfig({
       reporter: ["text", "lcov"],
       include: [
         "src/lib/**/*.ts",
+        "src/lib/apiUtils.ts",
         "src/hooks/**/*.ts",
         "src/components/ThemeController.tsx",
         "src/components/ReadmeCardUrlSection.tsx",
