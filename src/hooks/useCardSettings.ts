@@ -9,37 +9,16 @@ import {
 } from "@/lib/cardSettings";
 import type { CardLayout, CardBlockId } from "@/lib/types";
 
-export function useCardSettings(mounted: boolean) {
-  const [isHydrated, setIsHydrated] = useState(false);
+export function useCardSettings() {
   const [layout, setLayout] = useState<CardLayout>(() => loadCardSettings().layout);
   const [displayOptions, setDisplayOptions] = useState<CardDisplayOptions>(
     () => loadCardSettings().options,
   );
 
-  // Initialize state from storage on mount
+    // Persist changes to storage
   useEffect(() => {
-    if (!mounted || isHydrated) {
-      return;
-    }
-
-    const { layout: storedLayout, options: storedOptions } = loadCardSettings();
-    
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLayout((prev) => JSON.stringify(prev) !== JSON.stringify(storedLayout) ? storedLayout : prev);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setDisplayOptions((prev) => JSON.stringify(prev) !== JSON.stringify(storedOptions) ? storedOptions : prev);
-    
-    setIsHydrated(true);
-  }, [mounted, isHydrated]);
-
-  // Persist changes to storage
-  useEffect(() => {
-    if (!mounted || !isHydrated) {
-      return;
-    }
-
     saveCardSettings(layout, displayOptions);
-  }, [layout, displayOptions, mounted, isHydrated]);
+  }, [layout, displayOptions]);
 
   const toggleMainBlockVisibility = useCallback((blockId: CardBlockId) => {
     setLayout((prev) => toggleBlockVisibility(prev, blockId));

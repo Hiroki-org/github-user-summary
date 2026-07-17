@@ -41,7 +41,7 @@ export default function CardGeneratorModal({
     toggleMainBlockVisibility,
     toggleDisplayOption,
     isBlockVisible,
-  } = useCardSettings(mounted);
+  } = useCardSettings();
 
   const {
     isGenerating,
