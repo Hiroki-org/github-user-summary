@@ -47,8 +47,8 @@ describe("useCardSettings", () => {
     layout: {
       ...DEFAULT_CARD_LAYOUT,
       blocks: [
-        { id: "profile", visible: true, order: 0 },
-        { id: "stats", visible: false, order: 1 },
+        { id: "profile", visible: true, column: "full" },
+        { id: "stats", visible: false, column: "left" },
       ]
     } as CardLayout,
     options: {
@@ -59,9 +59,10 @@ describe("useCardSettings", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (cardSettingsLib.loadCardSettings as any).mockReturnValue(mockLoadedSettings);
-    (cardLayoutLib.toggleBlockVisibility as any).mockImplementation(
-      (prev: any, id: any) => ({ ...prev, toggled: id })
+    vi.mocked(cardSettingsLib.loadCardSettings).mockReturnValue(mockLoadedSettings);
+    vi.mocked(cardLayoutLib.toggleBlockVisibility).mockImplementation(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (prev: any, id: any) => ({ ...prev, toggled: id }) as any
     );
   });
 
@@ -141,6 +142,6 @@ describe("useCardSettings", () => {
 
     expect(result.current.isBlockVisible("profile")).toBe(true);
     expect(result.current.isBlockVisible("stats")).toBe(false);
-    expect(result.current.isBlockVisible("non-existent-block" as any)).toBe(false);
+    expect(result.current.isBlockVisible("non-existent-block" as import("@/lib/types").CardBlockId)).toBe(false);
   });
 });
