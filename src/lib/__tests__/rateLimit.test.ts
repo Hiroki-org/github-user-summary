@@ -225,4 +225,13 @@ describe("getClientIp", () => {
         });
         expect(getClientIp(req)).toBe("unknown");
     });
+
+    it("returns unknown for invalid IPv6 address with valid URL syntax", () => {
+        const req = new Request("http://localhost", {
+            headers: {
+                "x-forwarded-for": "this-is-not-an-ip.com"
+            }
+        });
+        expect(getClientIp(req)).toBe("unknown");
+    });
 });
