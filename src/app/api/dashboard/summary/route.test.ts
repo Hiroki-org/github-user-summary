@@ -89,4 +89,16 @@ describe("GET /api/dashboard/summary", () => {
     expect(response.status).toBe(500);
     expect(data.error).toBe("Something went wrong");
   });
+
+  it("returns 500 if getAuthenticatedUser throws an error", async () => {
+    vi.mocked(getAuthenticatedUser).mockRejectedValueOnce(new Error("Auth Error"));
+
+    const { GET } = await import("./route");
+    const response = await GET();
+    const data = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(data.error).toBe("Auth Error");
+  });
+
 });
