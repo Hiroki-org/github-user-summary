@@ -217,7 +217,7 @@ describe("getClientIp", () => {
         expect(getClientIp(req)).toBe("unknown");
     });
 
-    it("returns unknown for malformed IPv6 address", () => {
+    it("returns unknown for invalid IPv6 URL malformed address", () => {
         const req = new Request("http://localhost", {
             headers: {
                 "x-forwarded-for": "123:456:789:abc:def:gh:ij:kl"
