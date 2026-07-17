@@ -1,8 +1,8 @@
-import type { UserProfile, GithubContributions, CardDisplayOptions } from "@/lib/types";
+import type { UserProfile, ContributionData, CardDisplayOptions } from "@/lib/types";
 
 type Props = {
   profile: UserProfile;
-  contributions: GithubContributions | null;
+  contributions: ContributionData | null;
   options?: CardDisplayOptions;
 };
 

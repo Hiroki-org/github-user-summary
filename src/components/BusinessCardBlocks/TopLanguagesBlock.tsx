@@ -1,10 +1,12 @@
-import type { CardDisplayOptions, TopLanguage, Topic, UserInterests, GithubActivity } from "@/lib/types";
+import type { CardDisplayOptions, LanguageStats, InterestsData, ActivityData } from "@/lib/types";
+
+type Topic = { name: string; count: number };
 
 type Props = {
-  topLanguages: TopLanguage[];
+  topLanguages: LanguageStats[];
   topTopics: Topic[];
-  interests: UserInterests | null;
-  activity: GithubActivity | null;
+  interests: InterestsData | null;
+  activity: ActivityData | null;
   options?: CardDisplayOptions;
 };
 

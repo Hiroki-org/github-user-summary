@@ -1,4 +1,6 @@
-import type { Repository } from "@/lib/types";
+import type { PinnedRepo, TopRepo } from "@/lib/types";
+
+type Repository = PinnedRepo | TopRepo;
 
 type Props = {
   reposToShow: Repository[];
