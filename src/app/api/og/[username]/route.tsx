@@ -7,6 +7,7 @@ import { RateLimiter } from "@/lib/rateLimit";
 import { getClientIp } from "@/lib/rateLimit";
 
 export const runtime = "edge";
+const inflightFetch = new Map<string, Promise<Response>>();
 const rateLimiter = new RateLimiter(50, 60 * 1000);
 const ONE_HOUR_IN_SECONDS = 60 * 60;
 const ONE_DAY_IN_SECONDS = 24 * ONE_HOUR_IN_SECONDS;
@@ -42,13 +43,25 @@ export async function GET(
   let publicRepos = 0;
 
   try {
-    const res = await fetch(`https://api.github.com/users/${encodeURIComponent(username)}`, {
-      headers: {
-        Accept: "application/vnd.github.v3+json",
-        "User-Agent": "github-user-summary",
-      },
-      next: { revalidate: ONE_DAY_IN_SECONDS },
-    });
+    const url = `https://api.github.com/users/${encodeURIComponent(username)}`;
+    let fetchPromise = inflightFetch.get(url);
+    if (!fetchPromise) {
+      fetchPromise = fetch(url, {
+        headers: {
+          Accept: "application/vnd.github.v3+json",
+          "User-Agent": "github-user-summary",
+        },
+        next: { revalidate: ONE_DAY_IN_SECONDS },
+      }).finally(() => {
+        inflightFetch.delete(url);
+      });
+      inflightFetch.set(url, fetchPromise);
+    }
+
+    // We clone the response because multiple concurrent requests
+    // will need to read the body stream independently
+    const res = (await fetchPromise).clone();
+
     if (res.ok) {
       const data = await res.json();
       name = data.name ?? username;
