@@ -90,19 +90,16 @@ function calculateStreaks(calendar: { count: number }[]): { longestStreak: numbe
 
 function calculateMostActiveDay(calendar: { date: string; count: number }[]): string | null {
   const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const weekdayTotals = Array.from({ length: 7 }, () => 0);
-
-  for (const day of calendar) {
-    if (day.count === 0) {
-      continue;
+  const weekdayTotals = calendar.reduce((totals, day) => {
+    if (day.count > 0) {
+      totals[new Date(`${day.date}T00:00:00Z`).getUTCDay()] += day.count;
     }
-    const weekday = new Date(`${day.date}T00:00:00Z`).getUTCDay();
-    weekdayTotals[weekday] += day.count;
-  }
+    return totals;
+  }, Array(7).fill(0));
 
   const maxWeekdayTotal = Math.max(...weekdayTotals);
   return maxWeekdayTotal > 0
-    ? weekdayNames[weekdayTotals.findIndex((count) => count === maxWeekdayTotal)]
+    ? weekdayNames[weekdayTotals.indexOf(maxWeekdayTotal)]
     : null;
 }
 
