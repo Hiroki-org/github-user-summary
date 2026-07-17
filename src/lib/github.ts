@@ -222,22 +222,11 @@ async function fetchPinnedRepos(username: string, token?: string): Promise<Pinne
   })) ?? [];
 }
 
-/**
- * Task④: ユーザープロフィール・組織・ピン留めリポジトリを取得
- * REST /users/:username + /users/:username/orgs + GraphQL pinnedItems
- * @throws {UserNotFoundError} ユーザーが存在しない場合
- * @throws {RateLimitError} APIレート制限に達した場合
- */
-export async function fetchUserProfile(
-  username: string,
-  token?: string
-): Promise<UserProfile> {
-  const [profile, orgs, pinnedRepos] = await Promise.all([
-    fetchBasicProfile(username, token),
-    fetchOrganizations(username, token),
-    fetchPinnedRepos(username, token),
-  ]);
-
+function buildUserProfile(
+  profile: GitHubUser,
+  orgs: GitHubOrg[],
+  pinnedRepos: PinnedRepo[]
+): UserProfile {
   return {
     login: profile.login,
     avatar_url: profile.avatar_url,
@@ -254,6 +243,26 @@ export async function fetchUserProfile(
     orgs,
     pinnedRepos,
   };
+}
+
+/**
+ * Task④: ユーザープロフィール・組織・ピン留めリポジトリを取得
+
+ * REST /users/:username + /users/:username/orgs + GraphQL pinnedItems
+ * @throws {UserNotFoundError} ユーザーが存在しない場合
+ * @throws {RateLimitError} APIレート制限に達した場合
+ */
+export async function fetchUserProfile(
+  username: string,
+  token?: string
+): Promise<UserProfile> {
+  const [profile, orgs, pinnedRepos] = await Promise.all([
+    fetchBasicProfile(username, token),
+    fetchOrganizations(username, token),
+    fetchPinnedRepos(username, token),
+  ]);
+
+  return buildUserProfile(profile, orgs, pinnedRepos);
 }
 
 // ===== 2. fetchRepositories =====
