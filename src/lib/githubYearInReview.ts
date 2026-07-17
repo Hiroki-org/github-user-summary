@@ -196,8 +196,12 @@ async function fetchCommitDatesForTopRepos(
         const response = await graphql<Record<string, unknown>>(query, token, variables);
         const dates: string[] = [];
 
+        type RepoGraphQLNode = {
+            defaultBranchRef?: { target?: { history?: { nodes?: Array<{ author?: { date?: string } }> } } };
+        };
+
         for (let i = 0; i < candidates.length; i++) {
-            const nodes = (response[`repo${i}`] as any)?.defaultBranchRef?.target?.history?.nodes;
+            const nodes = (response[`repo${i}`] as RepoGraphQLNode | undefined)?.defaultBranchRef?.target?.history?.nodes;
             if (!nodes) continue;
             for (let j = 0; j < nodes.length; j++) {
                 const date = nodes[j]?.author?.date;
