@@ -149,6 +149,35 @@ describe("OG Image Route", () => {
     expect(res.status).toBe(429);
     expect(res.headers.get("Retry-After")).toBe("0");
   });
+
+  it("should dedupe concurrent fetches for the same username", async () => {
+    // Create a delayed fetch so multiple concurrent GETs will hit the inflight map
+    let callCount = 0;
+    const mockFetch = vi.spyOn(global, "fetch").mockImplementation(() => {
+      callCount++;
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve(new Response(JSON.stringify({ name: "Concurrent User" }), { status: 200 }));
+        }, 10);
+      });
+    });
+
+    const req1 = new NextRequest("http://localhost/api/og/concurrentuser");
+    const req2 = new NextRequest("http://localhost/api/og/concurrentuser");
+
+    // Fire concurrently
+    const [res1, res2] = await Promise.all([
+      GET(req1, { params: Promise.resolve({ username: "concurrentuser" }) }),
+      GET(req2, { params: Promise.resolve({ username: "concurrentuser" }) })
+    ]);
+
+    expect(res1.status).toBe(200);
+    expect(res2.status).toBe(200);
+    expect(callCount).toBe(1); // fetch should only be called once
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+
+    // We should restore fetch, though afterEach does that
+  });
 });
 
 function collectText(node: unknown): string[] {
