@@ -685,12 +685,46 @@ export const fetchActivity = cache(async function fetchActivity(
   // Suppress unhandled promise rejections for subsequent pages if we break early or throw
   promises.forEach((p) => p.catch((e) => logger.error("Event fetch promise rejected:", e)));
 
-  for (const p of promises) {
-    try {
-      const events = await p;
-      allEvents.push(...events);
+  // 曜日×時間帯ヒートマップ (7×24)
+  // 割り当てのオーバーヘッドを減らすために静的な 2D 配列リテラルを使用
+  const heatmap: number[][] = [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  ];
+
+  const eventCountMap = new Map<string, number>();
+  const dayCache = new Map<string, number>();
+
+  const results = await Promise.allSettled(promises);
+  for (const result of results) {
+    if (result.status === "fulfilled") {
+      const events = result.value;
+      for (const event of events) {
+        allEvents.push(event);
+        const createdAt = event.created_at;
+        const datePart = createdAt.slice(0, 10);
+
+        let day = dayCache.get(datePart);
+        if (day === undefined) {
+          day = new Date(datePart).getUTCDay(); // 0=Sun, 6=Sat
+          dayCache.set(datePart, day);
+        }
+
+        // Fast hour extraction from YYYY-MM-DDTHH:MM:SSZ
+        const charCodeZero = 48; // '0'.charCodeAt(0)
+        const hour = (createdAt.charCodeAt(11) - charCodeZero) * 10 + (createdAt.charCodeAt(12) - charCodeZero);
+        heatmap[day][hour]++;
+
+        eventCountMap.set(event.type, (eventCountMap.get(event.type) ?? 0) + 1);
+      }
       if (events.length < 100) break;
-    } catch (error) {
+    } else {
+      const error = result.reason;
       if (
         error instanceof UserNotFoundError ||
         error instanceof RateLimitError
@@ -699,32 +733,6 @@ export const fetchActivity = cache(async function fetchActivity(
       }
       break;
     }
-  }
-
-  // 曜日×時間帯ヒートマップ (7×24)
-  const heatmap: number[][] = Array.from({ length: 7 }, () =>
-    Array.from({ length: 24 }, () => 0)
-  );
-
-  const eventCountMap = new Map<string, number>();
-  const dayCache = new Map<string, number>();
-
-  for (const event of allEvents) {
-    const createdAt = event.created_at;
-    const datePart = createdAt.slice(0, 10);
-
-    let day = dayCache.get(datePart);
-    if (day === undefined) {
-      day = new Date(datePart).getUTCDay(); // 0=Sun, 6=Sat
-      dayCache.set(datePart, day);
-    }
-
-    // Fast hour extraction from YYYY-MM-DDTHH:MM:SSZ
-    const charCodeZero = '0'.charCodeAt(0);
-    const hour = (createdAt.charCodeAt(11) - charCodeZero) * 10 + (createdAt.charCodeAt(12) - charCodeZero);
-    heatmap[day][hour]++;
-
-    eventCountMap.set(event.type, (eventCountMap.get(event.type) ?? 0) + 1);
   }
 
   const eventBreakdown = Array.from(eventCountMap.entries())
