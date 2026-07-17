@@ -283,7 +283,7 @@ describe("useDashboardStats", () => {
         });
     });
 
-    it("returns mutate function", () => {
+    it("returns mutate function", async () => {
         vi.mocked(useSession).mockReturnValue({
             data: { accessToken: "token123", expires: "2030-01-01T00:00:00.000Z" },
             status: "authenticated",
@@ -291,6 +291,8 @@ describe("useDashboardStats", () => {
         } satisfies MockSessionReturn as unknown as MockSessionReturn);
 
         const { result } = renderHook(() => useDashboardStats(2023), { wrapper });
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false));
 
         expect(typeof result.current.mutate).toBe("function");
     });
