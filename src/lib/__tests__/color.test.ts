@@ -87,6 +87,7 @@ describe("adjustAccentColor", () => {
     "#zzz",
     "invalid-hex",
     "#00",
+    "invalid-color",
   ])("無効な16進数文字列 (%s) はデフォルトカラーにフォールバックする", (invalidHex) => {
     const resultInvalid = adjustAccentColor(invalidHex);
     expect(resultInvalid).toEqual(defaultColorResult);
