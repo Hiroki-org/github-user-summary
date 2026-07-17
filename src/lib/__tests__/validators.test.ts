@@ -27,6 +27,8 @@ describe("isValidGitHubUsername", () => {
       ["38文字の英字", "a".repeat(38)],
       ["ハイフンが複数あるが連続していない", "a-b-c-d-e"],
       ["39文字でハイフンを含む", "a" + "b".repeat(36) + "-c"],
+      ["1文字おきにハイフン", "a-b-c-d-e-f-g-h-i-j-k-l-m-n-o-p-q-r-s"],
+      ["数字とハイフン", "1-2-3-4"],
     ])("%s: %p", (_, username) => {
       expect(isValidGitHubUsername(username)).toBe(true);
     });
@@ -38,8 +40,14 @@ describe("isValidGitHubUsername", () => {
       ["ハイフンで始まる", "-testuser"],
       ["ハイフンで終わる", "testuser-"],
       ["連続ハイフンを含む", "test--user"],
+      ["1文字のハイフン", "-"],
+      ["複数ハイフンのみ", "---"],
+      ["両端がハイフン", "-testuser-"],
       ["40文字", "a".repeat(40)],
       ["40文字（ハイフン含む）", "a" + "b".repeat(37) + "-c"],
+      ["39文字で末尾がハイフン", "a".repeat(38) + "-"],
+      ["39文字で先頭がハイフン", "-" + "a".repeat(38)],
+      ["40文字で両端がハイフン", "-" + "a".repeat(38) + "-"],
       ["先頭がアンダースコア", "_testuser"],
       ["末尾がアンダースコア", "testuser_"],
       ["特殊文字を含む(@)", "test@user"],
