@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { FastAverageColor } from "fast-average-color";
 import { adjustAccentColor } from "@/lib/color";
+import { logger } from "@/lib/logger";
 
 function applyColor(color: string | [number, number, number]) {
   const result = adjustAccentColor(color);
@@ -47,7 +48,7 @@ export function useThemeColor({ avatarUrl, topLanguageColor }: UseThemeColorOpti
         }
       })
       .catch((e) => {
-        console.warn("Failed to extract color from avatar, keeping fallback color.", e);
+        logger.warn("Failed to extract color from avatar, keeping fallback color.", e);
       });
     }
 
