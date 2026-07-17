@@ -318,4 +318,53 @@ describe("useCardPreview", () => {
     expect(toBlob).not.toHaveBeenCalled();
     expect(result.current.copyStatus).toBe("idle");
   });
+
+  it("handles fonts ready failure in generate effect", async () => {
+    // Suppress unhandled rejection warning by catching it
+    const fontsReadyPromise = Promise.reject(new Error("Fonts loading failed"));
+    fontsReadyPromise.catch(() => {});
+
+    Object.defineProperty(document, "fonts", {
+      value: {
+        ready: fontsReadyPromise,
+      },
+      configurable: true,
+    });
+
+    const { result, rerender } = renderHook(
+      ({ isOpen }) =>
+        useCardPreview(isOpen, mockCardRef, mockSummary, mockLayout, mockDisplayOptions),
+      { initialProps: { isOpen: false } }
+    );
+
+    rerender({ isOpen: true });
+
+    await waitFor(() => {
+      expect(result.current.isGenerating).toBe(false);
+    });
+
+    expect(result.current.previewUrl).toBeNull();
+    expect(result.current.previewSize).toBeNull();
+  });
+
+  it("handles generateImage failure due to target error", async () => {
+    // Override the mock block to return null or throw earlier if possible, but testing the catch block of generateImage
+    const error = new Error("Mock Error");
+    vi.mocked(toPng).mockRejectedValueOnce(error);
+
+    const { result, rerender } = renderHook(
+      ({ isOpen }) =>
+        useCardPreview(isOpen, mockCardRef, mockSummary, mockLayout, mockDisplayOptions),
+      { initialProps: { isOpen: false } }
+    );
+
+    rerender({ isOpen: true });
+
+    await waitFor(() => {
+      expect(result.current.isGenerating).toBe(false);
+    });
+
+    expect(logger.error).toHaveBeenCalledWith("Failed to generate image", error);
+    expect(result.current.previewUrl).toBeNull();
+  });
 });
