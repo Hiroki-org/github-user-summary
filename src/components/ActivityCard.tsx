@@ -5,6 +5,20 @@ type Props = {
   activity: ActivityData;
 };
 
+// Event type labels
+const eventLabels: Record<string, string> = {
+  PushEvent: "Pushes",
+  PullRequestEvent: "Pull Requests",
+  IssuesEvent: "Issues",
+  IssueCommentEvent: "Comments",
+  CreateEvent: "Creates",
+  DeleteEvent: "Deletes",
+  WatchEvent: "Stars",
+  ForkEvent: "Forks",
+  PullRequestReviewEvent: "Reviews",
+  ReleaseEvent: "Releases",
+};
+
 export default function ActivityCard({ activity }: Props) {
   const { heatmap, eventBreakdown, totalEvents } = activity;
 
@@ -12,19 +26,7 @@ export default function ActivityCard({ activity }: Props) {
     return null;
   }
 
-  // Event type labels
-  const eventLabels: Record<string, string> = {
-    PushEvent: "Pushes",
-    PullRequestEvent: "Pull Requests",
-    IssuesEvent: "Issues",
-    IssueCommentEvent: "Comments",
-    CreateEvent: "Creates",
-    DeleteEvent: "Deletes",
-    WatchEvent: "Stars",
-    ForkEvent: "Forks",
-    PullRequestReviewEvent: "Reviews",
-    ReleaseEvent: "Releases",
-  };
+
 
   return (
     <div className="glass-card rounded-xl p-6 h-full flex flex-col">
