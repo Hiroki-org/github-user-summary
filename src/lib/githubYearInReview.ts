@@ -72,9 +72,9 @@ type YearInReviewResponse = {
                     }[];
                 }[];
             };
-            commitContributionsByRepository: ContributionsByRepoNode[];
-            pullRequestContributionsByRepository: ContributionsByRepoNode[];
-            issueContributionsByRepository: ContributionsByRepoNode[];
+            commitContributionsByRepository?: ContributionsByRepoNode[];
+            pullRequestContributionsByRepository?: ContributionsByRepoNode[];
+            issueContributionsByRepository?: ContributionsByRepoNode[];
         };
     } | null;
 };
