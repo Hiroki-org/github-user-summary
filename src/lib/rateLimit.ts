@@ -2,7 +2,7 @@ import { Redis } from "@upstash/redis";
 import { Ratelimit } from "@upstash/ratelimit";
 
 export class RateLimiter {
-    private cache = new Map<string, { count: number; resetTime: number }>();
+    private _testCache = new Map<string, { count: number; resetTime: number }>();
     private upstashRatelimit: Ratelimit | null = null;
 
     constructor(private limit: number, private windowMs: number) {
@@ -18,37 +18,36 @@ export class RateLimiter {
         }
     }
 
-    private cleanup(now: number) {
-        for (const [key, record] of this.cache.entries()) {
-            if (now > record.resetTime) {
-                this.cache.delete(key);
+    async check(key: string): Promise<{ success: boolean; reset: number }> {
+        if (!this.upstashRatelimit) {
+            if (process.env.NODE_ENV !== "test" && process.env.VITEST !== "true") {
+                console.warn("RateLimiter: UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN must be set for effective rate limiting.");
+                throw new Error("Redis rate limiter is not configured. Distributed rate limiting is required.");
+            } else {
+                 if (process.env.TEST_RATE_LIMIT_THROW === "true") {
+                     throw new Error("Redis rate limiter is not configured. Distributed rate limiting is required.");
+                 }
+                 // In test environment, fallback to a simple map so that test rate limit loops can work
+                 // without breaking the security of production
+                 const now = Date.now();
+                 for (const [k, v] of this._testCache.entries()) {
+                     if (now > v.resetTime) this._testCache.delete(k);
+                 }
+                 const record = this._testCache.get(key);
+                 if (!record || now > record.resetTime) {
+                     this._testCache.set(key, { count: 1, resetTime: now + this.windowMs });
+                     return { success: true, reset: now + this.windowMs };
+                 }
+                 if (record.count >= this.limit) {
+                     return { success: false, reset: record.resetTime };
+                 }
+                 record.count++;
+                 return { success: true, reset: record.resetTime };
             }
         }
-    }
 
-    async check(key: string): Promise<{ success: boolean; reset: number }> {
-        if (this.upstashRatelimit) {
-            const { success, reset } = await this.upstashRatelimit.limit(key);
-            return { success, reset };
-        }
-
-        // Fallback to in-memory caching
-        const now = Date.now();
-        this.cleanup(now); // Lazy cleanup
-
-        const record = this.cache.get(key);
-
-        if (!record || now > record.resetTime) {
-            this.cache.set(key, { count: 1, resetTime: now + this.windowMs });
-            return { success: true, reset: now + this.windowMs };
-        }
-
-        if (record.count >= this.limit) {
-            return { success: false, reset: record.resetTime };
-        }
-
-        record.count++;
-        return { success: true, reset: record.resetTime };
+        const { success, reset } = await this.upstashRatelimit.limit(key);
+        return { success, reset };
     }
 }
 

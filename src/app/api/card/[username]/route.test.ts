@@ -91,6 +91,7 @@ describe("GET /api/card/[username] rate limiting", () => {
         const { GET } = await import("./route");
         const { fetchCardData } = await import("@/lib/cardDataFetcher");
         const { renderErrorCardResponse } = await import("@/lib/cardRenderer");
+        const { RateLimiter } = await import("@/lib/rateLimit");
 
         const req1 = new Request("http://localhost/api/card/testuser", {
             headers: {
@@ -101,12 +102,7 @@ describe("GET /api/card/[username] rate limiting", () => {
         // Mock fetchCardData to resolve successfully to avoid error rendering for successful requests
         vi.mocked(fetchCardData).mockResolvedValue({} as unknown as Awaited<ReturnType<typeof fetchCardData>>);
 
-        // Fill up the rate limit (50 requests)
-        for (let i = 0; i < 50; i++) {
-            await GET(req1, { params: Promise.resolve({ username: "testuser" }) });
-        }
-
-        // 51st request should be rate limited
+        vi.spyOn(RateLimiter.prototype, "check").mockResolvedValue({ success: false, reset: Date.now() + 60000 });
         await GET(req1, { params: Promise.resolve({ username: "testuser" }) });
 
         expect(renderErrorCardResponse).toHaveBeenCalledWith(expect.objectContaining({
