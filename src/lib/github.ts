@@ -465,6 +465,26 @@ function processRepoData(repos: RepoNode[]): RepositoryData {
 
 // ===== 3. fetchContributions =====
 
+const CONTRIBUTIONS_QUERY = `query($login: String!, $from: DateTime!, $to: DateTime!) {
+  user(login: $login) {
+    contributionsCollection(from: $from, to: $to) {
+      totalCommitContributions
+      totalPullRequestContributions
+      totalIssueContributions
+      totalPullRequestReviewContributions
+      contributionCalendar {
+        totalContributions
+        weeks {
+          contributionDays {
+            date
+            contributionCount
+          }
+        }
+      }
+    }
+  }
+}`;
+
 type ContributionsResponse = {
   user: {
     contributionsCollection: {
@@ -506,30 +526,7 @@ export async function fetchContributions(
   const oneYearAgo = new Date(now);
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
-  const sevenDaysAgoStr = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-  const thirtyDaysAgoStr = new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-
-  const query = `query($login: String!, $from: DateTime!, $to: DateTime!) {
-    user(login: $login) {
-      contributionsCollection(from: $from, to: $to) {
-        totalCommitContributions
-        totalPullRequestContributions
-        totalIssueContributions
-        totalPullRequestReviewContributions
-        contributionCalendar {
-          totalContributions
-          weeks {
-            contributionDays {
-              date
-              contributionCount
-            }
-          }
-        }
-      }
-    }
-  }`;
-
-  const data = await graphql<ContributionsResponse>(query, token, {
+  const data = await graphql<ContributionsResponse>(CONTRIBUTIONS_QUERY, token, {
     login: username,
     from: oneYearAgo.toISOString(),
     to: now.toISOString(),
@@ -538,7 +535,14 @@ export async function fetchContributions(
     throw new UserNotFoundError(username);
   }
 
-  const cc = data.user.contributionsCollection;
+  return processContributionsData(data.user.contributionsCollection, now);
+}
+
+
+function processContributionsData(
+  cc: NonNullable<ContributionsResponse["user"]>["contributionsCollection"],
+  now: Date
+): ContributionData {
   const calendar = cc.contributionCalendar.weeks.flatMap((w) =>
     w.contributionDays.map((d) => ({
       date: d.date,
@@ -546,8 +550,10 @@ export async function fetchContributions(
     }))
   );
 
-
   calendar.sort((a, b) => a.date.localeCompare(b.date));
+
+  const sevenDaysAgoStr = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const thirtyDaysAgoStr = new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
   let weeklyContributions = 0;
   let monthlyContributions = 0;
