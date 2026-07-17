@@ -750,24 +750,13 @@ export const fetchActivity = cache(async function fetchActivity(
 
 /**
  * 効率的に Map から上位 K 件を抽出するヘルパー関数
- * 配列の作成とソートを最小限に抑えることでパフォーマンスを向上させます
+ * 上位 K 件だけを返します。
  */
 function getTopK(map: Map<string, number>, k: number = 10): { name: string; count: number }[] {
-  const top: { name: string; count: number }[] = [];
-  for (const [name, count] of map.entries()) {
-    if (top.length < k) {
-      top.push({ name, count });
-      top.sort((a, b) => b.count - a.count);
-    } else if (count > top[k - 1].count) {
-      let i = k - 2;
-      while (i >= 0 && top[i].count < count) {
-        top[i + 1] = top[i];
-        i--;
-      }
-      top[i + 1] = { name, count };
-    }
-  }
-  return top;
+  const limit = Math.max(0, k);
+  return Array.from(map, ([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
 }
 
 /**
