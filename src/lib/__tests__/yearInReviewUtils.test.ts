@@ -137,6 +137,14 @@ describe("getMostActiveDayFromCalendar", () => {
         expect(getMostActiveDayFromCalendar([])).toBeNull();
     });
 
+    it("returns null when all days have zero or negative counts", () => {
+        const calendar = [
+            { date: "2023-01-01", count: 0 }, // Sunday
+            { date: "2023-01-02", count: -5 }, // Monday
+        ];
+        expect(getMostActiveDayFromCalendar(calendar)).toBeNull();
+    });
+
     it("correctly identifies the most active day of the week", () => {
         const calendar = [
             { date: "2023-01-01", count: 5 }, // Sunday
