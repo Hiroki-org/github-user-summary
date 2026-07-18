@@ -26,6 +26,18 @@ describe("cardSettings", () => {
     });
 
     describe("loadCardSettings", () => {
+        it("falls back to default settings when localStorage throws an error", () => {
+            getItemMock.mockImplementation(() => {
+                throw new Error("Access Denied");
+            });
+
+            const result = loadCardSettings();
+
+            expect(result.layout).toEqual(DEFAULT_CARD_LAYOUT);
+            expect(result.options.showCompany).toBe(true);
+            expect(getItemMock).toHaveBeenCalledTimes(1);
+        });
+
         it("returns defaults when window is undefined", () => {
              // Remove window from global object to simulate SSR environment
              vi.stubGlobal("window", undefined);
