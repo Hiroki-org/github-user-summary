@@ -393,6 +393,21 @@ describe("fetchYearInReviewData safety checks", () => {
 });
 
 describe("fetchYearInReviewData additional coverage", () => {
+    it("throws 500 GitHubApiError for non-Error thrown objects", async () => {
+        mockFetch.mockImplementation(() => {
+            throw "String error";
+        });
+
+        await expect(fetchYearInReviewData("testuser", 2024, "fake-token")).rejects.toThrow(GitHubApiError);
+        try {
+            await fetchYearInReviewData("testuser", 2024, "fake-token");
+        } catch (error) {
+            expect(error).toBeInstanceOf(GitHubApiError);
+            expect((error as GitHubApiError).status).toBe(500);
+            expect((error as GitHubApiError).message).toBe("Failed to fetch year in review data");
+        }
+    });
+
     it("throws 500 GitHubApiError for unknown errors", async () => {
         mockFetch.mockImplementation(() => {
             throw new Error("Unexpected crash");
@@ -592,24 +607,162 @@ describe("githubYearInReview additional edge cases", () => {
     });
 
     it("fetchCommitDatesForTopRepos handles missing defaultBranchRef or history", async () => {
-        mockFetch.mockImplementation(() => {
-            return Promise.resolve(jsonResponse({
-                data: {
-                    user: {
-                        id: "123",
-                        contributionsCollection: {
-                            totalCommitContributions: 1,
-                            contributionCalendar: { totalContributions: 1, weeks: [] },
-                            commitContributionsByRepository: [
-                                { repository: { owner: { login: "u" }, name: "r" }, contributions: { totalCount: 1 } }
-                            ]
+        let callCount = 0;
+        mockFetch.mockImplementation((url) => {
+            const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : url.url;
+            if (urlStr.includes("/graphql")) {
+                callCount++;
+                if (callCount === 1) {
+                    return Promise.resolve(jsonResponse({
+                        data: {
+                            user: {
+                                id: "u1",
+                                contributionsCollection: {
+                                    totalCommitContributions: 10,
+                                    totalPullRequestContributions: 0,
+                                    totalIssueContributions: 0,
+                                    totalPullRequestReviewContributions: 0,
+                                    contributionCalendar: {
+                                        totalContributions: 10,
+                                        weeks: []
+                                    },
+                                    commitContributionsByRepository: [
+                                        { repository: { name: "repo", owner: { login: "u" } }, contributions: { totalCount: 10 } }
+                                    ]
+                                }
+                            }
                         }
-                    },
-                    repo0: { defaultBranchRef: null } // Missing defaultBranchRef
+                    }));
                 }
-            }));
+                return Promise.resolve(jsonResponse({
+                    data: {
+                        repo0: { defaultBranchRef: null }
+                    }
+                }));
+            }
+            return Promise.resolve(jsonResponse([], 200));
         });
 
+        const data = await fetchYearInReviewData("user", 2024, "token");
+        expect(data.year).toBe(2024);
+    });
+
+    it("fetchCommitDatesForTopRepos handles nodes without author or date", async () => {
+        let callCount = 0;
+        mockFetch.mockImplementation((url) => {
+            const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : url.url;
+            if (urlStr.includes("/graphql")) {
+                callCount++;
+                if (callCount === 1) {
+                    return Promise.resolve(jsonResponse({
+                        data: {
+                            user: {
+                                id: "u1",
+                                contributionsCollection: {
+                                    totalCommitContributions: 10,
+                                    totalPullRequestContributions: 0,
+                                    totalIssueContributions: 0,
+                                    totalPullRequestReviewContributions: 0,
+                                    contributionCalendar: {
+                                        totalContributions: 10,
+                                        weeks: []
+                                    },
+                                    commitContributionsByRepository: [
+                                        { repository: { name: "repo", owner: { login: "u" } }, contributions: { totalCount: 10 } }
+                                    ]
+                                }
+                            }
+                        }
+                    }));
+                }
+                return Promise.resolve(jsonResponse({
+                    data: {
+                        repo0: { defaultBranchRef: { target: { history: { nodes: [{ author: null }, { author: { date: null } }, { author: { date: "2024-01-01T12:00:00Z" } }] } } } }
+                    }
+                }));
+            }
+            return Promise.resolve(jsonResponse([], 200));
+        });
+        const data = await fetchYearInReviewData("user", 2024, "token");
+        expect(data.year).toBe(2024);
+    });
+
+    it("fetchCommitDatesForTopRepos handles undefined nodes in history", async () => {
+        let callCount = 0;
+        mockFetch.mockImplementation((url) => {
+            const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : url.url;
+            if (urlStr.includes("/graphql")) {
+                callCount++;
+                if (callCount === 1) {
+                    return Promise.resolve(jsonResponse({
+                        data: {
+                            user: {
+                                id: "u1",
+                                contributionsCollection: {
+                                    totalCommitContributions: 10,
+                                    totalPullRequestContributions: 0,
+                                    totalIssueContributions: 0,
+                                    totalPullRequestReviewContributions: 0,
+                                    contributionCalendar: {
+                                        totalContributions: 10,
+                                        weeks: []
+                                    },
+                                    commitContributionsByRepository: [
+                                        { repository: { name: "repo", owner: { login: "u" } }, contributions: { totalCount: 10 } }
+                                    ]
+                                }
+                            }
+                        }
+                    }));
+                }
+                return Promise.resolve(jsonResponse({
+                    data: {
+                        repo0: { defaultBranchRef: { target: { history: { nodes: [undefined, { author: { date: "2024-01-01T12:00:00Z" } }] } } } }
+                    }
+                }));
+            }
+            return Promise.resolve(jsonResponse([], 200));
+        });
+        const data = await fetchYearInReviewData("user", 2024, "token");
+        expect(data.year).toBe(2024);
+    });
+
+    it("fetchCommitDatesForTopRepos handles null nodes in history", async () => {
+        let callCount = 0;
+        mockFetch.mockImplementation((url) => {
+            const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : url.url;
+            if (urlStr.includes("/graphql")) {
+                callCount++;
+                if (callCount === 1) {
+                    return Promise.resolve(jsonResponse({
+                        data: {
+                            user: {
+                                id: "u1",
+                                contributionsCollection: {
+                                    totalCommitContributions: 10,
+                                    totalPullRequestContributions: 0,
+                                    totalIssueContributions: 0,
+                                    totalPullRequestReviewContributions: 0,
+                                    contributionCalendar: {
+                                        totalContributions: 10,
+                                        weeks: []
+                                    },
+                                    commitContributionsByRepository: [
+                                        { repository: { name: "repo", owner: { login: "u" } }, contributions: { totalCount: 10 } }
+                                    ]
+                                }
+                            }
+                        }
+                    }));
+                }
+                return Promise.resolve(jsonResponse({
+                    data: {
+                        repo0: { defaultBranchRef: { target: { history: { nodes: [null, { author: { date: "2024-01-01T12:00:00Z" } }] } } } }
+                    }
+                }));
+            }
+            return Promise.resolve(jsonResponse([], 200));
+        });
         const data = await fetchYearInReviewData("user", 2024, "token");
         expect(data.year).toBe(2024);
     });
