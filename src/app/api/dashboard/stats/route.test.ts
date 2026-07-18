@@ -104,4 +104,28 @@ describe("GET /api/dashboard/stats validation", () => {
         const data = await response.json();
         expect(data.error).toBe("API Error");
     });
+
+    it("returns 500 when getAuthenticatedUser throws an Error", async () => {
+        vi.mocked(getAuthenticatedUser).mockRejectedValueOnce(new Error("Auth Service Down"));
+
+        const { GET } = await import("./route");
+        const req = createMockRequest("http://localhost/api/dashboard/stats");
+        const response = await GET(req);
+
+        expect(response.status).toBe(500);
+        const data = await response.json();
+        expect(data.error).toBe("Auth Service Down");
+    });
+
+    it("returns 500 when getAuthenticatedUser throws an unknown object", async () => {
+        vi.mocked(getAuthenticatedUser).mockRejectedValueOnce({ some: "object" });
+
+        const { GET } = await import("./route");
+        const req = createMockRequest("http://localhost/api/dashboard/stats");
+        const response = await GET(req);
+
+        expect(response.status).toBe(500);
+        const data = await response.json();
+        expect(data.error).toBe("Unknown error");
+    });
 });
