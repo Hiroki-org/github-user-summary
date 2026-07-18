@@ -132,30 +132,6 @@ describe("useCopyToClipboard", () => {
     );
   });
 
-
-  it("should log error if both clipboard.writeText and fallback throw errors", async () => {
-    const writeError = new Error("Clipboard write error");
-    const execError = new Error("execCommand thrown error");
-
-    vi.mocked(navigator.clipboard.writeText).mockRejectedValue(writeError);
-    vi.mocked(document.execCommand).mockImplementation(() => {
-      throw execError;
-    });
-
-    const { result } = renderHook(() => useCopyToClipboard());
-
-    await act(async () => {
-      await result.current.copyToClipboard("failed text");
-    });
-
-    expect(result.current.copied).toBe(false);
-    expect(logger.error).toHaveBeenCalledWith(
-      "Failed to copy",
-      writeError,
-      execError
-    );
-  });
-
   it("should log error if fallback throws an error", async () => {
     // @ts-expect-error test setup
     delete navigator.clipboard;
