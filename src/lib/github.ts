@@ -309,7 +309,10 @@ export const fetchRepositories = cache(async function fetchRepositories(
   if (!token) {
     return fetchRepositoriesREST(username);
   }
+  return fetchRepositoriesGraphQL(username, token);
+});
 
+async function fetchRepositoriesGraphQL(username: string, token: string): Promise<RepositoryData> {
   const query = `query($login: String!) {
     user(login: $login) {
       repositories(first: 100, ownerAffiliations: [OWNER, ORGANIZATION_MEMBER, COLLABORATOR], orderBy: {field: STARGAZERS, direction: DESC}, isFork: false, privacy: PUBLIC) {
@@ -345,7 +348,7 @@ export const fetchRepositories = cache(async function fetchRepositories(
 
   const repos = data.user.repositories.nodes.filter((r) => !r.isFork);
   return processRepoData(repos);
-});
+}
 
 async function fetchRepositoriesREST(username: string): Promise<RepositoryData> {
   type RESTRepo = {
