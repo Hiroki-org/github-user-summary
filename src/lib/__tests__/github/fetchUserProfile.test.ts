@@ -2,6 +2,14 @@ import { describe, it, expect } from "vitest";
 import { mockFetch, jsonResponse, MOCK_USER, MOCK_ORGS, MOCK_PINNED_RESPONSE } from "./setup";
 
 describe("fetchUserProfile", () => {
+
+  it("headers() throws GitHubApiError on invalid token format", async () => {
+    const { headers } = await import("../../github");
+    const { GitHubApiError } = await import("../../types");
+    expect(() => headers("invalid token!")).toThrow(GitHubApiError);
+    expect(() => headers("valid_token-123=")).not.toThrow();
+  });
+
   it("handleRateLimit correctly parses NaN header and falls back", async () => {
     const { handleRateLimit } = await import("../../github");
     const { RateLimitError } = await import("../../types");
