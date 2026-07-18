@@ -16,21 +16,15 @@ export function useCardSettings(mounted: boolean) {
     () => loadCardSettings().options,
   );
 
-  // Initialize state from storage on mount
-  useEffect(() => {
-    if (!mounted || isHydrated) {
-      return;
-    }
-
+  // Initialize state from storage when mounted
+  // Setting state during render is the recommended way to adjust state based on props
+  // and avoid an extra effect cycle (see React docs on "Adjusting some state when a prop changes").
+  if (mounted && !isHydrated) {
     const { layout: storedLayout, options: storedOptions } = loadCardSettings();
-    
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLayout((prev) => JSON.stringify(prev) !== JSON.stringify(storedLayout) ? storedLayout : prev);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setDisplayOptions((prev) => JSON.stringify(prev) !== JSON.stringify(storedOptions) ? storedOptions : prev);
-    
+    setLayout(storedLayout);
+    setDisplayOptions(storedOptions);
     setIsHydrated(true);
-  }, [mounted, isHydrated]);
+  }
 
   // Persist changes to storage
   useEffect(() => {
