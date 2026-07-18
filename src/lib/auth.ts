@@ -18,14 +18,21 @@ declare module "next-auth/jwt" {
   }
 }
 
-const getSecret = (): string => {
+let devSecret: string | undefined;
+
+export const getSecret = (): string => {
   if (process.env.NEXTAUTH_SECRET) {
     return process.env.NEXTAUTH_SECRET;
   }
   if (process.env.NODE_ENV === "development") {
-    return "fallback_secret_for_development_only";
+    if (!devSecret) {
+      devSecret = crypto.randomUUID();
+    }
+    return devSecret;
   }
-  throw new Error("NEXTAUTH_SECRET is not set. Please set it to a secure random value.");
+  throw new Error(
+    "NEXTAUTH_SECRET is not set. Please set it to a secure random value.",
+  );
 };
 
 export const authOptions: NextAuthOptions = {
@@ -46,7 +53,8 @@ export const authOptions: NextAuthOptions = {
         token.accessToken = account.access_token;
       }
       if (profile && typeof profile === "object" && "login" in profile) {
-        token.login = typeof profile.login === "string" ? profile.login : undefined;
+        token.login =
+          typeof profile.login === "string" ? profile.login : undefined;
       }
       return token;
     },
