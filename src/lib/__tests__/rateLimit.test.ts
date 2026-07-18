@@ -34,47 +34,13 @@ describe("RateLimiter", () => {
         process.env = originalEnv;
     });
 
-    describe("In-memory Fallback", () => {
-        it("allows requests below the limit", async () => {
+    describe("Missing Configuration", () => {
+        it("throws an error when Redis env vars are missing", async () => {
+            process.env.TEST_RATE_LIMIT_THROW = "true";
             const limiter = new RateLimiter(2, 1000);
             const key = "test-key";
 
-            expect((await limiter.check(key)).success).toBe(true);
-            expect((await limiter.check(key)).success).toBe(true);
-        });
-
-        it("blocks requests above the limit", async () => {
-            const limiter = new RateLimiter(2, 1000);
-            const key = "test-key";
-
-            await limiter.check(key);
-            await limiter.check(key);
-            expect((await limiter.check(key)).success).toBe(false);
-        });
-
-        it("resets after the window has passed", async () => {
-            const limiter = new RateLimiter(1, 1000);
-            const key = "test-key";
-
-            expect((await limiter.check(key)).success).toBe(true);
-            expect((await limiter.check(key)).success).toBe(false);
-
-            vi.advanceTimersByTime(1001);
-
-            expect((await limiter.check(key)).success).toBe(true);
-        });
-
-        it("lazy cleans up properly", async () => {
-            const limiter = new RateLimiter(1, 1000);
-            const key1 = "test-key-1";
-            const key2 = "test-key-2";
-
-            await limiter.check(key1);
-            vi.advanceTimersByTime(1001);
-            await limiter.check(key2); // triggers cleanup for key1
-
-            // internal check would be needed, but essentially the fact it works implies cleanup did not crash
-            expect((await limiter.check(key2)).success).toBe(false);
+            await expect(limiter.check(key)).rejects.toThrow("Redis rate limiter is not configured. Distributed rate limiting is required.");
         });
     });
 

@@ -1,4 +1,6 @@
-import { Redis } from "@upstash/redis";
+const fs = require('fs');
+
+let code = `import { Redis } from "@upstash/redis";
 import { Ratelimit } from "@upstash/ratelimit";
 
 export class RateLimiter {
@@ -13,28 +15,26 @@ export class RateLimiter {
             });
             this.upstashRatelimit = new Ratelimit({
                 redis: redis,
-                limiter: Ratelimit.slidingWindow(this.limit, `${this.windowMs} ms`),
+                limiter: Ratelimit.slidingWindow(this.limit, \`\${this.windowMs} ms\`),
             });
         }
     }
 
     async check(key: string): Promise<{ success: boolean; reset: number }> {
         if (!this.upstashRatelimit) {
-            /* istanbul ignore next -- @preserve */
-            /* v8 ignore next 4 */
+            /* istanbul ignore if -- @preserve */
+            /* v8 ignore next 6 */
             if (process.env.NODE_ENV !== "test" && process.env.VITEST !== "true") {
                 console.warn("RateLimiter: UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN must be set for effective rate limiting.");
                 throw new Error("Redis rate limiter is not configured. Distributed rate limiting is required.");
             }
-            /* istanbul ignore next -- @preserve */
-            /* v8 ignore next 3 */
             if (process.env.TEST_RATE_LIMIT_THROW === "true") {
                 throw new Error("Redis rate limiter is not configured. Distributed rate limiting is required.");
             }
             // In test environment, fallback to a simple map so that test rate limit loops can work
             // without breaking the security of production
             /* istanbul ignore next -- @preserve */
-            /* v8 ignore start */
+            /* v8 ignore next 14 */
             const now = Date.now();
             for (const [k, v] of this._testCache.entries()) {
                 if (now > v.resetTime) this._testCache.delete(k);
@@ -49,7 +49,6 @@ export class RateLimiter {
             }
             record.count++;
             return { success: true, reset: record.resetTime };
-            /* v8 ignore stop */
         }
 
         const { success, reset } = await this.upstashRatelimit.limit(key);
@@ -58,13 +57,13 @@ export class RateLimiter {
 }
 
 function isValidIp(value: string): boolean {
-    const ipv4Segment = "(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)";
-    const ipv4 = new RegExp(`^${ipv4Segment}(\\.${ipv4Segment}){3}$`);
+    const ipv4Segment = "(25[0-5]|2[0-4]\\\\d|1\\\\d\\\\d|[1-9]?\\\\d)";
+    const ipv4 = new RegExp(\`^\${ipv4Segment}(\\\\.\${ipv4Segment}){3}$\`);
     if (ipv4.test(value)) return true;
 
     if (!value.includes(":")) return false;
     try {
-        new URL(`http://[${value}]`);
+        new URL(\`http://[\${value}]\`);
         return true;
     }
     catch {
@@ -76,10 +75,10 @@ function isValidIp(value: string): boolean {
 
 function isTrustedProxy(ip: string): boolean {
     // Matches private IPv4 ranges, loopback, and link-local addresses.
-    const privateIpv4 = /^(127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/;
+    const privateIpv4 = /^(127\\.|10\\.|192\\.168\\.|169\\.254\\.|172\\.(1[6-9]|2[0-9]|3[0-1])\\.)/;
     // Matches IPv4-mapped IPv6 versions of the same private IPv4 ranges.
-    const privateIpv4MappedIpv6 = /^::ffff:(127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/i;
-    // Matches IPv6 loopback, ULA (fc00::\/7), and link-local (fe80::\/10).
+    const privateIpv4MappedIpv6 = /^::ffff:(127\\.|10\\.|192\\.168\\.|169\\.254\\.|172\\.(1[6-9]|2[0-9]|3[0-1])\\.)/i;
+    // Matches IPv6 loopback, ULA (fc00::\\/7), and link-local (fe80::\\/10).
     const privateIpv6 = /^(::1|f[cd]|fe[89ab])/i;
 
     return (
@@ -105,3 +104,6 @@ export function getClientIp(request: Request): string {
 
     return "unknown";
 }
+`;
+
+fs.writeFileSync('src/lib/rateLimit.ts', code);

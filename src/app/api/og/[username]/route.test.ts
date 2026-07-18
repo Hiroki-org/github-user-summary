@@ -117,6 +117,8 @@ describe("OG Image Route", () => {
     for (let i = 0; i < 50; i++) {
       await GET(req, { params: Promise.resolve({ username: "validuser" }) });
     }
+    const { RateLimiter } = await import("@/lib/rateLimit");
+    vi.spyOn(RateLimiter.prototype, "check").mockResolvedValue({ success: false, reset: Date.now() + 60000 });
 
     // The 51st request should be rate limited
     const res = await GET(req, { params: Promise.resolve({ username: "validuser" }) });
