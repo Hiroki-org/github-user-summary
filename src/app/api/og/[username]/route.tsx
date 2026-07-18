@@ -12,11 +12,17 @@ const ONE_HOUR_IN_SECONDS = 60 * 60;
 const ONE_DAY_IN_SECONDS = 24 * ONE_HOUR_IN_SECONDS;
 const OG_CACHE_CONTROL = `public, max-age=${ONE_HOUR_IN_SECONDS}, s-maxage=${ONE_DAY_IN_SECONDS}, stale-while-revalidate=${ONE_DAY_IN_SECONDS}`;
 
+
+// In-flight requests cache to prevent cache stampedes (thundering herd)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const inFlightRequests = new Map<string, Promise<any>>();
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ username: string }> }
 ) {
   const { username } = await params;
+
 
   const ip = getClientIp(request);
   const rateLimitResult = await rateLimiter.check(ip);
@@ -41,22 +47,34 @@ export async function GET(
   let followers = 0;
   let publicRepos = 0;
 
+
   try {
-    const res = await fetch(`https://api.github.com/users/${encodeURIComponent(username)}`, {
-      headers: {
-        Accept: "application/vnd.github.v3+json",
-        "User-Agent": "github-user-summary",
-      },
-      next: { revalidate: ONE_DAY_IN_SECONDS },
-    });
-    if (res.ok) {
-      const data = await res.json();
-      name = data.name ?? username;
-      bio = data.bio ?? "";
-      avatarUrl = data.avatar_url ?? "";
-      followers = data.followers ?? 0;
-      publicRepos = data.public_repos ?? 0;
+    let dataPromise = inFlightRequests.get(username);
+    if (!dataPromise) {
+      dataPromise = fetch(`https://api.github.com/users/${encodeURIComponent(username)}`, {
+        headers: {
+          Accept: "application/vnd.github.v3+json",
+          "User-Agent": "github-user-summary",
+        },
+        next: { revalidate: ONE_DAY_IN_SECONDS },
+      }).then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`GitHub API responded with ${res.status}`);
+        }
+        return res.json();
+      });
+      inFlightRequests.set(username, dataPromise);
+      dataPromise.catch(() => {}).finally(() => {
+        inFlightRequests.delete(username);
+      });
     }
+
+    const data = await dataPromise;
+    name = data.name ?? username;
+    bio = data.bio ?? "";
+    avatarUrl = data.avatar_url ?? "";
+    followers = data.followers ?? 0;
+    publicRepos = data.public_repos ?? 0;
   } catch (error) {
     logger.error(`Failed to fetch GitHub profile for OG image: ${username}`, error);
     // fallback to defaults
