@@ -149,6 +149,26 @@ describe("OG Image Route", () => {
     expect(res.status).toBe(429);
     expect(res.headers.get("Retry-After")).toBe("0");
   });
+
+  it("should dedupe concurrent requests", async () => {
+    const mockFetch = vi.spyOn(global, "fetch").mockImplementation(() => {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve(new Response(JSON.stringify({ name: "Valid User" }), { status: 200 }));
+        }, 50);
+      });
+    });
+
+    const req1 = new NextRequest("http://localhost/api/og/dedupetest");
+    const req2 = new NextRequest("http://localhost/api/og/dedupetest");
+
+    await Promise.all([
+      GET(req1, { params: Promise.resolve({ username: "dedupetest" }) }),
+      GET(req2, { params: Promise.resolve({ username: "dedupetest" }) })
+    ]);
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
 });
 
 function collectText(node: unknown): string[] {

@@ -7,6 +7,9 @@ import { RateLimiter } from "@/lib/rateLimit";
 import { getClientIp } from "@/lib/rateLimit";
 
 export const runtime = "edge";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const inflightRequests = new Map<string, Promise<any>>();
 const rateLimiter = new RateLimiter(50, 60 * 1000);
 const ONE_HOUR_IN_SECONDS = 60 * 60;
 const ONE_DAY_IN_SECONDS = 24 * ONE_HOUR_IN_SECONDS;
@@ -42,15 +45,30 @@ export async function GET(
   let publicRepos = 0;
 
   try {
-    const res = await fetch(`https://api.github.com/users/${encodeURIComponent(username)}`, {
-      headers: {
-        Accept: "application/vnd.github.v3+json",
-        "User-Agent": "github-user-summary",
-      },
-      next: { revalidate: ONE_DAY_IN_SECONDS },
-    });
-    if (res.ok) {
-      const data = await res.json();
+    let fetchPromise = inflightRequests.get(username);
+    if (!fetchPromise) {
+      fetchPromise = (async () => {
+        try {
+          const res = await fetch(`https://api.github.com/users/${encodeURIComponent(username)}`, {
+            headers: {
+              Accept: "application/vnd.github.v3+json",
+              "User-Agent": "github-user-summary",
+            },
+            next: { revalidate: ONE_DAY_IN_SECONDS },
+          });
+          if (res.ok) {
+            return await res.json();
+          }
+          return null;
+        } finally {
+          inflightRequests.delete(username);
+        }
+      })();
+      inflightRequests.set(username, fetchPromise);
+    }
+
+    const data = await fetchPromise;
+    if (data) {
       name = data.name ?? username;
       bio = data.bio ?? "";
       avatarUrl = data.avatar_url ?? "";
