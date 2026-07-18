@@ -106,29 +106,28 @@ describe('authOptions', () => {
       expect(authModule.authOptions.secret).toBe('my_secret');
     });
 
-    it('returns fallback string in development environments', async () => {
+    it('throws error in development environments if NEXTAUTH_SECRET is missing', async () => {
       delete process.env.NEXTAUTH_SECRET;
       Object.defineProperty(process.env, 'NODE_ENV', { value: 'development', configurable: true });
-      const authModule = await import('@/lib/auth');
-      expect(authModule.authOptions.secret).toBe('fallback_secret_for_development_only');
+      await expect(import('@/lib/auth')).rejects.toThrow('NEXTAUTH_SECRET is not set. Please set it to a secure random value.');
     });
 
     it('throws error outside development and test environments if NEXTAUTH_SECRET is missing', async () => {
       delete process.env.NEXTAUTH_SECRET;
       Object.defineProperty(process.env, 'NODE_ENV', { value: 'production', configurable: true });
-      await expect(() => import('@/lib/auth')).rejects.toThrow('NEXTAUTH_SECRET is not set. Please set it to a secure random value.');
+      await expect(import('@/lib/auth')).rejects.toThrow('NEXTAUTH_SECRET is not set. Please set it to a secure random value.');
     });
 
     it('throws error in staging-like environments if NEXTAUTH_SECRET is missing', async () => {
       delete process.env.NEXTAUTH_SECRET;
       Object.defineProperty(process.env, 'NODE_ENV', { value: 'staging', configurable: true });
-      await expect(() => import('@/lib/auth')).rejects.toThrow('NEXTAUTH_SECRET is not set. Please set it to a secure random value.');
+      await expect(import('@/lib/auth')).rejects.toThrow('NEXTAUTH_SECRET is not set. Please set it to a secure random value.');
     });
 
     it('throws error in test environment if NEXTAUTH_SECRET is missing', async () => {
       delete process.env.NEXTAUTH_SECRET;
       Object.defineProperty(process.env, 'NODE_ENV', { value: 'test', configurable: true });
-      await expect(() => import('@/lib/auth')).rejects.toThrow('NEXTAUTH_SECRET is not set. Please set it to a secure random value.');
+      await expect(import('@/lib/auth')).rejects.toThrow('NEXTAUTH_SECRET is not set. Please set it to a secure random value.');
     });
   });
 });
