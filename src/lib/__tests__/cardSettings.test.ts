@@ -154,6 +154,18 @@ describe("cardSettings", () => {
             expect(profileBlock).toBeDefined();
         });
 
+
+        it("safely handles exceptions when accessing localStorage (e.g. security error)", () => {
+            getItemMock.mockImplementation(() => {
+                throw new Error("SecurityError: localStorage is restricted");
+            });
+
+            const result = loadCardSettings();
+
+            expect(result.layout).toEqual(DEFAULT_CARD_LAYOUT);
+            expect(result.options).toEqual(getDefaultCardSettings().options);
+        });
+
     describe("saveCardSettings", () => {
         it("does nothing when window is undefined", () => {
             vi.stubGlobal("window", undefined);
