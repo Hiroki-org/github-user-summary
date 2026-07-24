@@ -17,20 +17,12 @@ export function useCardSettings(mounted: boolean) {
   );
 
   // Initialize state from storage on mount
-  useEffect(() => {
-    if (!mounted || isHydrated) {
-      return;
-    }
-
+  if (mounted && !isHydrated) {
     const { layout: storedLayout, options: storedOptions } = loadCardSettings();
-    
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLayout((prev) => JSON.stringify(prev) !== JSON.stringify(storedLayout) ? storedLayout : prev);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDisplayOptions((prev) => JSON.stringify(prev) !== JSON.stringify(storedOptions) ? storedOptions : prev);
-    
     setIsHydrated(true);
-  }, [mounted, isHydrated]);
+  }
 
   // Persist changes to storage
   useEffect(() => {

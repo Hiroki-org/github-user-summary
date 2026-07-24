@@ -9,9 +9,9 @@ vi.mock('@/lib/auth', () => ({
 }));
 
 describe('NextAuth Route Handler', () => {
-  let GET: any;
-  let POST: any;
-  let NextAuth: any;
+  let GET: unknown;
+  let POST: unknown;
+  let NextAuth: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.resetModules();
