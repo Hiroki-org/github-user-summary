@@ -38,9 +38,9 @@ describe("RateLimiter", () => {
         it("throws in production when fallback is triggered", async () => {
             const limiter = new RateLimiter(2, 1000);
             const key = "test-key-prod";
-            process.env.NODE_ENV = "production";
+            vi.stubEnv('NODE_ENV', 'production');
             await expect(limiter.check(key)).rejects.toThrow("Redis must be configured in production for secure rate limiting.");
-            process.env.NODE_ENV = "test";
+            vi.stubEnv('NODE_ENV', 'test');
         });
 
         it("allows requests below the limit", async () => {
