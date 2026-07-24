@@ -152,21 +152,8 @@ describe("cardElements utility functions", () => {
       heatmap: {
         days: [{ date: "2023-01-01", count: 5 }],
         maxCount: 10,
-        total: 50,
-      },
-      contributions: {
-        totalCommits: 100,
-        totalPRs: 20,
-        totalIssues: 10,
-        totalReviews: 5,
-        totalContributions: 135,
-        monthlyContributions: 10,
-        weeklyContributions: 2,
-        longestStreak: 14,
-        currentStreak: 5,
-        streakActive: true,
-      },
-    };
+              },
+          };
 
     const emptyHide = new Set<string>();
 
