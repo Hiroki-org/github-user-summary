@@ -1,5 +1,5 @@
 import { vi, describe, it, expect } from 'vitest';
-import UserPage from './page';
+import UserPage, { generateMetadata } from './page';
 import { fetchUserSummary } from '@/lib/github';
 import { UserNotFoundError } from '@/lib/types';
 import { notFound } from 'next/navigation';
@@ -70,5 +70,36 @@ describe('UserPage Error Boundary', () => {
     vi.mocked(fetchUserSummary).mockRejectedValueOnce(error);
 
     await expect(UserPage({ params: Promise.resolve({ username: 'testuser' }) })).rejects.toThrow('Some API error');
+  });
+});
+
+
+describe('generateMetadata', () => {
+  it('generates correct metadata for a given username', async () => {
+    const params = Promise.resolve({ username: 'testuser' });
+    const metadata = await generateMetadata({ params });
+
+    expect(metadata).toEqual({
+      title: 'testuser - GitHub User Summary',
+      description: 'GitHub profile summary for testuser.',
+      openGraph: {
+        title: 'testuser - GitHub User Summary',
+        description: 'GitHub profile summary for testuser.',
+        images: ['/api/og/testuser'],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: 'testuser - GitHub User Summary',
+        images: ['/api/og/testuser'],
+      },
+    });
+  });
+
+  it('correctly encodes special characters in username for image URLs', async () => {
+    const params = Promise.resolve({ username: 'test user!@#' });
+    const metadata = await generateMetadata({ params });
+
+    expect(metadata.openGraph?.images).toEqual(['/api/og/test%20user!%40%23']);
+    expect(metadata.twitter?.images).toEqual(['/api/og/test%20user!%40%23']);
   });
 });
