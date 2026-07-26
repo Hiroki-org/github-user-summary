@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import DashboardSettingsPage from "./page";
+import DashboardSettingsPage from "@/app/dashboard/settings/page";
 
 // Mock the Client component so we don't need to mount the whole React tree
 vi.mock("@/components/DashboardSettingsClient", () => ({
