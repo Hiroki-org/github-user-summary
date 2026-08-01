@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { handleErrorResponse, getAuthenticatedUser } from '../apiUtils';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { handleErrorResponse, getAuthenticatedUser, handleRateLimit } from '../apiUtils';
+import { RateLimitError } from '../types';
 import { NextResponse } from 'next/server';
 import { getServerSession } from "next-auth";
 
@@ -53,6 +54,64 @@ describe('apiUtils', () => {
         body: { error: 'Unknown error' },
         init: { status: 500 }
       });
+    });
+  });
+
+
+  describe('handleRateLimit', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('should throw RateLimitError using timestamp from X-RateLimit-Reset header', () => {
+      const resetTimestamp = Math.floor(Date.now() / 1000) + 1000;
+      const res = new Response(null, {
+        headers: { 'X-RateLimit-Reset': resetTimestamp.toString() }
+      });
+
+      try {
+        handleRateLimit(res);
+        expect.fail('Should have thrown RateLimitError');
+      } catch (error) {
+        expect(error).toBeInstanceOf(RateLimitError);
+        expect((error as RateLimitError).resetAt.getTime()).toBe(resetTimestamp * 1000);
+      }
+    });
+
+    it('should fall back to 1 hour from now if header is missing', () => {
+      vi.useFakeTimers();
+      const now = new Date('2024-01-01T12:00:00Z');
+      vi.setSystemTime(now);
+
+      const res = new Response(null);
+
+      try {
+        handleRateLimit(res);
+        expect.fail('Should have thrown RateLimitError');
+      } catch (error) {
+        expect(error).toBeInstanceOf(RateLimitError);
+        const expectedResetTimestamp = Math.floor(now.getTime() / 1000) + 3600;
+        expect((error as RateLimitError).resetAt.getTime()).toBe(expectedResetTimestamp * 1000);
+      }
+    });
+
+    it('should fall back to 1 hour from now if header is invalid', () => {
+      vi.useFakeTimers();
+      const now = new Date('2024-01-01T12:00:00Z');
+      vi.setSystemTime(now);
+
+      const res = new Response(null, {
+        headers: { 'X-RateLimit-Reset': 'invalid' }
+      });
+
+      try {
+        handleRateLimit(res);
+        expect.fail('Should have thrown RateLimitError');
+      } catch (error) {
+        expect(error).toBeInstanceOf(RateLimitError);
+        const expectedResetTimestamp = Math.floor(now.getTime() / 1000) + 3600;
+        expect((error as RateLimitError).resetAt.getTime()).toBe(expectedResetTimestamp * 1000);
+      }
     });
   });
 
