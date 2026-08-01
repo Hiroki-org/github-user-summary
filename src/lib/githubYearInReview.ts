@@ -89,12 +89,12 @@ type GitHubCommit = {
 
 
 
-async function graphql<T>(query: string, token: string, variables: Record<string, unknown>): Promise<T> {
+async function graphql<T>(query: string, token: string, variables: Record<string, unknown>, cacheOpt: RequestCache = "no-store"): Promise<T> {
     const res = await fetch(GITHUB_GRAPHQL, {
         method: "POST",
         headers: headers(token),
         body: JSON.stringify({ query, variables }),
-        cache: "no-store",
+        cache: cacheOpt,
     });
 
     if (res.status === 403) {
@@ -144,7 +144,8 @@ async function fetchCommitDatesForTopRepos(
     token: string,
     fromIso: string,
     toIso: string,
-    repositories?: ContributionsByRepoNode[]
+    repositories?: ContributionsByRepoNode[],
+    cacheOpt?: RequestCache
 ): Promise<string[]> {
     const candidates = (repositories || [])
         .filter((repo) => repo.contributions.totalCount > 0)
@@ -193,7 +194,7 @@ async function fetchCommitDatesForTopRepos(
     }`;
 
     try {
-        const response = await graphql<Record<string, unknown>>(query, token, variables);
+        const response = await graphql<Record<string, unknown>>(query, token, variables, cacheOpt);
         const dates: string[] = [];
 
         for (let i = 0; i < candidates.length; i++) {
@@ -252,12 +253,15 @@ export async function fetchYearInReviewData(username: string, year: number, toke
     const to = new Date(Date.UTC(year, 11, 31, 23, 59, 59));
 
     try {
+        const currentYear = new Date().getFullYear();
+        const cacheOpt: RequestCache = year < currentYear ? "force-cache" : "no-store";
+
         const response = await graphql<YearInReviewResponse>(YEAR_IN_REVIEW_QUERY, token, {
             login: username,
             from: from.toISOString(),
             to: to.toISOString(),
             maxRepositories: 10,
-        });
+        }, cacheOpt);
 
         if (!response.user) {
             throw new UserNotFoundError(username);
@@ -270,7 +274,8 @@ export async function fetchYearInReviewData(username: string, year: number, toke
             token,
             from.toISOString(),
             to.toISOString(),
-            collection.commitContributionsByRepository
+            collection.commitContributionsByRepository,
+            cacheOpt
         );
 
         const commitDates = await commitDatesPromise;
@@ -292,12 +297,15 @@ export async function fetchCommitActivityHeatmap(username: string, year: number,
     const from = new Date(Date.UTC(year, 0, 1, 0, 0, 0));
     const to = new Date(Date.UTC(year, 11, 31, 23, 59, 59));
 
+    const currentYear = new Date().getFullYear();
+    const cacheOpt: RequestCache = year < currentYear ? "force-cache" : "no-store";
+
     const reposResponse = await graphql<YearInReviewResponse>(YEAR_IN_REVIEW_QUERY, token, {
         login: username,
         from: from.toISOString(),
         to: to.toISOString(),
         maxRepositories: 10,
-    });
+    }, cacheOpt);
 
     if (!reposResponse.user) {
         throw new UserNotFoundError(username);
@@ -316,7 +324,7 @@ export async function fetchCommitActivityHeatmap(username: string, year: number,
     url.searchParams.set("until", to.toISOString());
     url.searchParams.set("per_page", "100");
 
-    const res = await fetch(url.toString(), { headers: headers(token), cache: "no-store" });
+    const res = await fetch(url.toString(), { headers: headers(token), cache: cacheOpt });
     if (res.status === 403) {
         handleRateLimit(res);
     }
