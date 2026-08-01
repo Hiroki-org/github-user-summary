@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { handleErrorResponse, getAuthenticatedUser } from '../apiUtils';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { RateLimitError } from '../types';
+import { handleErrorResponse, getAuthenticatedUser, handleRateLimit } from '../apiUtils';
 import { NextResponse } from 'next/server';
 import { getServerSession } from "next-auth";
 
@@ -97,4 +98,61 @@ describe('apiUtils', () => {
       expect(result).toBeNull();
     });
   });
+
+  describe('handleRateLimit', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(1700000000000)); // Nov 14 2023 22:13:20 GMT
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('should throw RateLimitError with exact timestamp if header is present and valid', () => {
+      const res = new Response(null, {
+        headers: {
+          'X-RateLimit-Reset': '1700003600'
+        }
+      });
+
+      expect(() => handleRateLimit(res)).toThrow(RateLimitError);
+      try {
+        handleRateLimit(res);
+      } catch (error) {
+        expect(error).toBeInstanceOf(RateLimitError);
+        expect(error.resetAt.getTime()).toBe(1700003600000);
+      }
+    });
+
+    it('should throw RateLimitError with default timestamp (+1 hour) if header is missing', () => {
+      const res = new Response(null);
+
+      expect(() => handleRateLimit(res)).toThrow(RateLimitError);
+      try {
+        handleRateLimit(res);
+      } catch (error) {
+        expect(error).toBeInstanceOf(RateLimitError);
+        // Current time is 1700000000, so +1 hour (3600 seconds) is 1700003600
+        expect(error.resetAt.getTime()).toBe(1700003600000);
+      }
+    });
+
+    it('should throw RateLimitError with default timestamp if header is invalid (NaN)', () => {
+      const res = new Response(null, {
+        headers: {
+          'X-RateLimit-Reset': 'invalid-date'
+        }
+      });
+
+      expect(() => handleRateLimit(res)).toThrow(RateLimitError);
+      try {
+        handleRateLimit(res);
+      } catch (error) {
+        expect(error).toBeInstanceOf(RateLimitError);
+        expect(error.resetAt.getTime()).toBe(1700003600000);
+      }
+    });
+  });
+
 });
