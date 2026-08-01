@@ -32,6 +32,10 @@ export class RateLimiter {
             return { success, reset };
         }
 
+        if (process.env.NODE_ENV === "production") {
+            throw new Error("Redis must be configured in production for secure rate limiting.");
+        }
+
         // Fallback to in-memory caching
         const now = Date.now();
         this.cleanup(now); // Lazy cleanup
