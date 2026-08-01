@@ -207,9 +207,10 @@ export async function fetchCardData(username: string): Promise<CardData | null> 
                 key = repo.pushedAt.slice(0, 10);
             } else {
                 const pushed = new Date(repo.pushedAt);
-                if (!Number.isNaN(pushed.getTime())) {
-                    key = pushed.toISOString().slice(0, 10);
+                if (Number.isNaN(pushed.getTime())) {
+                    continue;
                 }
+                    key = pushed.toISOString().slice(0, 10);
             }
             if (key && dayCounts.has(key)) {
                 dayCounts.set(key, (dayCounts.get(key) ?? 0) + 1);
