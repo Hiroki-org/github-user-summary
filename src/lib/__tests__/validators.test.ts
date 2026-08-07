@@ -175,3 +175,33 @@ describe("isTrustedFontUrl", () => {
     ).toBe(false);
   });
 });
+
+describe("isTrustedFontUrl - error paths", () => {
+  const originalAppUrl = process.env.APP_URL;
+
+  beforeEach(() => {
+    delete process.env.APP_URL;
+  });
+
+  afterEach(() => {
+    if (originalAppUrl === undefined) {
+      delete process.env.APP_URL;
+    } else {
+      process.env.APP_URL = originalAppUrl;
+    }
+  });
+
+  it("ignores invalid APP_URL configuration gracefully", () => {
+    process.env.APP_URL = "not-a-valid-url";
+    expect(
+      isTrustedFontUrl(
+        "https://github-user-summary.vercel.app/fonts/NotoSans-Regular.ttf",
+        "https://github-user-summary.vercel.app"
+      ),
+    ).toBe(true);
+  });
+
+  it("returns false for invalid URLs that cannot be parsed", () => {
+    expect(isTrustedFontUrl("not-a-valid-url")).toBe(false);
+  });
+});
