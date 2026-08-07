@@ -4,6 +4,8 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { useCardSettings } from "../useCardSettings";
 import { loadCardSettings, saveCardSettings } from "@/lib/cardSettings";
 import { toggleBlockVisibility } from "@/lib/cardLayout";
+import type { CardLayout, CardBlockId } from "@/lib/types";
+import type { CardDisplayOptions } from "@/lib/cardSettings";
 
 vi.mock("@/lib/cardSettings", () => ({
   loadCardSettings: vi.fn(),
@@ -29,8 +31,8 @@ describe("useCardSettings", () => {
 
   beforeEach(() => {
     vi.mocked(loadCardSettings).mockReturnValue({
-      layout: mockLayout as any,
-      options: mockOptions as any,
+      layout: mockLayout as unknown as CardLayout,
+      options: mockOptions as unknown as CardDisplayOptions,
     });
     vi.clearAllMocks();
   });
@@ -46,7 +48,7 @@ describe("useCardSettings", () => {
   it("should not hydrate if not mounted", () => {
     const { result } = renderHook(() => useCardSettings(false));
 
-    // We should not trigger the internal useEffect hydration logice,
+    // We should not trigger the internal useEffect hydration logic,
     // though initial state is still loaded during useState init.
     // We mainly verify layout matches.
     expect(result.current.layout).toEqual(mockLayout);
@@ -61,12 +63,12 @@ describe("useCardSettings", () => {
     vi.clearAllMocks();
 
     act(() => {
-      result.current.setDisplayOptions({ ...mockOptions, showAvatar: false } as any);
+      result.current.toggleDisplayOption("showAvatar");
     });
 
     expect(saveCardSettings).toHaveBeenCalledWith(
       mockLayout,
-      { ...mockOptions, showAvatar: false }
+      { ...mockOptions, showAvatar: false } as unknown as CardDisplayOptions
     );
   });
 
@@ -74,7 +76,7 @@ describe("useCardSettings", () => {
     const { result } = renderHook(() => useCardSettings(true));
     const newLayout = { ...mockLayout, blocks: [{ id: "profile", visible: false }] };
 
-    vi.mocked(toggleBlockVisibility).mockReturnValue(newLayout as any);
+    vi.mocked(toggleBlockVisibility).mockReturnValue(newLayout as unknown as CardLayout);
 
     act(() => {
       result.current.toggleMainBlockVisibility("profile");
@@ -106,6 +108,6 @@ describe("useCardSettings", () => {
     expect(result.current.isBlockVisible("profile")).toBe(true);
     expect(result.current.isBlockVisible("stats")).toBe(false);
     // test unknown block
-    expect(result.current.isBlockVisible("unknown" as any)).toBe(false);
+    expect(result.current.isBlockVisible("unknown" as unknown as CardBlockId)).toBe(false);
   });
 });
