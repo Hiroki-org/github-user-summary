@@ -92,11 +92,26 @@ function calculateMostActiveDay(calendar: { date: string; count: number }[]): st
   const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const weekdayTotals = Array.from({ length: 7 }, () => 0);
 
+  const t = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
+  const charCodeZero = 48; // '0'.charCodeAt(0)
+
   for (const day of calendar) {
     if (day.count === 0) {
       continue;
     }
-    const weekday = new Date(`${day.date}T00:00:00Z`).getUTCDay();
+    const dateStr = day.date; // format is YYYY-MM-DD
+    const y = (dateStr.charCodeAt(0) - charCodeZero) * 1000 +
+              (dateStr.charCodeAt(1) - charCodeZero) * 100 +
+              (dateStr.charCodeAt(2) - charCodeZero) * 10 +
+              (dateStr.charCodeAt(3) - charCodeZero);
+    const m = (dateStr.charCodeAt(5) - charCodeZero) * 10 +
+              (dateStr.charCodeAt(6) - charCodeZero);
+    const d = (dateStr.charCodeAt(8) - charCodeZero) * 10 +
+              (dateStr.charCodeAt(9) - charCodeZero);
+
+    const year = y - (m < 3 ? 1 : 0);
+    const weekday = (year + Math.floor(year / 4) - Math.floor(year / 100) + Math.floor(year / 400) + t[m - 1] + d) % 7;
+
     weekdayTotals[weekday] += day.count;
   }
 
