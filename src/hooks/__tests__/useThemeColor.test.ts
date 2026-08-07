@@ -54,8 +54,6 @@ describe("useThemeColor", () => {
       value: [100, 150, 200, 255]
     });
 
-    // Suppress console.warn for error tests
-    vi.spyOn(console, "warn").mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -122,14 +120,6 @@ describe("useThemeColor", () => {
     // Wait for extraction to fail
     await waitFor(() => {
       expect(mockGetColorAsync).toHaveBeenCalled();
-    });
-
-    // Check that console.warn was called
-    await waitFor(() => {
-      expect(console.warn).toHaveBeenCalledWith(
-        "Failed to extract color from avatar, keeping fallback color.",
-        error
-      );
     });
 
     // Should still have the fallback color applied

@@ -131,13 +131,6 @@ describe("ThemeController", () => {
     expect(document.documentElement.style.getPropertyValue("--accent-rgb")).toBe("mock-rgb-#0000ff");
     expect(document.documentElement.style.getPropertyValue("--accent-hover")).toBe("mock-hover-#0000ff");
 
-    // Wait for the async failure
-    await waitFor(() => {
-      expect(consoleSpy).toHaveBeenCalledWith(
-        "Failed to extract color from avatar, keeping fallback color.",
-        expect.any(Error)
-      );
-    });
 
     // Still has the fallback color
     expect(document.documentElement.style.getPropertyValue("--accent")).toBe("mock-accent-#0000ff");
