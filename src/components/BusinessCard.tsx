@@ -60,7 +60,7 @@ const BusinessCard = forwardRef<HTMLDivElement, Props>(({ summary, layout, optio
       return (
         <StatsBlock
           profile={profile}
-          contributions={contributions}
+          contributions={contributions || undefined}
           showContributionBreakdown={showContributionBreakdown}
           showStreaks={showStreaks}
         />
@@ -71,15 +71,15 @@ const BusinessCard = forwardRef<HTMLDivElement, Props>(({ summary, layout, optio
         <TopLanguagesBlock
           topLanguages={topLanguages}
           topTopics={topTopics}
-          interests={interests}
-          activity={activity}
+          interests={interests || undefined}
+          activity={activity || undefined}
           showTopics={showTopics}
           showInterests={showInterests}
           showActivityBreakdown={showActivityBreakdown}
         />
       );
     }
-    return <TopReposBlock reposToShow={reposToShow} />;
+    return <TopReposBlock reposToShow={reposToShow as any} />;
   };
 
   const fullBlocks = activeLayout.blocks.filter((block) => block.column === "full" && block.visible);

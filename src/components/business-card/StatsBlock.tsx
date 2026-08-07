@@ -1,8 +1,8 @@
-import { UserProfile, UserContributions } from "@/lib/types";
+import { UserProfile, ContributionData } from "@/lib/types";
 
 type Props = {
   profile: UserProfile;
-  contributions?: UserContributions;
+  contributions?: ContributionData;
   showContributionBreakdown?: boolean;
   showStreaks?: boolean;
 };

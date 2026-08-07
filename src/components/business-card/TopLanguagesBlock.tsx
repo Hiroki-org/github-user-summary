@@ -1,8 +1,8 @@
-import { Language, Topic, UserInterests, UserActivity } from "@/lib/types";
+import { LanguageStats as Language, InterestsData as UserInterests, ActivityData as UserActivity } from "@/lib/types";
 
 type Props = {
   topLanguages: Language[];
-  topTopics: Topic[];
+  topTopics: { name: string; count: number }[];
   interests?: UserInterests;
   activity?: UserActivity;
   showTopics?: boolean;
@@ -46,7 +46,7 @@ export const TopLanguagesBlock = ({
           Top Topics
         </h3>
         <div className="flex flex-wrap gap-2">
-          {topTopics.map((topic) => (
+          {topTopics.map((topic: any) => (
             <span
               key={topic.name}
               className="break-all rounded-full bg-white/10 px-3 py-1 text-sm font-medium text-gray-200"
@@ -64,7 +64,7 @@ export const TopLanguagesBlock = ({
           Interests
         </h3>
         <div className="flex flex-wrap gap-2">
-          {interests.topTopics.slice(0, 8).map((topic) => (
+          {interests.topTopics.slice(0, 8).map((topic: any) => (
             <span
               key={topic.name}
               className="break-all rounded-full bg-accent/20 px-3 py-1 text-sm font-medium text-accent-light"
@@ -82,7 +82,7 @@ export const TopLanguagesBlock = ({
           Recent Activity
         </h3>
         <div className="space-y-2">
-          {activity.eventBreakdown.slice(0, 5).map((event) => (
+          {activity.eventBreakdown.slice(0, 5).map((event: any) => (
             <div key={event.type} className="flex items-center justify-between text-gray-300">
               <span>{event.type}</span>
               <span className="font-bold">{event.count}</span>

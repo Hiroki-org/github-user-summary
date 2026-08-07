@@ -1,4 +1,4 @@
-import { Repository } from "@/lib/types";
+import { TopRepo as Repository } from "@/lib/types";
 
 type Props = {
   reposToShow: Repository[];
