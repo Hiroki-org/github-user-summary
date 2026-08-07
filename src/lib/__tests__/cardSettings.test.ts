@@ -26,6 +26,18 @@ describe("cardSettings", () => {
     });
 
     describe("loadCardSettings", () => {
+        it("returns defaults when localStorage throws an error", () => {
+            getItemMock.mockImplementation(() => {
+                throw new Error("QuotaExceededError");
+            });
+
+            const result = loadCardSettings();
+
+            expect(result.layout).toEqual(DEFAULT_CARD_LAYOUT);
+            expect(result.options.showCompany).toBe(true);
+            expect(getItemMock).toHaveBeenCalled();
+        });
+
         it("returns defaults when window is undefined", () => {
              // Remove window from global object to simulate SSR environment
              vi.stubGlobal("window", undefined);
@@ -155,6 +167,19 @@ describe("cardSettings", () => {
         });
 
     describe("saveCardSettings", () => {
+        it("ignores errors when localStorage.setItem throws", () => {
+            setItemMock.mockImplementation(() => {
+                throw new Error("QuotaExceededError");
+            });
+
+            const customLayout = { blocks: [{ id: "bio", visible: true, column: "full" }] } as CardLayout;
+            const customOptions = { showCompany: false } as Partial<CardDisplayOptions>;
+
+            // This should not throw
+            expect(() => saveCardSettings(customLayout, customOptions as CardDisplayOptions)).not.toThrow();
+            expect(setItemMock).toHaveBeenCalledWith("card-layout", JSON.stringify(customLayout));
+        });
+
         it("does nothing when window is undefined", () => {
             vi.stubGlobal("window", undefined);
             saveCardSettings(DEFAULT_CARD_LAYOUT, getDefaultCardSettings().options);
