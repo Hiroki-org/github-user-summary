@@ -20,7 +20,9 @@ vi.mock('next/server', () => {
       json: vi.fn((body, init) => ({ body, init })),
     },
     NextRequest: class NextRequest {
-      constructor(url) {
+      constructor(url: string) {
+        // @ts-expect-error - Mock implementation
+
         this.nextUrl = new URL(url);
       }
     }
@@ -170,7 +172,7 @@ describe('apiUtils', () => {
       const req = new NextRequest('http://localhost');
       const result = await getAuthAndYear(req);
       expect(result.errorResponse).toBeDefined();
-      expect(result.errorResponse?.init?.status).toBe(401);
+      expect((result.errorResponse as { init?: { status?: number } })?.init?.status).toBe(401);
     });
 
     it('returns 400 if year param has invalid characters', async () => {
@@ -181,7 +183,7 @@ describe('apiUtils', () => {
       const req = new NextRequest('http://localhost?year=2024abc');
       const result = await getAuthAndYear(req);
       expect(result.errorResponse).toBeDefined();
-      expect(result.errorResponse?.init?.status).toBe(400);
+      expect((result.errorResponse as { init?: { status?: number } })?.init?.status).toBe(400);
     });
 
     it('returns 400 if year is before 2008', async () => {
@@ -192,7 +194,7 @@ describe('apiUtils', () => {
       const req = new NextRequest('http://localhost?year=2007');
       const result = await getAuthAndYear(req);
       expect(result.errorResponse).toBeDefined();
-      expect(result.errorResponse?.init?.status).toBe(400);
+      expect((result.errorResponse as { init?: { status?: number } })?.init?.status).toBe(400);
     });
 
     it('returns valid user and year if inputs are correct', async () => {

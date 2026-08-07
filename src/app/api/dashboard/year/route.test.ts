@@ -29,7 +29,7 @@ describe("GET /api/dashboard/year validation", () => {
     });
 
     it("returns 401 when not authorized", async () => {
-        mockGetAuthAndYear.mockResolvedValueOnce({ errorResponse: new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 }) } as unknown);
+        mockGetAuthAndYear.mockResolvedValueOnce({ errorResponse: new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 }) } as ReturnType<typeof getAuthAndYear> extends Promise<infer U> ? U : never);
 
         const { GET } = await import("./route");
         const req = createMockRequest("http://localhost/api/dashboard/year");
@@ -40,7 +40,7 @@ describe("GET /api/dashboard/year validation", () => {
 
 
     it("returns 400 when year contains non-numeric characters (e.g. 2024abc)", async () => {
-        mockGetAuthAndYear.mockResolvedValueOnce({ errorResponse: new Response(JSON.stringify({ error: "Invalid year" }), { status: 400 }) } as unknown);
+        mockGetAuthAndYear.mockResolvedValueOnce({ errorResponse: new Response(JSON.stringify({ error: "Invalid year" }), { status: 400 }) } as ReturnType<typeof getAuthAndYear> extends Promise<infer U> ? U : never);
 
         const { GET } = await import("./route");
         const req = createMockRequest("http://localhost/api/dashboard/year?year=2024abc");
@@ -52,7 +52,7 @@ describe("GET /api/dashboard/year validation", () => {
     });
 
     it("returns 400 when year is invalid (not a number)", async () => {
-        mockGetAuthAndYear.mockResolvedValueOnce({ errorResponse: new Response(JSON.stringify({ error: "Invalid year" }), { status: 400 }) } as unknown);
+        mockGetAuthAndYear.mockResolvedValueOnce({ errorResponse: new Response(JSON.stringify({ error: "Invalid year" }), { status: 400 }) } as ReturnType<typeof getAuthAndYear> extends Promise<infer U> ? U : never);
 
         const { GET } = await import("./route");
         const req = createMockRequest("http://localhost/api/dashboard/year?year=abc");
@@ -64,7 +64,7 @@ describe("GET /api/dashboard/year validation", () => {
     });
 
     it("returns 400 when year is before 2008", async () => {
-        mockGetAuthAndYear.mockResolvedValueOnce({ errorResponse: new Response(JSON.stringify({ error: "Invalid year" }), { status: 400 }) } as unknown);
+        mockGetAuthAndYear.mockResolvedValueOnce({ errorResponse: new Response(JSON.stringify({ error: "Invalid year" }), { status: 400 }) } as ReturnType<typeof getAuthAndYear> extends Promise<infer U> ? U : never);
 
         const { GET } = await import("./route");
         const req = createMockRequest("http://localhost/api/dashboard/year?year=2007");
@@ -76,7 +76,7 @@ describe("GET /api/dashboard/year validation", () => {
     });
 
     it("returns 400 when year is in the future", async () => {
-        mockGetAuthAndYear.mockResolvedValueOnce({ errorResponse: new Response(JSON.stringify({ error: "Invalid year" }), { status: 400 }) } as unknown);
+        mockGetAuthAndYear.mockResolvedValueOnce({ errorResponse: new Response(JSON.stringify({ error: "Invalid year" }), { status: 400 }) } as ReturnType<typeof getAuthAndYear> extends Promise<infer U> ? U : never);
 
         const { GET } = await import("./route");
         const currentYear = new Date().getUTCFullYear();
@@ -89,7 +89,7 @@ describe("GET /api/dashboard/year validation", () => {
     });
 
     it("returns 200 and fetches data when year is valid", async () => {
-        mockGetAuthAndYear.mockResolvedValueOnce({ user: { username: "alice", token: "token" }, year: new Date().getUTCFullYear() } as unknown);
+        mockGetAuthAndYear.mockResolvedValueOnce({ user: { username: "alice", token: "token" }, year: new Date().getUTCFullYear() } as ReturnType<typeof getAuthAndYear> extends Promise<infer U> ? U : never);
 
         vi.mocked(fetchYearInReviewData).mockResolvedValueOnce({ data: "ok", mostActiveDay: null } as unknown as YearInReviewData);
 
@@ -105,7 +105,7 @@ describe("GET /api/dashboard/year validation", () => {
     });
 
     it("returns 200 and falls back to current year when year is not provided", async () => {
-        mockGetAuthAndYear.mockResolvedValueOnce({ user: { username: "alice", token: "token" }, year: new Date().getUTCFullYear() } as unknown);
+        mockGetAuthAndYear.mockResolvedValueOnce({ user: { username: "alice", token: "token" }, year: new Date().getUTCFullYear() } as ReturnType<typeof getAuthAndYear> extends Promise<infer U> ? U : never);
 
         vi.mocked(fetchYearInReviewData).mockResolvedValueOnce({ data: "ok", mostActiveDay: null } as unknown as YearInReviewData);
 
