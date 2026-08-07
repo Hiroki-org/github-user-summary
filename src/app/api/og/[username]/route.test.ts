@@ -55,7 +55,9 @@ describe("OG Image Route", () => {
   });
 
   it("should generate image with default values when fetch fails", async () => {
-    const mockFetch = vi.spyOn(global, "fetch").mockImplementation(() => Promise.reject(new Error("Network error")));
+    const error = new Error("Network error");
+    const mockFetch = vi.spyOn(global, "fetch").mockImplementation(() => Promise.reject(error));
+    const mockLogger = vi.spyOn(logger, "error");
 
     const req = new NextRequest("http://localhost/api/og/validuser");
     const res = await GET(req, { params: Promise.resolve({ username: "validuser" }) });
@@ -64,6 +66,25 @@ describe("OG Image Route", () => {
     expect(await res.text()).toBe("Mock ImageResponse");
     expect(res.headers.get("Cache-Control")).toBe("public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400");
     expect(mockFetch).toHaveBeenCalledWith("https://api.github.com/users/validuser", expect.any(Object));
+    expect(mockLogger).toHaveBeenCalledWith("Failed to fetch GitHub profile for OG image: validuser", error);
+  });
+
+  it("should generate image with default values when json parsing fails", async () => {
+    const error = new Error("Invalid JSON");
+    const mockFetch = vi.spyOn(global, "fetch").mockImplementation(() => Promise.resolve({
+      ok: true,
+      json: () => Promise.reject(error)
+    } as unknown as Response));
+    const mockLogger = vi.spyOn(logger, "error");
+
+    const req = new NextRequest("http://localhost/api/og/validuser");
+    const res = await GET(req, { params: Promise.resolve({ username: "validuser" }) });
+
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe("Mock ImageResponse");
+    expect(res.headers.get("Cache-Control")).toBe("public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400");
+    expect(mockFetch).toHaveBeenCalledWith("https://api.github.com/users/validuser", expect.any(Object));
+    expect(mockLogger).toHaveBeenCalledWith("Failed to fetch GitHub profile for OG image: validuser", error);
   });
 
   it("should generate image with default values when fetch returns non-ok response", async () => {
