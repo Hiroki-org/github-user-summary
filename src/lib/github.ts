@@ -465,23 +465,43 @@ function processRepoData(repos: RepoNode[]): RepositoryData {
 
 // ===== 3. fetchContributions =====
 
+export const CONTRIBUTIONS_COLLECTION_FRAGMENT = `
+  fragment ContributionsCollectionFragment on ContributionsCollection {
+    totalCommitContributions
+    totalPullRequestContributions
+    totalIssueContributions
+    totalPullRequestReviewContributions
+    contributionCalendar {
+      totalContributions
+      weeks {
+        contributionDays {
+          date
+          contributionCount
+        }
+      }
+    }
+  }
+`;
+
+export type ContributionsCollectionData = {
+  totalCommitContributions: number;
+  totalPullRequestContributions: number;
+  totalIssueContributions: number;
+  totalPullRequestReviewContributions: number;
+  contributionCalendar: {
+    totalContributions: number;
+    weeks: {
+      contributionDays: {
+        date: string;
+        contributionCount: number;
+      }[];
+    }[];
+  };
+};
+
 type ContributionsResponse = {
   user: {
-    contributionsCollection: {
-      totalCommitContributions: number;
-      totalPullRequestContributions: number;
-      totalIssueContributions: number;
-      totalPullRequestReviewContributions: number;
-      contributionCalendar: {
-        totalContributions: number;
-        weeks: {
-          contributionDays: {
-            date: string;
-            contributionCount: number;
-          }[];
-        }[];
-      };
-    };
+    contributionsCollection: ContributionsCollectionData;
   } | null;
 };
 
@@ -512,22 +532,11 @@ export async function fetchContributions(
   const query = `query($login: String!, $from: DateTime!, $to: DateTime!) {
     user(login: $login) {
       contributionsCollection(from: $from, to: $to) {
-        totalCommitContributions
-        totalPullRequestContributions
-        totalIssueContributions
-        totalPullRequestReviewContributions
-        contributionCalendar {
-          totalContributions
-          weeks {
-            contributionDays {
-              date
-              contributionCount
-            }
-          }
-        }
+        ...ContributionsCollectionFragment
       }
     }
-  }`;
+  }
+  ${CONTRIBUTIONS_COLLECTION_FRAGMENT}`;
 
   const data = await graphql<ContributionsResponse>(query, token, {
     login: username,
