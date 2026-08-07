@@ -88,6 +88,20 @@ function calculateStreaks(calendar: { count: number }[]): { longestStreak: numbe
   return { longestStreak, currentStreak };
 }
 
+
+/**
+ * Fast calculation of day of the week for YYYY-MM-DD
+ * Returns 0=Sunday, 1=Monday, ..., 6=Saturday
+ */
+function getDayOfWeek(dateString: string): number {
+  const y = (dateString.charCodeAt(0) - 48) * 1000 + (dateString.charCodeAt(1) - 48) * 100 + (dateString.charCodeAt(2) - 48) * 10 + (dateString.charCodeAt(3) - 48);
+  const m = (dateString.charCodeAt(5) - 48) * 10 + (dateString.charCodeAt(6) - 48);
+  const d = (dateString.charCodeAt(8) - 48) * 10 + (dateString.charCodeAt(9) - 48);
+  const year = m < 3 ? y - 1 : y;
+  const t = m === 1 ? 0 : m === 2 ? 3 : m === 3 ? 2 : m === 4 ? 5 : m === 5 ? 0 : m === 6 ? 3 : m === 7 ? 5 : m === 8 ? 1 : m === 9 ? 4 : m === 10 ? 6 : m === 11 ? 2 : 4;
+  return (year + Math.floor(year / 4) - Math.floor(year / 100) + Math.floor(year / 400) + t + d) % 7;
+}
+
 function calculateMostActiveDay(calendar: { date: string; count: number }[]): string | null {
   const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const weekdayTotals = Array.from({ length: 7 }, () => 0);
@@ -96,7 +110,7 @@ function calculateMostActiveDay(calendar: { date: string; count: number }[]): st
     if (day.count === 0) {
       continue;
     }
-    const weekday = new Date(`${day.date}T00:00:00Z`).getUTCDay();
+    const weekday = getDayOfWeek(day.date);
     weekdayTotals[weekday] += day.count;
   }
 
@@ -715,7 +729,7 @@ export const fetchActivity = cache(async function fetchActivity(
 
     let day = dayCache.get(datePart);
     if (day === undefined) {
-      day = new Date(datePart).getUTCDay(); // 0=Sun, 6=Sat
+      day = getDayOfWeek(datePart); // 0=Sun, 6=Sat
       dayCache.set(datePart, day);
     }
 
