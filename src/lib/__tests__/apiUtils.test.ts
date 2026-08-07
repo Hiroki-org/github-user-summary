@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { handleErrorResponse, getAuthenticatedUser, handleRateLimit } from '../apiUtils';
+import { handleErrorResponse, getAuthenticatedUser, handleRateLimit, getAuthAndYear } from '../apiUtils';
+
+import { NextRequest } from "next/server";
 import { RateLimitError } from '../types';
 import { NextResponse } from 'next/server';
 import { getServerSession } from "next-auth";
@@ -17,6 +19,11 @@ vi.mock('next/server', () => {
     NextResponse: {
       json: vi.fn((body, init) => ({ body, init })),
     },
+    NextRequest: class NextRequest {
+      constructor(url) {
+        this.nextUrl = new URL(url);
+      }
+    }
   };
 });
 
@@ -156,4 +163,50 @@ describe('apiUtils', () => {
       expect(result).toBeNull();
     });
   });
+
+  describe('getAuthAndYear', () => {
+    it('returns 401 response if no user', async () => {
+      vi.mocked(getServerSession).mockResolvedValueOnce(null);
+      const req = new NextRequest('http://localhost');
+      const result = await getAuthAndYear(req);
+      expect(result.errorResponse).toBeDefined();
+      expect(result.errorResponse?.init?.status).toBe(401);
+    });
+
+    it('returns 400 if year param has invalid characters', async () => {
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        accessToken: 'fake-token',
+        user: { login: 'testuser' }
+      });
+      const req = new NextRequest('http://localhost?year=2024abc');
+      const result = await getAuthAndYear(req);
+      expect(result.errorResponse).toBeDefined();
+      expect(result.errorResponse?.init?.status).toBe(400);
+    });
+
+    it('returns 400 if year is before 2008', async () => {
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        accessToken: 'fake-token',
+        user: { login: 'testuser' }
+      });
+      const req = new NextRequest('http://localhost?year=2007');
+      const result = await getAuthAndYear(req);
+      expect(result.errorResponse).toBeDefined();
+      expect(result.errorResponse?.init?.status).toBe(400);
+    });
+
+    it('returns valid user and year if inputs are correct', async () => {
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        accessToken: 'fake-token',
+        user: { login: 'testuser' }
+      });
+      const currentYear = new Date().getUTCFullYear();
+      const req = new NextRequest(`http://localhost?year=${currentYear}`);
+      const result = await getAuthAndYear(req);
+      expect(result.errorResponse).toBeUndefined();
+      expect(result.user).toEqual({ username: 'testuser', token: 'fake-token' });
+      expect(result.year).toBe(currentYear);
+    });
+  });
+
 });

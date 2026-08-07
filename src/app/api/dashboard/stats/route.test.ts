@@ -1,13 +1,13 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
-import { getAuthenticatedUser } from "@/lib/apiUtils";
+import { getAuthAndYear } from "@/lib/apiUtils";
 import { fetchCommitActivityHeatmap } from "@/lib/githubYearInReview";
 
 vi.mock("@/lib/apiUtils", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/apiUtils")>();
   return {
     ...actual,
-    getAuthenticatedUser: vi.fn(),
+    getAuthAndYear: vi.fn(),
   };
 });
 
@@ -20,12 +20,14 @@ function createMockRequest(url: string): NextRequest {
 }
 
 describe("GET /api/dashboard/stats validation", () => {
+    const mockGetAuthAndYear = vi.mocked(getAuthAndYear);
+
     beforeEach(() => {
         vi.clearAllMocks();
     });
 
     it("returns 401 when not authorized", async () => {
-        vi.mocked(getAuthenticatedUser).mockResolvedValueOnce(null);
+        mockGetAuthAndYear.mockResolvedValueOnce({ errorResponse: new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 }) } as unknown);
 
         const { GET } = await import("./route");
         const req = createMockRequest("http://localhost/api/dashboard/stats");
@@ -38,7 +40,7 @@ describe("GET /api/dashboard/stats validation", () => {
 
 
     it("returns 400 when year contains non-numeric characters (e.g. 2024abc)", async () => {
-        vi.mocked(getAuthenticatedUser).mockResolvedValueOnce({ username: "alice", token: "token" });
+        mockGetAuthAndYear.mockResolvedValueOnce({ errorResponse: new Response(JSON.stringify({ error: "Invalid year" }), { status: 400 }) } as unknown);
 
         const { GET } = await import("./route");
         const req = createMockRequest("http://localhost/api/dashboard/stats?year=2024abc");
@@ -50,7 +52,7 @@ describe("GET /api/dashboard/stats validation", () => {
     });
 
     it("returns 400 when year is invalid (not a number)", async () => {
-        vi.mocked(getAuthenticatedUser).mockResolvedValueOnce({ username: "alice", token: "token" });
+        mockGetAuthAndYear.mockResolvedValueOnce({ errorResponse: new Response(JSON.stringify({ error: "Invalid year" }), { status: 400 }) } as unknown);
 
         const { GET } = await import("./route");
         const req = createMockRequest("http://localhost/api/dashboard/stats?year=abc");
@@ -62,7 +64,7 @@ describe("GET /api/dashboard/stats validation", () => {
     });
 
     it("returns 400 when year is before 2008", async () => {
-        vi.mocked(getAuthenticatedUser).mockResolvedValueOnce({ username: "alice", token: "token" });
+        mockGetAuthAndYear.mockResolvedValueOnce({ errorResponse: new Response(JSON.stringify({ error: "Invalid year" }), { status: 400 }) } as unknown);
 
         const { GET } = await import("./route");
         const req = createMockRequest("http://localhost/api/dashboard/stats?year=2007");
@@ -74,7 +76,7 @@ describe("GET /api/dashboard/stats validation", () => {
     });
 
     it("returns 200 and fetches data when year is valid", async () => {
-        vi.mocked(getAuthenticatedUser).mockResolvedValueOnce({ username: "alice", token: "token" });
+        mockGetAuthAndYear.mockResolvedValueOnce({ user: { username: "alice", token: "token" }, year: new Date().getUTCFullYear() } as unknown);
 
         const mockHeatmap = [[1, 2], [3, 4]];
         vi.mocked(fetchCommitActivityHeatmap).mockResolvedValueOnce(mockHeatmap);
@@ -92,7 +94,7 @@ describe("GET /api/dashboard/stats validation", () => {
     });
 
     it("returns 500 when fetchCommitActivityHeatmap throws an Error", async () => {
-        vi.mocked(getAuthenticatedUser).mockResolvedValueOnce({ username: "alice", token: "token" });
+        mockGetAuthAndYear.mockResolvedValueOnce({ user: { username: "alice", token: "token" }, year: new Date().getUTCFullYear() } as unknown);
         vi.mocked(fetchCommitActivityHeatmap).mockRejectedValueOnce(new Error("API Error"));
 
         const { GET } = await import("./route");
