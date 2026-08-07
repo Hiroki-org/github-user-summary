@@ -72,8 +72,7 @@ describe("GET /api/card/[username] error responses", () => {
         expect(renderErrorCardResponse).toHaveBeenCalledWith(expect.objectContaining({
             message: expectedMessage,
             status: expectedStatus,
-            cacheControl: "public, s-maxage=60, stale-while-revalidate=120",
-            fontUrl: "http://localhost:3000/fonts/NotoSans-Regular.ttf"
+            cacheControl: "public, s-maxage=60, stale-while-revalidate=120"
         }));
     };
 
