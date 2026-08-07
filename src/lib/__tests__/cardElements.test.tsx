@@ -1,5 +1,7 @@
+// @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
-import { estimateHeight, levelColor } from "../cardElements";
+import { render, screen } from "@testing-library/react";
+import { estimateHeight, levelColor, errorTree } from "../cardElements";
 import type { CardRenderOptions } from "../cardOptions";
 
 describe("cardElements utility functions", () => {
@@ -105,6 +107,55 @@ describe("cardElements utility functions", () => {
       expect(levelColor(8, 10, mockTheme)).toBe("#15803d");
       expect(levelColor(10, 10, mockTheme)).toBe("#15803d");
       expect(levelColor(15, 10, mockTheme)).toBe("#15803d"); // > 1
+    });
+  });
+
+  describe("errorTree", () => {
+    const defaultOptions = {
+      format: "png",
+      theme: "light",
+      blocks: [],
+      hide: new Set<string>(),
+      width: 600,
+    } as unknown as CardRenderOptions;
+
+    it("renders correctly with light theme", () => {
+      const message = "User not found";
+      const height = 400;
+
+      const { container } = render(errorTree(message, defaultOptions, height));
+
+      const mainDiv = container.firstChild as HTMLElement;
+      expect(mainDiv).toBeInTheDocument();
+      expect(mainDiv).toHaveStyle({
+        width: "600px",
+        height: "400px",
+        backgroundColor: "#f8fafc", // Light theme bg
+        color: "#0f172a" // Light theme text
+      });
+
+      expect(screen.getByText(message)).toBeInTheDocument();
+      expect(screen.getByText("github-user-summary card endpoint")).toBeInTheDocument();
+    });
+
+    it("renders correctly with dark theme", () => {
+      const message = "API Rate Limit Exceeded";
+      const height = 500;
+      const options = { ...defaultOptions, theme: "dark" as const };
+
+      const { container } = render(errorTree(message, options, height));
+
+      const mainDiv = container.firstChild as HTMLElement;
+      expect(mainDiv).toBeInTheDocument();
+      expect(mainDiv).toHaveStyle({
+        width: "600px",
+        height: "500px",
+        backgroundColor: "#0b1220", // Dark theme bg
+        color: "#e2e8f0" // Dark theme text
+      });
+
+      expect(screen.getByText(message)).toBeInTheDocument();
+      expect(screen.getByText("github-user-summary card endpoint")).toBeInTheDocument();
     });
   });
 });
