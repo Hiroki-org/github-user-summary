@@ -14,7 +14,7 @@ describe("github base helpers", () => {
 
     it("should add Authorization header with valid token", () => {
       const h = headers("valid-token_123");
-      expect((h as any).Authorization).toBe("Bearer valid-token_123");
+      expect((h as Record<string, string>).Authorization).toBe("Bearer valid-token_123");
     });
 
     it("should throw GitHubApiError for invalid token format", () => {
@@ -29,7 +29,7 @@ describe("github base helpers", () => {
         headers: {
           get: (name: string) => (name === "X-RateLimit-Reset" ? "1234567890" : null),
         },
-      } as Response;
+      } as unknown as Response;
 
       expect(() => handleRateLimit(mockResponse)).toThrow(RateLimitError);
       try {
@@ -42,7 +42,7 @@ describe("github base helpers", () => {
     it("should use fallback timestamp if X-RateLimit-Reset is missing", () => {
       const mockResponse = {
         headers: { get: () => null },
-      } as Response;
+      } as unknown as Response;
 
       expect(() => handleRateLimit(mockResponse)).toThrow(RateLimitError);
       try {
@@ -55,7 +55,7 @@ describe("github base helpers", () => {
     it("should use fallback timestamp if X-RateLimit-Reset is invalid", () => {
       const mockResponse = {
         headers: { get: () => "invalid-timestamp" },
-      } as Response;
+      } as unknown as Response;
 
       expect(() => handleRateLimit(mockResponse)).toThrow(RateLimitError);
       try {
