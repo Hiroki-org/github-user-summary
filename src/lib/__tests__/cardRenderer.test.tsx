@@ -11,7 +11,7 @@ vi.mock("satori", () => ({
 
 vi.mock("@vercel/og", () => {
   class MockImageResponse extends Response {
-    constructor(element: any, options: any) {
+    constructor(element: unknown, options: { status?: number; headers?: Record<string, string> } | undefined) {
       super("mocked-image", {
         status: options?.status || 200,
         headers: options?.headers,
@@ -39,7 +39,7 @@ class MockAbortController {
   };
   abort = vi.fn();
 }
-global.AbortController = MockAbortController as any;
+global.AbortController = MockAbortController as unknown as typeof AbortController;
 
 describe("cardRenderer", () => {
   beforeEach(() => {
@@ -49,7 +49,7 @@ describe("cardRenderer", () => {
       ok: true,
       arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)),
     });
-    (isTrustedFontUrl as any).mockReturnValue(true);
+    vi.mocked(isTrustedFontUrl).mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -167,7 +167,7 @@ describe("cardRenderer", () => {
 
   it("uses default font url if provided font url is not trusted", async () => {
     const uniqueUrl = "https://example.com/untrusted-font.ttf";
-    (isTrustedFontUrl as any).mockReturnValueOnce(false);
+    vi.mocked(isTrustedFontUrl).mockReturnValueOnce(false);
 
     await renderCardResponse({
       data: mockData,
