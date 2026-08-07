@@ -81,7 +81,6 @@ describe("useCardSettings", () => {
     const { result } = renderHook(() => useCardSettings(true));
 
     act(() => {
-      // @ts-expect-error key may be incomplete in mock
       result.current.toggleDisplayOption("showAvatar");
     });
 
@@ -91,7 +90,6 @@ describe("useCardSettings", () => {
     });
 
     act(() => {
-      // @ts-expect-error key may be incomplete in mock
       result.current.toggleDisplayOption("showBio");
     });
 
