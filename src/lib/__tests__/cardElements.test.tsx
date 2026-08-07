@@ -1,5 +1,8 @@
+// @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
-import { estimateHeight, levelColor } from "../cardElements";
+import { estimateHeight, levelColor, cardTree } from "../cardElements";
+import { render } from "@testing-library/react";
+import type { CardData } from "../cardDataFetcher";
 import type { CardRenderOptions } from "../cardOptions";
 
 describe("cardElements utility functions", () => {
@@ -105,6 +108,72 @@ describe("cardElements utility functions", () => {
       expect(levelColor(8, 10, mockTheme)).toBe("#15803d");
       expect(levelColor(10, 10, mockTheme)).toBe("#15803d");
       expect(levelColor(15, 10, mockTheme)).toBe("#15803d"); // > 1
+    });
+  });
+
+  describe("cardTree", () => {
+    const mockData: CardData = {
+      profile: {
+        login: "testuser",
+        name: "Test User",
+        avatarUrl: "https://example.com/avatar.png",
+        bio: "Test bio",
+        followers: 10,
+        following: 20,
+        publicRepos: 30,
+      },
+      repos: [],
+      totalStars: 100,
+      languages: [],
+      streak: { current: 5, longest: 10 },
+      heatmap: { days: [], maxCount: 5 },
+    };
+
+    const baseOptions: CardRenderOptions = {
+      format: "png",
+      theme: "light",
+      blocks: ["bio", "stats"],
+      cols: 1,
+      layout: {},
+      hide: new Set<string>(),
+      width: 600,
+    };
+
+    it("renders correctly with 1 column layout", () => {
+      const { container } = render(cardTree(mockData, baseOptions, 500));
+      // Check if root container has correct styles (using basic string matching on text content or generic checks)
+      expect(container.textContent).toContain("testuser");
+      expect(container.textContent).toContain("github-user-summary");
+      expect(container.textContent).toContain("Test bio");
+      expect(container.textContent).toContain("Stats");
+    });
+
+    it("renders correctly with 2 column layout", () => {
+      const options2Col: CardRenderOptions = {
+        ...baseOptions,
+        cols: 2,
+        blocks: ["bio", "stats", "repos"],
+        layout: { bio: "left", stats: "right", repos: "full" },
+      };
+
+      const { container } = render(cardTree(mockData, options2Col, 500));
+      expect(container.textContent).toContain("testuser");
+      expect(container.textContent).toContain("Test bio");
+      expect(container.textContent).toContain("Stats");
+      expect(container.textContent).toContain("Top Repositories");
+    });
+
+    it("renders correctly with no blocks", () => {
+      const optionsEmpty: CardRenderOptions = {
+        ...baseOptions,
+        blocks: [],
+      };
+
+      const { container } = render(cardTree(mockData, optionsEmpty, 300));
+      expect(container.textContent).toContain("testuser");
+      // Should not contain block contents
+      expect(container.textContent).not.toContain("Test bio");
+      expect(container.textContent).not.toContain("Stats");
     });
   });
 });
