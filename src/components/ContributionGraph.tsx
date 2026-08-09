@@ -30,18 +30,38 @@ function processCalendarData(calendar: ContributionData["calendar"]) {
     return { weeks: [], monthLabels: [], maxCount: 1 };
   }
 
-  const maxCount = Math.max(...calendar.map((d) => d.count), 1);
+  let maxCount = 1;
+  for (let i = 0; i < calendar.length; i++) {
+    if (calendar[i].count > maxCount) maxCount = calendar[i].count;
+  }
 
-  // Group entries by week columns
-  const entries = calendar
-    .map((d) => {
-      const date = new Date(d.date + "T00:00:00");
-      return { ...d, dateObj: date, dayOfWeek: date.getDay() };
-    })
-    .sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
+  // Create sortable array without instantiating dates excessively
+  const entries = new Array(calendar.length);
+  const dateObj = new Date(0); // reuse a single date object
 
-  const weeks: (typeof entries)[] = [];
-  let currentWeek: typeof entries = [];
+  for (let i = 0; i < calendar.length; i++) {
+    const d = calendar[i];
+    const year = parseInt(d.date.substring(0, 4), 10);
+    const month = parseInt(d.date.substring(5, 7), 10) - 1;
+    const day = parseInt(d.date.substring(8, 10), 10);
+
+    dateObj.setFullYear(year, month, day);
+
+    entries[i] = {
+      date: d.date,
+      count: d.count,
+      dayOfWeek: dateObj.getDay(),
+      timestamp: dateObj.getTime(), // stored for sorting
+      month: month // stored for label generation
+    };
+  }
+
+  // Sort by timestamp
+  entries.sort((a, b) => a.timestamp - b.timestamp);
+
+  type EntryType = typeof entries[0];
+  const weeks: EntryType[][] = [];
+  let currentWeek: EntryType[] = [];
 
   for (let i = 0; i < entries.length; i++) {
     const entry = entries[i];
@@ -55,17 +75,17 @@ function processCalendarData(calendar: ContributionData["calendar"]) {
 
   const monthLabels: { label: string; x: number }[] = [];
   let lastMonth = -1;
-  weeks.forEach((week, wIdx) => {
+  for (let wIdx = 0; wIdx < weeks.length; wIdx++) {
+    const week = weeks[wIdx];
     const firstEntry = week[0];
-    const month = firstEntry.dateObj.getMonth();
-    if (month !== lastMonth) {
+    if (firstEntry.month !== lastMonth) {
       monthLabels.push({
-        label: MONTHS[month],
+        label: MONTHS[firstEntry.month],
         x: DAY_LABEL_WIDTH + wIdx * STEP,
       });
-      lastMonth = month;
+      lastMonth = firstEntry.month;
     }
-  });
+  }
 
   return { weeks, monthLabels, maxCount };
 }
