@@ -26,6 +26,18 @@ describe("cardSettings", () => {
     });
 
     describe("loadCardSettings", () => {
+
+        it("handles errors thrown when accessing localStorage in loadCardSettings", () => {
+            getItemMock.mockImplementation(() => {
+                throw new Error("Access denied");
+            });
+
+            const result = loadCardSettings();
+
+            expect(result.layout).toEqual(DEFAULT_CARD_LAYOUT);
+            expect(result.options.showCompany).toBe(true);
+        });
+
         it("returns defaults when window is undefined", () => {
              // Remove window from global object to simulate SSR environment
              vi.stubGlobal("window", undefined);
@@ -155,6 +167,18 @@ describe("cardSettings", () => {
         });
 
     describe("saveCardSettings", () => {
+
+        it("handles errors thrown when saving to localStorage", () => {
+            setItemMock.mockImplementation(() => {
+                throw new Error("Quota exceeded");
+            });
+
+            const customLayout: CardLayout = { blocks: [{ id: "bio", visible: true, column: "full" }] };
+            const customOptions: Partial<CardDisplayOptions> = { showCompany: false };
+
+            expect(() => saveCardSettings(customLayout, customOptions)).not.toThrow();
+        });
+
         it("does nothing when window is undefined", () => {
             vi.stubGlobal("window", undefined);
             saveCardSettings(DEFAULT_CARD_LAYOUT, getDefaultCardSettings().options);
