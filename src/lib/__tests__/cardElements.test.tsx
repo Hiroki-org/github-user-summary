@@ -1,5 +1,8 @@
+// @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
-import { estimateHeight, levelColor } from "../cardElements";
+import { estimateHeight, levelColor, errorTree } from "../cardElements";
+import { render, screen } from "@testing-library/react";
+
 import type { CardRenderOptions } from "../cardOptions";
 
 describe("cardElements utility functions", () => {
@@ -105,6 +108,30 @@ describe("cardElements utility functions", () => {
       expect(levelColor(8, 10, mockTheme)).toBe("#15803d");
       expect(levelColor(10, 10, mockTheme)).toBe("#15803d");
       expect(levelColor(15, 10, mockTheme)).toBe("#15803d"); // > 1
+    });
+  });
+
+
+  describe("errorTree", () => {
+    const defaultOptions = {
+      theme: "light",
+      width: 600,
+    } as unknown as CardRenderOptions;
+
+    it("renders the error message and correct styles", () => {
+      const { container } = render(errorTree("Test Error Message", defaultOptions, 400));
+
+      const messageEl = screen.getByText("Test Error Message");
+      expect(messageEl).toBeDefined();
+
+      const subtitleEl = screen.getByText("github-user-summary card endpoint");
+      expect(subtitleEl).toBeDefined();
+
+      const mainDiv = container.firstChild as HTMLElement;
+      expect(mainDiv).toBeDefined();
+      expect(mainDiv.style.width).toBe("600px");
+      expect(mainDiv.style.height).toBe("400px");
+      expect(mainDiv.style.backgroundColor).toBe("rgb(248, 250, 252)"); // default theme bg for light
     });
   });
 });
