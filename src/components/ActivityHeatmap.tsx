@@ -49,17 +49,20 @@ export default function ActivityHeatmap({ heatmap, totalEvents }: Props) {
         aria-label="Activity heatmap"
         className="min-w-full"
       >
-        {Array.from({ length: 8 }, (_, i) => i * 3).map((h) => (
-          <text
-            key={h}
-            x={labelWidth + h * step + cellSize / 2}
-            y={12}
-            textAnchor="middle"
-            className="fill-muted text-[10px]"
-          >
-            {h.toString().padStart(2, "0")}
-          </text>
-        ))}
+        {Array.from({ length: 8 }, (_, i) => {
+          const h = i * 3;
+          return (
+            <text
+              key={h}
+              x={labelWidth + h * step + cellSize / 2}
+              y={12}
+              textAnchor="middle"
+              className="fill-muted text-[10px]"
+            >
+              {h.toString().padStart(2, "0")}
+            </text>
+          );
+        })}
 
         {DAYS.map((day, dIdx) => (
           <g key={day}>
