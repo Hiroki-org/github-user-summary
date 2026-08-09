@@ -22,9 +22,6 @@ const getSecret = (): string => {
   if (process.env.NEXTAUTH_SECRET) {
     return process.env.NEXTAUTH_SECRET;
   }
-  if (process.env.NODE_ENV === "development") {
-    return "fallback_secret_for_development_only";
-  }
   throw new Error("NEXTAUTH_SECRET is not set. Please set it to a secure random value.");
 };
 
