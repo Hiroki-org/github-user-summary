@@ -654,7 +654,34 @@ export async function fetchStarredRepos(
   };
 }
 
+
+/**
+ * Fast UTC day of week calculation for ISO-8601 string ("YYYY-MM-DD...")
+ * using Sakamoto's algorithm. Avoids Date object allocation.
+ * Returns 0=Sun, 1=Mon, ..., 6=Sat
+ */
+function getUTCDayFast(dateString: string): number {
+  const charCodeZero = 48; // '0'.charCodeAt(0)
+
+  const y = (dateString.charCodeAt(0) - charCodeZero) * 1000 +
+            (dateString.charCodeAt(1) - charCodeZero) * 100 +
+            (dateString.charCodeAt(2) - charCodeZero) * 10 +
+            (dateString.charCodeAt(3) - charCodeZero);
+
+  const m = (dateString.charCodeAt(5) - charCodeZero) * 10 +
+            (dateString.charCodeAt(6) - charCodeZero);
+
+  const d = (dateString.charCodeAt(8) - charCodeZero) * 10 +
+            (dateString.charCodeAt(9) - charCodeZero);
+
+  const t = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
+  let year = y;
+  if (m < 3) year -= 1;
+  return (year + Math.floor(year / 4) - Math.floor(year / 100) + Math.floor(year / 400) + t[m - 1] + d) % 7;
+}
+
 // ===== 5. fetchActivity =====
+
 
 type GitHubEvent = {
   type: string;
@@ -707,20 +734,14 @@ export const fetchActivity = cache(async function fetchActivity(
   );
 
   const eventCountMap = new Map<string, number>();
-  const dayCache = new Map<string, number>();
 
   for (const event of allEvents) {
     const createdAt = event.created_at;
-    const datePart = createdAt.slice(0, 10);
 
-    let day = dayCache.get(datePart);
-    if (day === undefined) {
-      day = new Date(datePart).getUTCDay(); // 0=Sun, 6=Sat
-      dayCache.set(datePart, day);
-    }
+    const day = getUTCDayFast(createdAt);
 
     // Fast hour extraction from YYYY-MM-DDTHH:MM:SSZ
-    const charCodeZero = '0'.charCodeAt(0);
+    const charCodeZero = 48; // '0'.charCodeAt(0)
     const hour = (createdAt.charCodeAt(11) - charCodeZero) * 10 + (createdAt.charCodeAt(12) - charCodeZero);
     heatmap[day][hour]++;
 
