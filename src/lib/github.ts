@@ -89,14 +89,20 @@ function calculateStreaks(calendar: { count: number }[]): { longestStreak: numbe
 }
 
 function calculateMostActiveDay(calendar: { date: string; count: number }[]): string | null {
+  if (calendar.length === 0) {
+    return null;
+  }
+
   const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const weekdayTotals = Array.from({ length: 7 }, () => 0);
+  const startDay = new Date(`${calendar[0].date}T00:00:00Z`).getUTCDay();
 
-  for (const day of calendar) {
+  for (let i = 0; i < calendar.length; i++) {
+    const day = calendar[i];
     if (day.count === 0) {
       continue;
     }
-    const weekday = new Date(`${day.date}T00:00:00Z`).getUTCDay();
+    const weekday = (startDay + i) % 7;
     weekdayTotals[weekday] += day.count;
   }
 
