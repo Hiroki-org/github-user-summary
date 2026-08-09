@@ -46,8 +46,8 @@ export function useThemeColor({ avatarUrl, topLanguageColor }: UseThemeColorOpti
           applyColor(color.value.slice(0, 3) as [number, number, number]);
         }
       })
-      .catch((e) => {
-        console.warn("Failed to extract color from avatar, keeping fallback color.", e);
+      .catch(() => {
+        // Silently swallow error to keep fallback color
       });
     }
 
