@@ -161,11 +161,13 @@ function buildHeatmapFromRepoPushes(repos: CardRepoData[]): { days: { date: stri
     start.setUTCDate(start.getUTCDate() - 41);
 
     const dayCounts = new Map<string, number>();
+    const current = new Date(start);
     for (let i = 0; i < 42; i += 1) {
-        const date = new Date(start);
-        date.setUTCDate(start.getUTCDate() + i);
-        const key = date.toISOString().slice(0, 10);
-        dayCounts.set(key, 0);
+        const year = current.getUTCFullYear();
+        const month = String(current.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(current.getUTCDate()).padStart(2, '0');
+        dayCounts.set(`${year}-${month}-${day}`, 0);
+        current.setUTCDate(current.getUTCDate() + 1);
     }
 
     for (const repo of repos) {
