@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { estimateHeight, levelColor, createBlock } from "@/lib/cardElements";
-import type { CardRenderOptions } from "@/lib/cardOptions";
-import type { CardData } from "@/lib/cardDataFetcher";
-import type { ThemePalette } from "@/lib/cardElements";
+import { estimateHeight, levelColor, createBlock } from "../cardElements";
+import type { CardRenderOptions, CardBlockType } from "../cardOptions";
+import type { CardData } from "../cardDataFetcher";
+import type { ThemePalette } from "../cardElements";
 
 describe("cardElements utility functions", () => {
   describe("estimateHeight", () => {
