@@ -103,7 +103,7 @@ function calculateMostActiveDay(calendar: { date: string; count: number }[]): st
       (day.date.charCodeAt(1) - charCodeZero) * 100 +
       (day.date.charCodeAt(2) - charCodeZero) * 10 +
       (day.date.charCodeAt(3) - charCodeZero);
-    let m =
+    const m =
       (day.date.charCodeAt(5) - charCodeZero) * 10 +
       (day.date.charCodeAt(6) - charCodeZero);
     const d =
