@@ -60,7 +60,7 @@ describe("fetchCardData", () => {
                     name: "repo-2",
                     stargazers_count: 5,
                     forks_count: 1,
-                    language: "TypeScript",
+                    language: "JavaScript",
                     html_url: "https://github.com/alice/repo-2",
                     pushed_at: new Date().toISOString(),
                 },
@@ -205,3 +205,79 @@ describe("fetchCardData", () => {
         }
     });
 });
+
+    it("handles totalLanguageRepos === 0", async () => {
+        mockFetch
+            .mockResolvedValueOnce(jsonResponse({
+                login: "alice",
+                name: "Alice",
+                avatar_url: "https://example.com/a.png",
+                bio: "hello",
+                followers: 10,
+                following: 4,
+                public_repos: 12,
+            }))
+            .mockResolvedValueOnce(jsonResponse([
+                {
+                    name: "repo-1",
+                    stargazers_count: 20,
+                    forks_count: 2,
+                    language: null, // No language
+                    html_url: "https://github.com/alice/repo-1",
+                    pushed_at: new Date().toISOString(),
+                }
+            ]));
+
+        const { fetchCardData } = await import("@/lib/cardDataFetcher");
+        const result = await fetchCardData("alice");
+
+        expect(result).not.toBeNull();
+        expect(result?.languages).toHaveLength(0);
+    });
+
+    it("throws non-abort errors from fetch", async () => {
+        const error = new Error("Network error");
+        mockFetch.mockRejectedValueOnce(error);
+
+        const { fetchCardData } = await import("@/lib/cardDataFetcher");
+
+        await expect(fetchCardData("alice")).rejects.toThrow("Network error");
+    });
+
+    it("throws GitHubApiError when response is not ok", async () => {
+        mockFetch
+            .mockResolvedValueOnce({
+                ok: false,
+                status: 500,
+                headers: new Headers(),
+                text: () => Promise.resolve("Internal Server Error"),
+            } as unknown as Response)
+            .mockResolvedValueOnce(jsonResponse([]));
+
+        const { fetchCardData } = await import("@/lib/cardDataFetcher");
+
+        await expect(fetchCardData("alice")).rejects.toMatchObject({
+            name: "GitHubApiError",
+            message: "Internal Server Error",
+            status: 500,
+        });
+    });
+
+    it("throws GitHubApiError with default message when response is not ok and text fails", async () => {
+        mockFetch
+            .mockResolvedValueOnce({
+                ok: false,
+                status: 500,
+                headers: new Headers(),
+                text: () => Promise.reject(new Error("Failed to read")),
+            } as unknown as Response)
+            .mockResolvedValueOnce(jsonResponse([]));
+
+        const { fetchCardData } = await import("@/lib/cardDataFetcher");
+
+        await expect(fetchCardData("alice")).rejects.toMatchObject({
+            name: "GitHubApiError",
+            message: "Unknown GitHub error",
+            status: 500,
+        });
+    });

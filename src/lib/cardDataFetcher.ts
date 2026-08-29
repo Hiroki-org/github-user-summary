@@ -123,77 +123,6 @@ function toCardProfile(user: GitHubUser): CardProfileData {
     };
 }
 
-function toCardRepos(repos: GitHubRepo[]): CardRepoData[] {
-    return repos.map((repo) => ({
-        name: repo.name,
-        stars: repo.stargazers_count,
-        forks: repo.forks_count,
-        language: repo.language,
-        url: repo.html_url,
-        pushedAt: repo.pushed_at,
-    }));
-}
-
-function buildLanguageStats(repos: CardRepoData[]): CardLanguageData[] {
-    const bucket = new Map<string, number>();
-    for (const repo of repos) {
-        if (!repo.language) {
-            continue;
-        }
-        bucket.set(repo.language, (bucket.get(repo.language) ?? 0) + 1);
-    }
-
-    const total = Array.from(bucket.values()).reduce((acc, value) => acc + value, 0);
-
-    return Array.from(bucket.entries())
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 6)
-        .map(([name, count]) => ({
-            name,
-            count,
-            percentage: total > 0 ? Math.round((count / total) * 1000) / 10 : 0,
-        }));
-}
-
-function buildHeatmapFromRepoPushes(repos: CardRepoData[]): { days: { date: string; count: number }[]; maxCount: number } {
-    const today = new Date();
-    const start = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
-    start.setUTCDate(start.getUTCDate() - 41);
-
-    const dayCounts = new Map<string, number>();
-    for (let i = 0; i < 42; i += 1) {
-        const date = new Date(start);
-        date.setUTCDate(start.getUTCDate() + i);
-        const key = date.toISOString().slice(0, 10);
-        dayCounts.set(key, 0);
-    }
-
-    for (const repo of repos) {
-        if (!repo.pushedAt) {
-            continue;
-        }
-
-        let key: string;
-        if (repo.pushedAt.length >= 10 && repo.pushedAt[4] === '-' && repo.pushedAt[7] === '-') {
-            key = repo.pushedAt.slice(0, 10);
-        } else {
-            const pushed = new Date(repo.pushedAt);
-            if (Number.isNaN(pushed.getTime())) {
-                continue;
-            }
-            key = pushed.toISOString().slice(0, 10);
-        }
-
-        if (dayCounts.has(key)) {
-            dayCounts.set(key, (dayCounts.get(key) ?? 0) + 1);
-        }
-    }
-
-    const days = Array.from(dayCounts.entries()).map(([date, count]) => ({ date, count }));
-    const maxCount = days.reduce((max, day) => Math.max(max, day.count), 0);
-    return { days, maxCount };
-}
-
 function buildStreak(days: { date: string; count: number }[]): { current: number; longest: number } {
     let longest = 0;
     let activeRun = 0;
@@ -233,10 +162,75 @@ export async function fetchCardData(username: string): Promise<CardData | null> 
         return null;
     }
 
-    const repos = toCardRepos(reposResult.data ?? []);
-    const languages = buildLanguageStats(repos);
-    const totalStars = repos.reduce((acc, repo) => acc + repo.stars, 0);
-    const heatmap = buildHeatmapFromRepoPushes(repos);
+    const rawRepos = reposResult.data ?? [];
+
+    const repos: CardRepoData[] = [];
+    const languageBucket = new Map<string, number>();
+    let totalLanguageRepos = 0;
+    let totalStars = 0;
+
+    const today = new Date();
+    const start = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+    start.setUTCDate(start.getUTCDate() - 41);
+
+    const dayCounts = new Map<string, number>();
+    for (let i = 0; i < 42; i += 1) {
+        const date = new Date(start);
+        date.setUTCDate(start.getUTCDate() + i);
+        const key = date.toISOString().slice(0, 10);
+        dayCounts.set(key, 0);
+    }
+
+    for (let i = 0; i < rawRepos.length; i++) {
+        const rawRepo = rawRepos[i];
+
+        const repo: CardRepoData = {
+            name: rawRepo.name,
+            stars: rawRepo.stargazers_count,
+            forks: rawRepo.forks_count,
+            language: rawRepo.language,
+            url: rawRepo.html_url,
+            pushedAt: rawRepo.pushed_at,
+        };
+        repos.push(repo);
+
+        totalStars += repo.stars;
+
+        if (repo.language) {
+            languageBucket.set(repo.language, (languageBucket.get(repo.language) ?? 0) + 1);
+            totalLanguageRepos += 1;
+        }
+
+        if (repo.pushedAt) {
+            let key: string | undefined;
+            if (repo.pushedAt.length >= 10 && repo.pushedAt[4] === '-' && repo.pushedAt[7] === '-') {
+                key = repo.pushedAt.slice(0, 10);
+            } else {
+                const pushed = new Date(repo.pushedAt);
+                if (Number.isNaN(pushed.getTime())) {
+                    continue;
+                }
+                    key = pushed.toISOString().slice(0, 10);
+            }
+            if (key && dayCounts.has(key)) {
+                dayCounts.set(key, (dayCounts.get(key) ?? 0) + 1);
+            }
+        }
+    }
+
+    const languages: CardLanguageData[] = Array.from(languageBucket.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 6)
+        .map(([name, count]) => ({
+            name,
+            count,
+            percentage: totalLanguageRepos > 0 ? Math.round((count / totalLanguageRepos) * 1000) / 10 : 0,
+        }));
+
+    const days = Array.from(dayCounts.entries()).map(([date, count]) => ({ date, count }));
+    const maxCount = days.reduce((max, day) => Math.max(max, day.count), 0);
+    const heatmap = { days, maxCount };
+
     const streak = buildStreak(heatmap.days);
 
     return {
