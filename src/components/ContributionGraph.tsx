@@ -32,13 +32,24 @@ function processCalendarData(calendar: ContributionData["calendar"]) {
 
   const maxCount = Math.max(...calendar.map((d) => d.count), 1);
 
+  // Sakamoto's algorithm constants for day of week
+  const t = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
+
   // Group entries by week columns
   const entries = calendar
     .map((d) => {
-      const date = new Date(d.date + "T00:00:00");
-      return { ...d, dateObj: date, dayOfWeek: date.getDay() };
+      // Manual parsing to avoid expensive Date parsing and instantiation
+      const y = parseInt(d.date.slice(0, 4), 10);
+      const m = parseInt(d.date.slice(5, 7), 10);
+      const day = parseInt(d.date.slice(8, 10), 10);
+
+      let y2 = y;
+      if (m < 3) y2 -= 1;
+      const dayOfWeek = (y2 + Math.floor(y2 / 4) - Math.floor(y2 / 100) + Math.floor(y2 / 400) + t[m - 1] + day) % 7;
+
+      return { ...d, month: m - 1, dayOfWeek };
     })
-    .sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 
   const weeks: (typeof entries)[] = [];
   let currentWeek: typeof entries = [];
@@ -57,7 +68,7 @@ function processCalendarData(calendar: ContributionData["calendar"]) {
   let lastMonth = -1;
   weeks.forEach((week, wIdx) => {
     const firstEntry = week[0];
-    const month = firstEntry.dateObj.getMonth();
+    const month = firstEntry.month;
     if (month !== lastMonth) {
       monthLabels.push({
         label: MONTHS[month],
