@@ -1,8 +1,6 @@
-import { describe, it, expect, vi } from "vitest";
-import { headers, handleRateLimit, getTopK, processResult } from "@/lib/github";
-import { GitHubApiError, RateLimitError } from "@/lib/types";
-
-vi.mock("server-only", () => ({}));
+import { describe, it, expect } from "vitest";
+import { headers, handleRateLimit, getTopK, processResult } from "../github";
+import { GitHubApiError, RateLimitError } from "../types";
 
 describe("github base helpers", () => {
   describe("headers()", () => {
