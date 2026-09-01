@@ -247,4 +247,48 @@ describe("useCopyToClipboard", () => {
     expect(clearTimeoutSpy).toHaveBeenCalledTimes(1);
     expect(vi.getTimerCount()).toBe(0);
   });
+
+  it("should perform fallback copy with DOM manipulation and cleanup", async () => {
+    vi.mocked(navigator.clipboard.writeText).mockRejectedValue(new Error("Clipboard error"));
+    vi.mocked(document.execCommand).mockReturnValue(true);
+
+    const createElementSpy = vi.spyOn(document, "createElement");
+    const appendChildSpy = vi.spyOn(document.body, "appendChild");
+    const removeChildSpy = vi.spyOn(document.body, "removeChild");
+    const selectSpy = vi.spyOn(HTMLTextAreaElement.prototype, "select");
+
+    const { result } = renderHook(() => useCopyToClipboard());
+
+    await act(async () => {
+      await result.current.copyToClipboard("fallback text");
+    });
+
+    expect(createElementSpy).toHaveBeenCalledWith("textarea");
+    expect(appendChildSpy).toHaveBeenCalled();
+    expect(selectSpy).toHaveBeenCalled();
+    expect(document.execCommand).toHaveBeenCalledWith("copy");
+    expect(removeChildSpy).toHaveBeenCalled();
+
+    // Verify the appended child was the textarea we created
+    const textarea = createElementSpy.mock.results.find(
+      (result) => result.value instanceof HTMLTextAreaElement
+    )?.value;
+    expect(textarea).toBeDefined();
+    expect(appendChildSpy).toHaveBeenCalledWith(textarea);
+    expect(removeChildSpy).toHaveBeenCalledWith(textarea);
+    expect(textarea.value).toBe("fallback text");
+
+    expect(result.current.copied).toBe(true);
+
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+
+    expect(result.current.copied).toBe(false);
+
+    createElementSpy.mockRestore();
+    appendChildSpy.mockRestore();
+    removeChildSpy.mockRestore();
+    selectSpy.mockRestore();
+  });
 });
