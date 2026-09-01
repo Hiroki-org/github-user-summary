@@ -427,20 +427,10 @@ function processRepoData(repos: RepoNode[]): RepositoryData {
   }
 
   const totalBytes = Array.from(languageMap.values()).reduce((a, b) => a + b.bytes, 0);
-  const topLanguages: { name: string; bytes: number; color: string }[] = [];
-  for (const [name, data] of languageMap.entries()) {
-    if (topLanguages.length < 10) {
-      topLanguages.push({ name, ...data });
-      topLanguages.sort((a, b) => b.bytes - a.bytes);
-    } else if (data.bytes > topLanguages[9].bytes) {
-      let i = 8;
-      while (i >= 0 && topLanguages[i].bytes < data.bytes) {
-        topLanguages[i + 1] = topLanguages[i];
-        i--;
-      }
-      topLanguages[i + 1] = { name, ...data };
-    }
-  }
+  const topLanguages = Array.from(languageMap.entries())
+    .sort((a, b) => b[1].bytes - a[1].bytes)
+    .slice(0, 10)
+    .map(([name, data]) => ({ name, ...data }));
 
   const languages: LanguageStats[] = topLanguages.map(({ name, bytes, color }) => ({
     name,
