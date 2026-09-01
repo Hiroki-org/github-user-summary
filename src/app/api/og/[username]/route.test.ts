@@ -42,6 +42,21 @@ describe("OG Image Route", () => {
     expect(await res.text()).toBe("Invalid username");
   });
 
+  it("should generate image for valid username with authorization header when GITHUB_TOKEN is set", async () => {
+    vi.stubEnv('GITHUB_TOKEN', 'test_token');
+    const mockFetch = vi.spyOn(global, "fetch").mockImplementation(() => Promise.resolve(new Response(JSON.stringify({ name: "Valid User" }), { status: 200 })));
+
+    const req = new NextRequest("http://localhost/api/og/validuser");
+    await GET(req, { params: Promise.resolve({ username: "validuser" }) });
+
+    expect(mockFetch).toHaveBeenCalledWith("https://api.github.com/users/validuser", expect.objectContaining({
+      headers: expect.objectContaining({
+        Authorization: "Bearer test_token"
+      })
+    }));
+    vi.unstubAllEnvs();
+  });
+
   it("should generate image for valid username", async () => {
     const mockFetch = vi.spyOn(global, "fetch").mockImplementation(() => Promise.resolve(new Response(JSON.stringify({ name: "Valid User", bio: "Short bio", avatar_url: "https://example.com/avatar.png", followers: 100, public_repos: 50 }), { status: 200 })));
 

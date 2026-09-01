@@ -44,6 +44,7 @@ export async function GET(
   try {
     const res = await fetch(`https://api.github.com/users/${encodeURIComponent(username)}`, {
       headers: {
+        ...(process.env.GITHUB_TOKEN && { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` }),
         Accept: "application/vnd.github.v3+json",
         "User-Agent": "github-user-summary",
       },
