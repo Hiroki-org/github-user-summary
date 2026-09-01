@@ -96,7 +96,25 @@ function calculateMostActiveDay(calendar: { date: string; count: number }[]): st
     if (day.count === 0) {
       continue;
     }
-    const weekday = new Date(`${day.date}T00:00:00Z`).getUTCDay();
+    // Fast weekday extraction using Sakamoto's algorithm (no Date object allocation)
+    const charCodeZero = 48; // '0'.charCodeAt(0)
+    const y =
+      (day.date.charCodeAt(0) - charCodeZero) * 1000 +
+      (day.date.charCodeAt(1) - charCodeZero) * 100 +
+      (day.date.charCodeAt(2) - charCodeZero) * 10 +
+      (day.date.charCodeAt(3) - charCodeZero);
+    const m =
+      (day.date.charCodeAt(5) - charCodeZero) * 10 +
+      (day.date.charCodeAt(6) - charCodeZero);
+    const d =
+      (day.date.charCodeAt(8) - charCodeZero) * 10 +
+      (day.date.charCodeAt(9) - charCodeZero);
+
+    const t = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
+    let year = y;
+    if (m < 3) year -= 1;
+    const weekday = (year + Math.floor(year / 4) - Math.floor(year / 100) + Math.floor(year / 400) + t[m - 1] + d) % 7;
+
     weekdayTotals[weekday] += day.count;
   }
 
