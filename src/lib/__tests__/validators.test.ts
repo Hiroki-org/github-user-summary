@@ -174,4 +174,8 @@ describe("isTrustedFontUrl", () => {
       isTrustedFontUrl("https://localhost:3000/fonts/NotoSans-Regular.ttf", "https://localhost:3000"),
     ).toBe(false);
   });
+
+  it("returns false for invalid unparseable URLs (error path)", () => {
+    expect(isTrustedFontUrl("not-a-valid-url")).toBe(false);
+  });
 });
