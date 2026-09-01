@@ -265,6 +265,95 @@ describe("fetchYearInReviewData success paths", () => {
     });
 });
 
+
+describe("fetchYearInReviewData caching logic", () => {
+  const currentYear = new Date().getFullYear();
+
+  beforeEach(() => {
+    mockFetch.mockResolvedValue(jsonResponse({
+      data: {
+        user: {
+          id: "U_123",
+          contributionsCollection: {
+            totalCommitContributions: 10,
+            totalPullRequestContributions: 5,
+            totalIssueContributions: 2,
+            totalPullRequestReviewContributions: 1,
+            contributionCalendar: {
+              totalContributions: 18,
+              weeks: []
+            },
+            commitContributionsByRepository: [],
+            pullRequestContributionsByRepository: [],
+            issueContributionsByRepository: []
+          }
+        }
+      }
+    }));
+  });
+
+  it("should use cache: 'no-store' for the current year", async () => {
+    await fetchYearInReviewData("testuser", currentYear, "mock-token");
+    expect(mockFetch).toHaveBeenCalledWith("https://api.github.com/graphql", expect.objectContaining({
+      cache: "no-store"
+    }));
+  });
+
+  it("should use cache: 'force-cache' for a past year", async () => {
+    await fetchYearInReviewData("testuser", currentYear - 1, "mock-token");
+    expect(mockFetch).toHaveBeenCalledWith("https://api.github.com/graphql", expect.objectContaining({
+      cache: "force-cache"
+    }));
+  });
+});
+
+describe("fetchCommitActivityHeatmap caching logic", () => {
+  const currentYear = new Date().getFullYear();
+
+  beforeEach(() => {
+    // 1st call for repos
+    mockFetch.mockResolvedValueOnce(jsonResponse({
+      data: {
+        user: {
+          id: "U_123",
+          contributionsCollection: {
+            commitContributionsByRepository: [{
+              repository: { owner: { login: "own" }, name: "repo" },
+              contributions: { totalCount: 1 }
+            }]
+          }
+        }
+      }
+    }));
+    // 2nd call for commits
+    mockFetch.mockResolvedValueOnce(jsonResponse([{
+      commit: { author: { date: "2023-01-01T12:00:00Z" } }
+    }]));
+  });
+
+  it("should use cache: 'no-store' for the current year", async () => {
+    await fetchCommitActivityHeatmap("testuser", currentYear, "mock-token");
+    expect(mockFetch).toHaveBeenCalledWith("https://api.github.com/graphql", expect.objectContaining({
+      cache: "no-store"
+    }));
+    // URL will have the parameters
+    expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("https://api.github.com/repos/own/repo/commits"), expect.objectContaining({
+      cache: "no-store"
+    }));
+  });
+
+  it("should use cache: 'force-cache' for a past year", async () => {
+    await fetchCommitActivityHeatmap("testuser", currentYear - 1, "mock-token");
+    expect(mockFetch).toHaveBeenCalledWith("https://api.github.com/graphql", expect.objectContaining({
+      cache: "force-cache"
+    }));
+    expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("https://api.github.com/repos/own/repo/commits"), expect.objectContaining({
+      cache: "force-cache"
+    }));
+  });
+});
+
+
 describe("fetchCommitActivityHeatmap", () => {
     it("successfully fetches and builds commit activity heatmap", async () => {
         mockFetch.mockImplementation((url: string | URL | Request) => {
