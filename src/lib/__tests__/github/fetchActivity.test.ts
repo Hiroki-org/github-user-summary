@@ -2,6 +2,90 @@ import { describe, it, expect } from "vitest";
 import { mockFetch, jsonResponse, MOCK_EVENTS } from "./setup";
 
 describe("fetchActivity", () => {
+  it("Sakamoto algorithm calculates weekday correctly for leap year month >= 3", async () => {
+    // 2024-03-01 is Friday (5) and it is a leap year.
+    // 2025-05-18 is Sunday (0) and it is not a leap year.
+    const edgeEvents = [
+      { type: "PushEvent", created_at: "2024-03-01T10:30:00Z" },
+      { type: "PushEvent", created_at: "2025-05-18T10:30:00Z" }
+    ];
+    mockFetch
+      .mockResolvedValueOnce(jsonResponse(edgeEvents))
+      .mockResolvedValueOnce(jsonResponse([]))
+      .mockResolvedValueOnce(jsonResponse([]));
+
+    const { fetchActivity } = await import("../../github");
+    const result = await fetchActivity("testuser", "fake-token");
+
+    // 2024-03-01 (Friday = 5)
+    expect(result.heatmap[5][10]).toBeGreaterThanOrEqual(1);
+    // 2025-05-18 (Sunday = 0)
+    expect(result.heatmap[0][10]).toBeGreaterThanOrEqual(1);
+  });
+
+  it("Sakamoto algorithm calculates weekday correctly for leap year month >= 3", async () => {
+    // 2024-03-01 is Friday (5) and it is a leap year.
+    // 2025-05-18 is Sunday (0) and it is not a leap year.
+    const edgeEvents = [
+      { type: "PushEvent", created_at: "2024-03-01T10:30:00Z" },
+      { type: "PushEvent", created_at: "2025-05-18T10:30:00Z" }
+    ];
+    mockFetch
+      .mockResolvedValueOnce(jsonResponse(edgeEvents))
+      .mockResolvedValueOnce(jsonResponse([]))
+      .mockResolvedValueOnce(jsonResponse([]));
+
+    const { fetchActivity } = await import("../../github");
+    const result = await fetchActivity("testuser", "fake-token");
+
+    // 2024-03-01 (Friday = 5)
+    expect(result.heatmap[5][10]).toBeGreaterThanOrEqual(1);
+    // 2025-05-18 (Sunday = 0)
+    expect(result.heatmap[0][10]).toBeGreaterThanOrEqual(1);
+  });
+
+  it("Sakamoto algorithm calculates weekday correctly for month < 3", async () => {
+    // 2024-02-29 is Thursday (4)
+    // 2023-01-01 is Sunday (0)
+    const edgeEvents = [
+      { type: "PushEvent", created_at: "2024-02-29T10:30:00Z" },
+      { type: "PushEvent", created_at: "2023-01-01T10:30:00Z" }
+    ];
+    mockFetch
+      .mockResolvedValueOnce(jsonResponse(edgeEvents))
+      .mockResolvedValueOnce(jsonResponse([]))
+      .mockResolvedValueOnce(jsonResponse([]));
+
+    const { fetchActivity } = await import("../../github");
+    const result = await fetchActivity("testuser", "fake-token");
+
+    // 2024-02-29 (Thursday = 4)
+    expect(result.heatmap[4][10]).toBeGreaterThanOrEqual(1);
+    // 2023-01-01 (Sunday = 0)
+    expect(result.heatmap[0][10]).toBeGreaterThanOrEqual(1);
+  });
+
+  it("Sakamoto algorithm calculates weekday correctly for month >= 3 and leap years", async () => {
+    // 2024-03-01 is Friday (5)
+    // 2023-05-18 is Thursday (4)
+    const edgeEvents = [
+      { type: "PushEvent", created_at: "2024-03-01T10:30:00Z" },
+      { type: "PushEvent", created_at: "2023-05-18T10:30:00Z" }
+    ];
+    mockFetch
+      .mockResolvedValueOnce(jsonResponse(edgeEvents))
+      .mockResolvedValueOnce(jsonResponse([]))
+      .mockResolvedValueOnce(jsonResponse([]));
+
+    const { fetchActivity } = await import("../../github");
+    const result = await fetchActivity("testuser", "fake-token");
+
+    // 2024-03-01 (Friday = 5)
+    expect(result.heatmap[5][10]).toBe(1);
+    // 2023-05-18 (Thursday = 4)
+    expect(result.heatmap[4][10]).toBe(1);
+  });
+
   it("ヒートマップが 7×24 で初期化される", async () => {
     mockFetch
       .mockResolvedValueOnce(jsonResponse(MOCK_EVENTS))
