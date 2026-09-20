@@ -1,6 +1,10 @@
+// @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
-import { estimateHeight, levelColor } from "../cardElements";
-import type { CardRenderOptions } from "../cardOptions";
+import { render, screen } from "@testing-library/react";
+import { estimateHeight, levelColor, createBlock } from "@/lib/cardElements";
+import type { CardRenderOptions } from "@/lib/cardOptions";
+import type { CardData } from "@/lib/cardDataFetcher";
+import type { ThemePalette } from "@/lib/cardElements";
 
 describe("cardElements utility functions", () => {
   describe("estimateHeight", () => {
@@ -105,6 +109,101 @@ describe("cardElements utility functions", () => {
       expect(levelColor(8, 10, mockTheme)).toBe("#15803d");
       expect(levelColor(10, 10, mockTheme)).toBe("#15803d");
       expect(levelColor(15, 10, mockTheme)).toBe("#15803d"); // > 1
+    });
+  });
+
+  describe("createBlock", () => {
+    const mockTheme: ThemePalette = {
+      bg: "#fff",
+      panel: "#f8f9fa",
+      text: "#000",
+      subtext: "#666",
+      border: "#ccc",
+      success: "#0f0",
+      accent: "#3b82f6",
+    };
+
+    const mockData: CardData = {
+      profile: {
+        login: "testuser",
+        name: "Test User",
+        avatarUrl: "https://example.com/avatar.png",
+        bio: "Test bio here",
+        followers: 10,
+        following: 5,
+        publicRepos: 20,
+      },
+      repos: [
+        {
+          name: "repo1",
+          stars: 100,
+          forks: 50,
+          language: "TypeScript",
+          url: "https://github.com/testuser/repo1",
+          pushedAt: "2023-01-01T00:00:00Z",
+        },
+      ],
+      totalStars: 500,
+      languages: [
+        { name: "TypeScript", count: 10, percentage: 80 },
+        { name: "JavaScript", count: 2, percentage: 20 },
+      ],
+      streak: { current: 5, longest: 14 },
+      heatmap: {
+        days: [{ date: "2023-01-01", count: 5 }],
+        maxCount: 10,
+              },
+          };
+
+    const emptyHide = new Set<string>();
+
+    it("renders bio block correctly", () => {
+      const element = createBlock("bio", mockData, mockTheme, emptyHide);
+      render(element);
+      expect(screen.getByText("Test User")).toBeTruthy();
+      expect(screen.getByText("@testuser")).toBeTruthy();
+      expect(screen.getByText("Test bio here")).toBeTruthy();
+      // The bio block does not have Followers in it.
+    });
+
+    it("renders stats block correctly", () => {
+      const element = createBlock("stats", mockData, mockTheme, emptyHide);
+      render(element);
+      expect(screen.getByText("Stats")).toBeTruthy();
+      expect(screen.getByText(/Stars:/)).toBeTruthy();
+      expect(screen.getByText(/500/)).toBeTruthy();
+    });
+
+    it("renders langs block correctly", () => {
+      const element = createBlock("langs", mockData, mockTheme, emptyHide);
+      render(element);
+      expect(screen.getByText("Top Languages")).toBeTruthy();
+      expect(screen.getByText("TypeScript")).toBeTruthy();
+      expect(screen.getByText(/80.0%/)).toBeTruthy();
+      expect(screen.getByText("JavaScript")).toBeTruthy();
+      expect(screen.getByText(/20.0%/)).toBeTruthy();
+    });
+
+    it("renders repos block correctly", () => {
+      const element = createBlock("repos", mockData, mockTheme, emptyHide);
+      render(element);
+      expect(screen.getByText("Top Repositories")).toBeTruthy();
+      expect(screen.getByText("repo1")).toBeTruthy();
+      expect(screen.getByText(/★100/)).toBeTruthy();
+    });
+
+    it("renders streak block correctly", () => {
+      const element = createBlock("streak", mockData, mockTheme, emptyHide);
+      render(element);
+      expect(screen.getByText("Streak")).toBeTruthy();
+      expect(screen.getByText(/Current: 5 days/)).toBeTruthy();
+      expect(screen.getByText(/Longest: 14 days/)).toBeTruthy();
+    });
+
+    it("renders heatmap block correctly", () => {
+      const element = createBlock("heatmap", mockData, mockTheme, emptyHide);
+      render(element);
+      expect(screen.getByText("Heatmap")).toBeTruthy();
     });
   });
 });
