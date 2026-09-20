@@ -745,7 +745,7 @@ export const fetchActivity = cache(async function fetchActivity(
  * 効率的に Map から上位 K 件を抽出するヘルパー関数
  * 上位 K 件だけを返します。
  */
-function getTopK(map: Map<string, number>, k: number = 10): { name: string; count: number }[] {
+export function getTopK(map: Map<string, number>, k: number = 10): { name: string; count: number }[] {
   const limit = Math.max(0, k);
   return Array.from(map, ([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count)
@@ -755,7 +755,7 @@ function getTopK(map: Map<string, number>, k: number = 10): { name: string; coun
 /**
  * 結果を処理し、エラーがあれば記録するヘルパー関数
  */
-function processResult<T>(
+export function processResult<T>(
   result: PromiseSettledResult<T>,
   section: string,
   errors: { section: string; message: string }[]
