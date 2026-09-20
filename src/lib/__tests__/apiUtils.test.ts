@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { handleErrorResponse, getAuthenticatedUser } from '../apiUtils';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { handleErrorResponse, getAuthenticatedUser, handleRateLimit } from '../apiUtils';
+import { RateLimitError } from '@/lib/types';
 import { NextResponse } from 'next/server';
 import { getServerSession } from "next-auth";
 
@@ -95,6 +96,67 @@ describe('apiUtils', () => {
       const result = await getAuthenticatedUser();
 
       expect(result).toBeNull();
+    });
+  });
+
+  describe('handleRateLimit', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2024-01-01T12:00:00Z')); // 1704110400
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('should throw RateLimitError with exact timestamp if X-RateLimit-Reset is present and valid', () => {
+      expect.assertions(2);
+      const resetTimestamp = 1704114000;
+      const res = {
+        headers: new Headers({
+          'X-RateLimit-Reset': resetTimestamp.toString(),
+        })
+      } as unknown as Response;
+
+      try {
+        handleRateLimit(res);
+        expect.fail('Expected handleRateLimit to throw');
+      } catch (error) {
+        expect(error).toBeInstanceOf(RateLimitError);
+        expect((error as RateLimitError).resetAt.getTime()).toBe(resetTimestamp * 1000);
+      }
+    });
+
+    it('should throw RateLimitError with timestamp 1 hour in the future if header is missing', () => {
+      expect.assertions(2);
+      const res = {
+        headers: new Headers()
+      } as unknown as Response;
+
+      try {
+        handleRateLimit(res);
+        expect.fail('Expected handleRateLimit to throw');
+      } catch (error) {
+        expect(error).toBeInstanceOf(RateLimitError);
+        expect((error as RateLimitError).resetAt.getTime()).toBe((1704110400 + 3600) * 1000);
+      }
+    });
+
+    it('should throw RateLimitError with timestamp 1 hour in the future if header is invalid (NaN)', () => {
+      expect.assertions(2);
+      const res = {
+        headers: new Headers({
+          'X-RateLimit-Reset': 'invalid-data',
+        })
+      } as unknown as Response;
+
+      try {
+        handleRateLimit(res);
+        expect.fail('Expected handleRateLimit to throw');
+      } catch (error) {
+        expect(error).toBeInstanceOf(RateLimitError);
+        expect((error as RateLimitError).resetAt.getTime()).toBe((1704110400 + 3600) * 1000);
+      }
     });
   });
 });
