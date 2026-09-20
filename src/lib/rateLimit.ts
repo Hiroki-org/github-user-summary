@@ -66,31 +66,18 @@ function isValidIp(value: string): boolean {
     }
 }
 
-function isTrustedProxy(ip: string): boolean {
-    // Matches private IPv4 ranges, loopback, and link-local addresses.
-    const privateIpv4 = /^(127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/;
-    // Matches IPv4-mapped IPv6 versions of the same private IPv4 ranges.
-    const privateIpv4MappedIpv6 = /^::ffff:(127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/i;
-    // Matches IPv6 loopback, ULA (fc00::/7), and link-local (fe80::/10).
-    const privateIpv6 = /^(::1|f[cd]|fe[89ab])/i;
-
-    return (
-        privateIpv4.test(ip) ||
-        privateIpv4MappedIpv6.test(ip) ||
-        privateIpv6.test(ip)
-    );
-}
-
 export function getClientIp(request: Request): string {
     const forwardedFor = request.headers.get("x-forwarded-for");
     if (!forwardedFor) return "unknown";
 
     const ips = forwardedFor.split(",").map(ip => ip.trim());
 
-    // Iterate from right to left and return the first non-private IP as the client IP.
+    // Iterate from right to left and return the first valid IP.
+    // We do not skip private IPs because doing so without a known proxy topology
+    // allows attackers to bypass rate limiting by appending a spoofed private IP.
     for (let i = ips.length - 1; i >= 0; i--) {
         const ip = ips[i];
-        if (ip && isValidIp(ip) && !isTrustedProxy(ip)) {
+        if (ip && isValidIp(ip)) {
             return ip;
         }
     }
