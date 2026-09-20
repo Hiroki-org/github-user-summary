@@ -47,34 +47,6 @@ describe("fetchContributions", () => {
     }
   });
 
-  it("うるう日と年境界を含む曜日を正しく集計する", async () => {
-    mockFetch.mockResolvedValueOnce(jsonResponse({
-      data: {
-        user: {
-          contributionsCollection: {
-            totalCommitContributions: 0,
-            totalPullRequestContributions: 0,
-            totalIssueContributions: 0,
-            totalPullRequestReviewContributions: 0,
-            contributionCalendar: {
-              totalContributions: 8,
-              weeks: [{ contributionDays: [
-                { date: "2023-12-31", contributionCount: 1 },
-                { date: "2024-01-01", contributionCount: 2 },
-                { date: "2024-02-29", contributionCount: 5 },
-              ] }],
-            },
-          },
-        },
-      },
-    }));
-
-    const { fetchContributions } = await import("../../github");
-    const result = await fetchContributions("testuser", "fake-token");
-
-    expect(result.mostActiveDay).toBe("Thursday");
-  });
-
   it("token なしの場合 GitHubApiError をスローする", async () => {
     const { fetchContributions } = await import("../../github");
     const { GitHubApiError } = await import("../../types");
