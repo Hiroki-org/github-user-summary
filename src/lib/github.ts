@@ -23,7 +23,6 @@ import {
 
 const GITHUB_API = "https://api.github.com";
 const GITHUB_GRAPHQL = "https://api.github.com/graphql";
-const SAKAMOTO_MONTH_OFFSETS = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4] as const;
 
 export function headers(token?: string): HeadersInit {
   const h: HeadersInit = {
@@ -88,6 +87,8 @@ function calculateStreaks(calendar: { count: number }[]): { longestStreak: numbe
 
   return { longestStreak, currentStreak };
 }
+
+const SAKAMOTO_MONTH_OFFSETS = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
 
 function calculateMostActiveDay(calendar: { date: string; count: number }[]): string | null {
   const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
