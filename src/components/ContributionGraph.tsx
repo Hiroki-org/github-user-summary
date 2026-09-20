@@ -35,10 +35,19 @@ function processCalendarData(calendar: ContributionData["calendar"]) {
   // Group entries by week columns
   const entries = calendar
     .map((d) => {
-      const date = new Date(d.date + "T00:00:00");
-      return { ...d, dateObj: date, dayOfWeek: date.getDay() };
+      // YYYY-MM-DD format
+      const ds = d.date;
+      const y = (ds.charCodeAt(0) - 48) * 1000 + (ds.charCodeAt(1) - 48) * 100 + (ds.charCodeAt(2) - 48) * 10 + (ds.charCodeAt(3) - 48);
+      const m = (ds.charCodeAt(5) - 48) * 10 + (ds.charCodeAt(6) - 48);
+      const day = (ds.charCodeAt(8) - 48) * 10 + (ds.charCodeAt(9) - 48);
+
+      const t = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
+      const yAdj = y - (m < 3 ? 1 : 0);
+      const dayOfWeek = (yAdj + Math.floor(yAdj / 4) - Math.floor(yAdj / 100) + Math.floor(yAdj / 400) + t[m - 1] + day) % 7;
+
+      return { ...d, month: m - 1, dayOfWeek };
     })
-    .sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 
   const weeks: (typeof entries)[] = [];
   let currentWeek: typeof entries = [];
@@ -57,7 +66,7 @@ function processCalendarData(calendar: ContributionData["calendar"]) {
   let lastMonth = -1;
   weeks.forEach((week, wIdx) => {
     const firstEntry = week[0];
-    const month = firstEntry.dateObj.getMonth();
+    const month = firstEntry.month;
     if (month !== lastMonth) {
       monthLabels.push({
         label: MONTHS[month],
