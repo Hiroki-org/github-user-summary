@@ -618,11 +618,14 @@ export async function fetchStarredRepos(
 
   const [res1, res2] = await Promise.all([fetchPage(1), fetchPage(2)]);
 
-  const starred1 = await handleResponse<StarredRepo[]>(res1);
+  const [starred1, starred2] = await Promise.all([
+    handleResponse<StarredRepo[]>(res1),
+    handleResponse<StarredRepo[]>(res2)
+  ]);
+
   allStarred.push(...starred1);
 
   if (starred1.length === 100) {
-    const starred2 = await handleResponse<StarredRepo[]>(res2);
     allStarred.push(...starred2);
   }
 

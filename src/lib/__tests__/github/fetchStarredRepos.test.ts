@@ -3,7 +3,7 @@ import { mockFetch, jsonResponse, MOCK_STARRED_PAGE1 } from "./setup";
 
 describe("fetchStarredRepos", () => {
   it("スター済みリポジトリのトピックを正しく集計する", async () => {
-    mockFetch.mockResolvedValueOnce(jsonResponse(MOCK_STARRED_PAGE1));
+    mockFetch.mockResolvedValueOnce(jsonResponse(MOCK_STARRED_PAGE1)).mockResolvedValueOnce(jsonResponse([]));
 
     const { fetchStarredRepos } = await import("../../github");
     const result = await fetchStarredRepos("testuser", "fake-token");
@@ -18,7 +18,7 @@ describe("fetchStarredRepos", () => {
   });
 
   it("スター済みリポジトリの言語を正しく集計する", async () => {
-    mockFetch.mockResolvedValueOnce(jsonResponse(MOCK_STARRED_PAGE1));
+    mockFetch.mockResolvedValueOnce(jsonResponse(MOCK_STARRED_PAGE1)).mockResolvedValueOnce(jsonResponse([]));
 
     const { fetchStarredRepos } = await import("../../github");
     const result = await fetchStarredRepos("testuser", "fake-token");
@@ -33,7 +33,7 @@ describe("fetchStarredRepos", () => {
   });
 
   it("totalStarred がリポジトリ数と一致する", async () => {
-    mockFetch.mockResolvedValueOnce(jsonResponse(MOCK_STARRED_PAGE1));
+    mockFetch.mockResolvedValueOnce(jsonResponse(MOCK_STARRED_PAGE1)).mockResolvedValueOnce(jsonResponse([]));
 
     const { fetchStarredRepos } = await import("../../github");
     const result = await fetchStarredRepos("testuser", "fake-token");
