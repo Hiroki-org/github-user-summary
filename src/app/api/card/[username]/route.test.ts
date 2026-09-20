@@ -115,3 +115,10 @@ describe("GET /api/card/[username] rate limiting", () => {
         }));
     });
 });
+
+describe("GET /api/card/[username] exports", () => {
+    it("should export edge runtime", async () => {
+        const { runtime } = await import("./route");
+        expect(runtime).toBe("edge");
+    });
+});
