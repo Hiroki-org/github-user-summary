@@ -1,3 +1,5 @@
+import { render } from "@testing-library/react";
+import { cardTree, errorTree } from "../cardElements";
 import { describe, it, expect } from "vitest";
 import { estimateHeight, levelColor } from "../cardElements";
 import type { CardRenderOptions } from "../cardOptions";
@@ -106,5 +108,76 @@ describe("cardElements utility functions", () => {
       expect(levelColor(10, 10, mockTheme)).toBe("#15803d");
       expect(levelColor(15, 10, mockTheme)).toBe("#15803d"); // > 1
     });
+  });
+});
+
+
+describe("cardTree and errorTree", () => {
+  const mockData = {
+    profile: {
+      login: "testuser",
+      followers: 10,
+      following: 20,
+      publicRepos: 30,
+      avatarUrl: "https://example.com/avatar.jpg",
+    },
+    langStats: {},
+    topRepos: [],
+    totalStars: 50,
+    contributions: {
+      totalContributions: 100,
+      contributionCalendar: {
+        weeks: [],
+      },
+    },
+  } as unknown as import("../cardDataFetcher").CardData;
+
+  it("should render 1 col layout", () => {
+    const mockOptions = {
+      theme: "light",
+      cols: 1,
+      width: 600,
+      hide: new Set(),
+      blocks: ["bio"],
+      layout: { bio: "full" },
+    } as unknown as CardRenderOptions;
+
+    const result = cardTree(mockData, mockOptions, 400);
+    const { getByText } = render(result);
+
+    expect(getByText("testuser")).toBeInTheDocument();
+    expect(getByText("github-user-summary")).toBeInTheDocument();
+  });
+
+  it("should render 2 col layout", () => {
+    const mockOptions = {
+      theme: "light",
+      cols: 2,
+      width: 600,
+      hide: new Set(),
+      blocks: ["bio", "stats"],
+      layout: { bio: "left", stats: "right" },
+    } as unknown as CardRenderOptions;
+
+    const result = cardTree(mockData, mockOptions, 400);
+    const { getByText } = render(result);
+
+    expect(getByText("testuser")).toBeInTheDocument();
+    expect(getByText("github-user-summary")).toBeInTheDocument();
+  });
+
+  it("should render error tree", () => {
+    const mockOptions = {
+      theme: "light",
+      cols: 2,
+      width: 600,
+      hide: new Set(),
+    } as unknown as CardRenderOptions;
+
+    const result = errorTree("Network error", mockOptions, 400);
+    const { getByText } = render(result);
+
+    expect(getByText("Network error")).toBeInTheDocument();
+    expect(getByText("github-user-summary card endpoint")).toBeInTheDocument();
   });
 });
