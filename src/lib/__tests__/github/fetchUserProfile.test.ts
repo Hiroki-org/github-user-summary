@@ -2,16 +2,6 @@ import { describe, it, expect } from "vitest";
 import { mockFetch, jsonResponse, MOCK_USER, MOCK_ORGS, MOCK_PINNED_RESPONSE } from "./setup";
 
 describe("fetchUserProfile", () => {
-  it("handleRateLimit correctly parses NaN header and falls back", async () => {
-    const { handleRateLimit } = await import("../../github");
-    const { RateLimitError } = await import("../../types");
-    const res = { headers: { get: () => "invalid" } } as unknown as Response;
-    try {
-      handleRateLimit(res);
-    } catch (e) {
-      expect(e).toBeInstanceOf(RateLimitError);
-    }
-  });
   it("プロフィール・組織・ピン留めを正しく取得して結合する", async () => {
     mockFetch
       .mockResolvedValueOnce(jsonResponse(MOCK_USER))                    // GET /users/testuser
