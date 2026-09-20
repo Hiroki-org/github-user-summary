@@ -21,4 +21,9 @@ describe("LanguageChartLegend", () => {
     expect(screen.getByText("60.5%")).toBeInTheDocument();
     expect(screen.getByText("39.5%")).toBeInTheDocument();
   });
+
+  it("renders without crashing with an empty array", () => {
+    const { container } = render(<LanguageChartLegend top={[]} />);
+    expect(container.firstChild).toBeEmptyDOMElement();
+  });
 });
