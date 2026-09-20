@@ -13,14 +13,12 @@ vi.mock("@/lib/logger", () => ({
 
 describe("useCopyToClipboard", () => {
   let originalClipboard: Clipboard | undefined;
-  let originalExecCommand: typeof document.execCommand;
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
 
     originalClipboard = navigator.clipboard;
-    originalExecCommand = document.execCommand;
 
     // Mock clipboard
     Object.defineProperty(navigator, "clipboard", {
@@ -29,9 +27,6 @@ describe("useCopyToClipboard", () => {
       },
       configurable: true,
     });
-
-    // Mock document.execCommand
-    document.execCommand = vi.fn();
   });
 
   afterEach(() => {
@@ -45,7 +40,6 @@ describe("useCopyToClipboard", () => {
         configurable: true,
       });
     }
-    document.execCommand = originalExecCommand;
     vi.restoreAllMocks();
   });
 
@@ -62,7 +56,6 @@ describe("useCopyToClipboard", () => {
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith("test text");
     expect(result.current.copied).toBe(true);
-    expect(document.execCommand).not.toHaveBeenCalled();
 
     act(() => {
       vi.advanceTimersByTime(2000);
@@ -71,52 +64,48 @@ describe("useCopyToClipboard", () => {
     expect(result.current.copied).toBe(false);
   });
 
-  it("should use fallback if navigator.clipboard is not available", async () => {
+  it("should log error if navigator.clipboard.writeText fails", async () => {
+    const error = new Error("Clipboard error");
+    vi.mocked(navigator.clipboard.writeText).mockRejectedValue(error);
+
+    const { result } = renderHook(() => useCopyToClipboard());
+
+    await act(async () => {
+      await result.current.copyToClipboard("failed text");
+    });
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith("failed text");
+    expect(result.current.copied).toBe(false);
+    expect(logger.error).toHaveBeenCalledWith("Failed to copy", error);
+  });
+
+  it("should clear stale copied state if navigator.clipboard.writeText fails after success", async () => {
+    // 1. Success
+    vi.mocked(navigator.clipboard.writeText).mockResolvedValueOnce(undefined);
+
+    const { result } = renderHook(() => useCopyToClipboard());
+
+    await act(async () => {
+      await result.current.copyToClipboard("success text");
+    });
+
+    expect(result.current.copied).toBe(true);
+
+    // 2. Failure immediately after
+    const error = new Error("Clipboard error");
+    vi.mocked(navigator.clipboard.writeText).mockRejectedValueOnce(error);
+
+    await act(async () => {
+      await result.current.copyToClipboard("failed text");
+    });
+
+    expect(result.current.copied).toBe(false);
+  });
+
+  it("should log error if navigator.clipboard is not available", async () => {
     // Remove clipboard
     // @ts-expect-error test setup
     delete navigator.clipboard;
-    vi.mocked(document.execCommand).mockReturnValue(true);
-
-    const { result } = renderHook(() => useCopyToClipboard());
-
-    await act(async () => {
-      await result.current.copyToClipboard("fallback text");
-    });
-
-    expect(document.execCommand).toHaveBeenCalledWith("copy");
-    expect(result.current.copied).toBe(true);
-
-    act(() => {
-      vi.advanceTimersByTime(2000);
-    });
-
-    expect(result.current.copied).toBe(false);
-  });
-
-  it("should use fallback if navigator.clipboard.writeText fails", async () => {
-    vi.mocked(navigator.clipboard.writeText).mockRejectedValue(new Error("Clipboard error"));
-    vi.mocked(document.execCommand).mockReturnValue(true);
-
-    const { result } = renderHook(() => useCopyToClipboard());
-
-    await act(async () => {
-      await result.current.copyToClipboard("fallback text");
-    });
-
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith("fallback text");
-    expect(document.execCommand).toHaveBeenCalledWith("copy");
-    expect(result.current.copied).toBe(true);
-
-    act(() => {
-      vi.advanceTimersByTime(2000);
-    });
-
-    expect(result.current.copied).toBe(false);
-  });
-
-  it("should log error if both clipboard and fallback fail", async () => {
-    vi.mocked(navigator.clipboard.writeText).mockRejectedValue(new Error("Clipboard error"));
-    vi.mocked(document.execCommand).mockReturnValue(false);
 
     const { result } = renderHook(() => useCopyToClipboard());
 
@@ -127,54 +116,31 @@ describe("useCopyToClipboard", () => {
     expect(result.current.copied).toBe(false);
     expect(logger.error).toHaveBeenCalledWith(
       "Failed to copy",
-      expect.any(Error),
       expect.any(Error)
     );
   });
 
-
-  it("should log error if both clipboard.writeText and fallback throw errors", async () => {
-    const writeError = new Error("Clipboard write error");
-    const execError = new Error("execCommand thrown error");
-
-    vi.mocked(navigator.clipboard.writeText).mockRejectedValue(writeError);
-    vi.mocked(document.execCommand).mockImplementation(() => {
-      throw execError;
-    });
+  it("should clear stale copied state if navigator.clipboard is not available after success", async () => {
+    // 1. Success
+    vi.mocked(navigator.clipboard.writeText).mockResolvedValueOnce(undefined);
 
     const { result } = renderHook(() => useCopyToClipboard());
 
     await act(async () => {
-      await result.current.copyToClipboard("failed text");
+      await result.current.copyToClipboard("success text");
     });
 
-    expect(result.current.copied).toBe(false);
-    expect(logger.error).toHaveBeenCalledWith(
-      "Failed to copy",
-      writeError,
-      execError
-    );
-  });
+    expect(result.current.copied).toBe(true);
 
-  it("should log error if fallback throws an error", async () => {
+    // 2. Failure immediately after (remove clipboard)
     // @ts-expect-error test setup
     delete navigator.clipboard;
-    vi.mocked(document.execCommand).mockImplementation(() => {
-      throw new Error("execCommand thrown error");
-    });
-
-    const { result } = renderHook(() => useCopyToClipboard());
 
     await act(async () => {
       await result.current.copyToClipboard("failed text");
     });
 
     expect(result.current.copied).toBe(false);
-    expect(logger.error).toHaveBeenCalledWith(
-      "Failed to copy",
-      expect.any(Error),
-      expect.any(Error)
-    );
   });
 
   it("should respect custom timeout", async () => {

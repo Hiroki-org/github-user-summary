@@ -8,13 +8,11 @@ import { logger } from "@/lib/logger";
 
 describe("ShareButtons", () => {
   let originalClipboard: Navigator["clipboard"] | undefined;
-  let originalExecCommand: (commandId: string, showUI?: boolean, value?: string) => boolean;
   let originalLocation: Location;
 
   beforeEach(() => {
     vi.spyOn(logger, 'error').mockImplementation(() => {});
     originalClipboard = navigator.clipboard;
-    originalExecCommand = document.execCommand;
     originalLocation = window.location;
 
     Object.defineProperty(window, "location", {
@@ -30,66 +28,10 @@ describe("ShareButtons", () => {
     vi.useRealTimers();
     vi.restoreAllMocks();
     Object.assign(navigator, { clipboard: originalClipboard });
-    document.execCommand = originalExecCommand;
 
     Object.defineProperty(window, "location", {
       value: originalLocation,
       writable: true,
-    });
-  });
-
-  it("uses document.execCommand as fallback when navigator.clipboard.writeText fails", async () => {
-    // 1. Mock clipboard.writeText to reject
-    const writeTextMock = vi.fn().mockRejectedValue(new Error("Not allowed"));
-    Object.assign(navigator, {
-      clipboard: {
-        writeText: writeTextMock,
-      },
-    });
-
-    // 2. Mock execCommand
-    const execCommandMock = vi.fn().mockReturnValue(true);
-    document.execCommand = execCommandMock;
-
-    // 3. Spy on document.createElement, document.body.appendChild, and document.body.removeChild
-    // to verify the full fallback flow
-    const createElementSpy = vi.spyOn(document, "createElement");
-    const appendChildSpy = vi.spyOn(document.body, "appendChild");
-    const removeChildSpy = vi.spyOn(document.body, "removeChild");
-
-    render(<ShareButtons username="johndoe" />);
-
-    const copyButton = screen.getByRole("button", { name: "Copy profile URL" });
-
-    fireEvent.click(copyButton);
-
-    await waitFor(() => {
-      expect(writeTextMock).toHaveBeenCalledWith("http://localhost/johndoe");
-    });
-
-    await waitFor(() => {
-      expect(createElementSpy).toHaveBeenCalledWith("textarea");
-
-      // Find the appendChild call that appends the textarea (since React might also call appendChild)
-      const textareaAppendCall = appendChildSpy.mock.calls.find(
-        (call) => (call[0] as HTMLElement).tagName === "TEXTAREA"
-      );
-
-      expect(textareaAppendCall).toBeDefined();
-      if (textareaAppendCall) {
-        const appendedNode = textareaAppendCall[0] as HTMLTextAreaElement;
-        expect(appendedNode.value).toBe("http://localhost/johndoe");
-
-        expect(execCommandMock).toHaveBeenCalledWith("copy");
-
-        // Verify removeChild was called with the same element
-        expect(removeChildSpy).toHaveBeenCalledWith(appendedNode);
-      }
-    });
-
-    // Clear out React's state updates
-    await act(async () => {
-      vi.advanceTimersByTime(2500);
     });
   });
 
@@ -102,9 +44,6 @@ describe("ShareButtons", () => {
       },
     });
 
-    const execCommandMock = vi.fn().mockReturnValue(true);
-    document.execCommand = execCommandMock;
-
     render(<ShareButtons username="johndoe" />);
 
     const copyButton = screen.getByRole("button", { name: "Copy profile URL" });
@@ -114,9 +53,6 @@ describe("ShareButtons", () => {
     await waitFor(() => {
       expect(writeTextMock).toHaveBeenCalledWith("http://localhost/johndoe");
     });
-
-    // Fallback should not be triggered
-    expect(execCommandMock).not.toHaveBeenCalled();
 
     // Clear out React's state updates
     await act(async () => {
@@ -155,7 +91,7 @@ describe("ShareButtons", () => {
     });
   });
 
-  it("logs an error and does not show 'Copied!' feedback when both copy methods fail", async () => {
+  it("logs an error and does not show 'Copied!' feedback when copy fails", async () => {
     // 1. Mock clipboard.writeText to reject
     const writeTextMock = vi.fn().mockRejectedValue(new Error("Clipboard API failed"));
     Object.assign(navigator, {
@@ -163,10 +99,6 @@ describe("ShareButtons", () => {
         writeText: writeTextMock,
       },
     });
-
-    // 2. Mock execCommand to return false (failure)
-    const execCommandMock = vi.fn().mockReturnValue(false);
-    document.execCommand = execCommandMock;
 
     render(<ShareButtons username="johndoe" />);
 
@@ -178,15 +110,10 @@ describe("ShareButtons", () => {
       expect(writeTextMock).toHaveBeenCalledWith("http://localhost/johndoe");
     });
 
-    await waitFor(() => {
-      expect(execCommandMock).toHaveBeenCalledWith("copy");
-    });
-
     // Verify logger.error was called
     expect(logger.error).toHaveBeenCalledWith(
       "Failed to copy",
-      expect.any(Error), // error from clipboard.writeText
-      expect.any(Error)  // error from execCommand fallback failing
+      expect.any(Error) // error from clipboard.writeText
     );
 
     // Verify button text remains unchanged
@@ -209,12 +136,8 @@ describe("ShareButtons", () => {
     };
   };
 
-  it("uses document.execCommand as fallback when navigator.clipboard is undefined", async () => {
+  it("logs an error and does not show 'Copied!' feedback when clipboard is undefined", async () => {
     const restoreClipboard = setupUndefinedClipboard();
-
-    // 2. Mock execCommand
-    const execCommandMock = vi.fn().mockReturnValue(true);
-    document.execCommand = execCommandMock;
 
     render(<ShareButtons username="johndoe" />);
 
@@ -223,70 +146,11 @@ describe("ShareButtons", () => {
     fireEvent.click(copyButton);
 
     await waitFor(() => {
-      expect(execCommandMock).toHaveBeenCalledWith("copy");
+      expect(logger.error).toHaveBeenCalledWith(
+        "Failed to copy",
+        expect.any(Error)
+      );
     });
-
-    // Check for success feedback
-    await waitFor(() => {
-      expect(screen.getByText("Copied!")).toBeDefined();
-    });
-
-    // Clear out React's state updates
-    await act(async () => {
-      vi.advanceTimersByTime(2500);
-    });
-
-    restoreClipboard();
-  });
-
-  it("logs an error and does not show 'Copied!' feedback when both copy methods fail and clipboard is undefined", async () => {
-    const restoreClipboard = setupUndefinedClipboard();
-
-    const execCommandMock = vi.fn().mockReturnValue(false);
-    document.execCommand = execCommandMock;
-
-    render(<ShareButtons username="johndoe" />);
-
-    const copyButton = screen.getByRole("button", { name: "Copy profile URL" });
-
-    fireEvent.click(copyButton);
-
-    await waitFor(() => {
-      expect(execCommandMock).toHaveBeenCalledWith("copy");
-    });
-
-    expect(logger.error).toHaveBeenCalledWith(
-      "Failed to copy",
-      expect.any(Error),
-      expect.any(Error)
-    );
-
-    restoreClipboard();
-  });
-
-  it("uses document.execCommand as fallback and catches its error", async () => {
-    const restoreClipboard = setupUndefinedClipboard();
-
-    const execCommandMock = vi.fn().mockImplementation(() => {
-      throw new Error("execCommand crashed");
-    });
-    document.execCommand = execCommandMock;
-
-    render(<ShareButtons username="johndoe" />);
-
-    const copyButton = screen.getByRole("button", { name: "Copy profile URL" });
-
-    fireEvent.click(copyButton);
-
-    await waitFor(() => {
-      expect(execCommandMock).toHaveBeenCalledWith("copy");
-    });
-
-    expect(logger.error).toHaveBeenCalledWith(
-      "Failed to copy",
-      expect.any(Error), // clipboard API missing error
-      expect.any(Error)  // execCommand crash error
-    );
 
     restoreClipboard();
   });
