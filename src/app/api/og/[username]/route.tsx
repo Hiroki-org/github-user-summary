@@ -5,8 +5,9 @@ import { logger } from "@/lib/logger";
 import { isValidGitHubUsername, sanitizeUrl } from "@/lib/validators";
 import { RateLimiter } from "@/lib/rateLimit";
 import { getClientIp } from "@/lib/rateLimit";
+import crypto from "crypto";
 
-export const runtime = "edge";
+// export const runtime = "edge"; // Disabled to support crypto module for HMAC
 const rateLimiter = new RateLimiter(50, 60 * 1000);
 const ONE_HOUR_IN_SECONDS = 60 * 60;
 const ONE_DAY_IN_SECONDS = 24 * ONE_HOUR_IN_SECONDS;
@@ -33,9 +34,25 @@ export async function GET(
     return new Response("Invalid username", { status: 400 });
   }
 
+  const sig = request.nextUrl.searchParams.get("sig");
+  if (!sig) {
+    return new Response("Missing signature", { status: 401 });
+  }
+
+  const secret = process.env.OG_SECRET || "default_og_secret_for_local_dev";
+  const expectedSig = crypto
+    .createHmac("sha256", secret)
+    .update(username)
+    .digest("hex");
+
+  if (sig !== expectedSig) {
+    return new Response("Invalid signature", { status: 401 });
+  }
+
 
   // Fetch minimal profile data for the OG image
   let name = username;
+  let isDegraded = false;
   let bio = "";
   let avatarUrl = "";
   let followers = 0;
@@ -44,6 +61,7 @@ export async function GET(
   try {
     const res = await fetch(`https://api.github.com/users/${encodeURIComponent(username)}`, {
       headers: {
+        ...(process.env.GITHUB_TOKEN && { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` }),
         Accept: "application/vnd.github.v3+json",
         "User-Agent": "github-user-summary",
       },
@@ -56,10 +74,13 @@ export async function GET(
       avatarUrl = data.avatar_url ?? "";
       followers = data.followers ?? 0;
       publicRepos = data.public_repos ?? 0;
+    } else {
+      isDegraded = true;
     }
   } catch (error) {
     logger.error(`Failed to fetch GitHub profile for OG image: ${username}`, error);
     // fallback to defaults
+    isDegraded = true;
   }
 
   return new ImageResponse(
@@ -180,7 +201,7 @@ export async function GET(
       width: 1200,
       height: 630,
       headers: {
-        "Cache-Control": OG_CACHE_CONTROL,
+        "Cache-Control": isDegraded ? "no-cache, no-store" : OG_CACHE_CONTROL,
       },
     }
   );

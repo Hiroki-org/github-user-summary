@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import { notFound } from "next/navigation";
+import crypto from "crypto";
 
 import { authOptions } from "@/lib/auth";
 import { fetchUserSummary } from "@/lib/github";
@@ -23,18 +24,25 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { username } = await params;
+
+  const secret = process.env.OG_SECRET || "default_og_secret_for_local_dev";
+  const sig = crypto
+    .createHmac("sha256", secret)
+    .update(username)
+    .digest("hex");
+  const ogUrl = `/api/og/${encodeURIComponent(username)}?sig=${sig}`;
   return {
     title: `${username} - GitHub User Summary`,
     description: `GitHub profile summary for ${username}.`,
     openGraph: {
       title: `${username} - GitHub User Summary`,
       description: `GitHub profile summary for ${username}.`,
-      images: [`/api/og/${encodeURIComponent(username)}`],
+      images: [ogUrl],
     },
     twitter: {
       card: "summary_large_image",
       title: `${username} - GitHub User Summary`,
-      images: [`/api/og/${encodeURIComponent(username)}`],
+      images: [ogUrl],
     },
   };
 }
