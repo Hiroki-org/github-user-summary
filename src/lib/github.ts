@@ -715,7 +715,20 @@ export const fetchActivity = cache(async function fetchActivity(
 
     let day = dayCache.get(datePart);
     if (day === undefined) {
-      day = new Date(datePart).getUTCDay(); // 0=Sun, 6=Sat
+      // Sakamoto's algorithm for fast day of week calculation
+      // Avoids allocating a new Date object inside the loop
+      const charCodeZero = 48; // '0'.charCodeAt(0)
+      const y = (datePart.charCodeAt(0) - charCodeZero) * 1000 +
+                (datePart.charCodeAt(1) - charCodeZero) * 100 +
+                (datePart.charCodeAt(2) - charCodeZero) * 10 +
+                (datePart.charCodeAt(3) - charCodeZero);
+      const m = (datePart.charCodeAt(5) - charCodeZero) * 10 +
+                (datePart.charCodeAt(6) - charCodeZero);
+      const d = (datePart.charCodeAt(8) - charCodeZero) * 10 +
+                (datePart.charCodeAt(9) - charCodeZero);
+      const t = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
+      const yAdjusted = m < 3 ? y - 1 : y;
+      day = (yAdjusted + Math.floor(yAdjusted / 4) - Math.floor(yAdjusted / 100) + Math.floor(yAdjusted / 400) + t[m - 1] + d) % 7;
       dayCache.set(datePart, day);
     }
 
