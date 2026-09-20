@@ -17,8 +17,7 @@ export async function GET(
     const { username } = await params;
     const url = new URL(request.url);
     const options = parseCardQueryParams(url.searchParams);
-    const allowedOrigin = process.env.APP_URL || "http://localhost:3000";
-    const fontUrl = `${allowedOrigin}/fonts/NotoSans-Regular.ttf`;
+
 
     const ip = getClientIp(request);
     const rateLimitResult = await rateLimiter.check(ip);
@@ -29,7 +28,7 @@ export async function GET(
             options,
             status: 429,
             cacheControl: ERROR_CACHE,
-            fontUrl,
+
         });
     }
 
@@ -43,8 +42,7 @@ export async function GET(
                 options,
                 status: 404,
                 cacheControl: ERROR_CACHE,
-                fontUrl,
-                allowedOrigin,
+
             });
         }
 
@@ -52,8 +50,7 @@ export async function GET(
             data,
             options,
             cacheControl: SUCCESS_CACHE,
-            fontUrl,
-            allowedOrigin,
+
         });
     } catch {
         return renderErrorCardResponse({
@@ -61,8 +58,7 @@ export async function GET(
             options,
             status: 503,
             cacheControl: ERROR_CACHE,
-            fontUrl,
-            allowedOrigin,
+
         });
     }
 }
