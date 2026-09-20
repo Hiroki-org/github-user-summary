@@ -1,5 +1,6 @@
 import "server-only";
 import { cache } from 'react';
+import { CONTRIBUTIONS_COLLECTION_FRAGMENT, type BaseContributionsCollection } from "./githubQueries";
 import { logger } from "@/lib/logger";
 
 import type {
@@ -467,21 +468,7 @@ function processRepoData(repos: RepoNode[]): RepositoryData {
 
 type ContributionsResponse = {
   user: {
-    contributionsCollection: {
-      totalCommitContributions: number;
-      totalPullRequestContributions: number;
-      totalIssueContributions: number;
-      totalPullRequestReviewContributions: number;
-      contributionCalendar: {
-        totalContributions: number;
-        weeks: {
-          contributionDays: {
-            date: string;
-            contributionCount: number;
-          }[];
-        }[];
-      };
-    };
+    contributionsCollection: BaseContributionsCollection;
   } | null;
 };
 
@@ -512,22 +499,11 @@ export async function fetchContributions(
   const query = `query($login: String!, $from: DateTime!, $to: DateTime!) {
     user(login: $login) {
       contributionsCollection(from: $from, to: $to) {
-        totalCommitContributions
-        totalPullRequestContributions
-        totalIssueContributions
-        totalPullRequestReviewContributions
-        contributionCalendar {
-          totalContributions
-          weeks {
-            contributionDays {
-              date
-              contributionCount
-            }
-          }
-        }
+        ...contributionsFields
       }
     }
-  }`;
+  }
+  ${CONTRIBUTIONS_COLLECTION_FRAGMENT}`;
 
   const data = await graphql<ContributionsResponse>(query, token, {
     login: username,
