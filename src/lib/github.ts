@@ -23,6 +23,7 @@ import {
 
 const GITHUB_API = "https://api.github.com";
 const GITHUB_GRAPHQL = "https://api.github.com/graphql";
+const SAKAMOTO_MONTH_OFFSETS = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4] as const;
 
 export function headers(token?: string): HeadersInit {
   const h: HeadersInit = {
@@ -110,10 +111,9 @@ function calculateMostActiveDay(calendar: { date: string; count: number }[]): st
       (day.date.charCodeAt(8) - charCodeZero) * 10 +
       (day.date.charCodeAt(9) - charCodeZero);
 
-    const t = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
     let year = y;
     if (m < 3) year -= 1;
-    const weekday = (year + Math.floor(year / 4) - Math.floor(year / 100) + Math.floor(year / 400) + t[m - 1] + d) % 7;
+    const weekday = (year + Math.floor(year / 4) - Math.floor(year / 100) + Math.floor(year / 400) + SAKAMOTO_MONTH_OFFSETS[m - 1] + d) % 7;
 
     weekdayTotals[weekday] += day.count;
   }
